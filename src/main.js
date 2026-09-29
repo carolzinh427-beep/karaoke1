@@ -18,16 +18,29 @@ export function createWhatsAppUrl(message) {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
 }
 
-// 1. Header scroll effect
+// 1. Header scroll effect and portal transition
 function initHeader() {
   const header = document.querySelector('.site-header');
+  const portal = document.getElementById('portal');
   if (!header) return;
 
   const handleScroll = () => {
-    if (window.scrollY > 40) {
-      header.classList.add('scrolled');
+    if (portal) {
+      const portalThreshold = portal.offsetHeight - 90;
+      if (window.scrollY >= portalThreshold) {
+        header.classList.add('visible');
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('visible');
+        header.classList.remove('scrolled');
+      }
     } else {
-      header.classList.remove('scrolled');
+      header.classList.add('visible');
+      if (window.scrollY > 40) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
     }
   };
 

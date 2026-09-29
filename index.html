@@ -74,6 +74,81 @@
 <body>
 
   <!-- ========================================================================
+       TELA INICIAL DE ENTRADA (WELCOME PORTAL COM APENAS OS 4 BOTÕES)
+       ======================================================================== -->
+  <section class="welcome-portal-screen" id="portal">
+    <div class="welcome-portal-content">
+      <!-- Live Status Pill -->
+      <div class="welcome-badge-live">
+        <span class="pulse-dot"></span>
+        KARAOKÊ PREMIUM EM BRASÍLIA
+      </div>
+
+      <!-- Logo Centralizada -->
+      <div class="welcome-logo-box">
+        <img src="/assets/brand/logo.svg" alt="Backstage Karaokê" class="welcome-logo-img" width="310" height="70">
+      </div>
+
+      <!-- Slogan e Subtítulo Centralizados -->
+      <h1 class="welcome-slogan">"ONDE O SOM É <span class="highlight">MAIS ALTO QUE O PREÇO!</span>"</h1>
+      <p class="welcome-subtitle">Asa Norte • Brasília - DF</p>
+
+      <!-- APENAS OS 4 BOTÕES PRINCIPAIS -->
+      <div class="welcome-actions-stack">
+        <!-- 1. Ver Site -->
+        <a href="#site-principal" class="welcome-btn welcome-btn-site" id="btnEntrarSite">
+          <span class="welcome-btn-icon">🌐</span>
+          <span class="welcome-btn-text">Ver Site</span>
+          <span class="welcome-btn-arrow">↓</span>
+        </a>
+
+        <!-- 2. Ver Cardápio (leva à página individual) -->
+        <a href="/cardapio.html" class="welcome-btn welcome-btn-cardapio" id="btnEntrarCardapio">
+          <span class="welcome-btn-icon">🍹</span>
+          <span class="welcome-btn-text">Ver Cardápio</span>
+          <span class="welcome-btn-arrow">→</span>
+        </a>
+
+        <!-- 3. Ver Localização -->
+        <a href="#localizacao" class="welcome-btn welcome-btn-location" id="btnEntrarLocalizacao">
+          <span class="welcome-btn-icon">📍</span>
+          <span class="welcome-btn-text">Ver Localização</span>
+          <span class="welcome-btn-arrow">→</span>
+        </a>
+
+        <!-- 4. Falar no WhatsApp -->
+        <a href="https://wa.me/556181426321?text=Ol%C3%A1!%20Gostaria%20de%20informa%C3%A7%C3%B5es%20e%20fazer%20uma%20reserva%20no%20Backstage%20Karaok%C3%AA." 
+           class="welcome-btn welcome-btn-wpp" 
+           target="_blank" 
+           rel="noopener noreferrer" 
+           id="btnEntrarWhatsapp">
+          <span class="welcome-btn-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/>
+            </svg>
+          </span>
+          <span class="welcome-btn-text">Falar no WhatsApp</span>
+          <span class="welcome-btn-arrow">↗</span>
+        </a>
+      </div>
+
+      <!-- Seta suave de rolagem -->
+      <a href="#site-principal" class="welcome-scroll-hint" aria-label="Rolar para o site">
+        <span>Ou deslize para ver o site</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       SITE PRINCIPAL (ENTRA COM HERO BONITO E TODAS AS SEÇÕES)
+       ======================================================================== -->
+  <div id="site-principal">
+
+
+  <!-- ========================================================================
        3. HEADER / NAVIGATION
        ======================================================================== -->
   <header class="site-header" id="topHeader">
@@ -155,63 +230,7 @@
     <!-- ========================================================================
          PORTAL DE TÓPICOS ANTECIPADO (ABA RÁPIDA DE ENTRADA)
          ======================================================================== -->
-    <section class="portal-topics-bar-section" id="portalRapido">
-      <div class="container">
-        <div class="portal-topics-box">
-          <div class="portal-brand-top">
-            <img src="/assets/brand/logo.svg" alt="Backstage Karaokê" class="portal-center-logo" width="310" height="65">
-            <span class="portal-slogan-pill">"Onde o som é mais alto que o preço!"</span>
-          </div>
-
-          <div class="portal-topics-nav" role="navigation" aria-label="Aba de tópicos rápidos">
-            <!-- 1. Ver Site -->
-            <a href="#inicio" class="portal-topic-tab active" id="btnTopicVerSite">
-              <span class="topic-tab-icon">🌐</span>
-              <div class="topic-tab-info">
-                <span class="topic-tab-name">Ver Site</span>
-                <span class="topic-tab-sub">Salas & Experiências</span>
-              </div>
-            </a>
-
-            <!-- 2. Ver Cardápio (Leva à página individual) -->
-            <a href="/cardapio.html" class="portal-topic-tab topic-tab-highlight" id="btnTopicVerCardapio">
-              <span class="topic-tab-icon">🍹</span>
-              <div class="topic-tab-info">
-                <span class="topic-tab-name">Ver Cardápio</span>
-                <span class="topic-tab-sub">Página Oficial Individual</span>
-              </div>
-              <span class="topic-tab-tag">Oficial</span>
-            </a>
-
-            <!-- 3. Ver Localização -->
-            <a href="#localizacao" class="portal-topic-tab" id="btnTopicVerLocalizacao">
-              <span class="topic-tab-icon">📍</span>
-              <div class="topic-tab-info">
-                <span class="topic-tab-name">Ver Localização</span>
-                <span class="topic-tab-sub">Como Chegar & Mapa</span>
-              </div>
-            </a>
-
-            <!-- 4. Botão WhatsApp -->
-            <a href="https://wa.me/556181426321?text=Ol%C3%A1!%20Gostaria%20de%20informa%C3%A7%C3%B5es%20e%20fazer%20uma%20reserva%20no%20Backstage%20Karaok%C3%AA." 
-               class="portal-topic-tab topic-tab-whatsapp" 
-               target="_blank" 
-               rel="noopener noreferrer" 
-               id="btnTopicWhatsapp">
-              <span class="topic-tab-icon wpp-svg-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/>
-                </svg>
-              </span>
-              <div class="topic-tab-info">
-                <span class="topic-tab-name">Falar no WhatsApp</span>
-                <span class="topic-tab-sub">+55 61 8142-6321</span>
-              </div>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+    
     <!-- ========================================================================
          4. HERO / PRIMEIRA DOBRA
          ======================================================================== -->
@@ -1156,5 +1175,6 @@
 
   <!-- Scripts -->
   <script type="module" src="/src/main.js"></script>
+  </div><!-- #site-principal -->
 </body>
 </html>
