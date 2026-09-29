@@ -1,16 +1,4 @@
 {
-  "framework": "vite",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/cardapio",
-      "destination": "/cardapio.html"
-    },
-    {
-      "source": "/cardapio.html",
-      "destination": "/cardapio.html"
-    }
-  ]
+  "outputDirectory": "dist"
 }
