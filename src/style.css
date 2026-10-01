@@ -2898,5 +2898,186 @@ img, video {
   }
 }
 
+/* ==========================================================================
+   WELCOME INFO MODAL (CLIQUE AQUI ANTES)
+   ========================================================================== */
+.welcome-info-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.welcome-info-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.welcome-info-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.welcome-info-dialog {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 680px;
+  max-height: 88vh;
+  max-height: 88dvh;
+  background: #090e20;
+  border: 1px solid rgba(255, 0, 122, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 40px rgba(255, 0, 122, 0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.94) translateY(12px);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.welcome-info-modal.open .welcome-info-dialog {
+  transform: scale(1) translateY(0);
+}
+
+.welcome-info-header {
+  padding: 24px 24px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 20, 44, 0.75);
+}
+
+.welcome-info-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary-magenta);
+  margin-bottom: 6px;
+}
+
+.welcome-info-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.2rem, 3.2vw, 1.55rem);
+  font-weight: 900;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+
+.welcome-info-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.welcome-info-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.welcome-info-close:hover {
+  background: var(--primary-magenta);
+  border-color: var(--primary-magenta);
+  transform: rotate(90deg);
+}
+
+.welcome-info-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.welcome-info-body .rules-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.welcome-info-body .rule-card {
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.welcome-info-body .rule-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(4px);
+}
+
+.welcome-info-body .rule-card.alert {
+  border-left: 3px solid #EF4444;
+  background: rgba(239, 68, 68, 0.07);
+}
+
+.welcome-info-body .rule-card.perk {
+  border-left: 3px solid #10B981;
+  background: rgba(16, 185, 129, 0.07);
+}
+
+.welcome-info-footer {
+  padding: 16px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 20, 44, 0.75);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 540px) {
+  .welcome-info-dialog {
+    max-height: 94vh;
+  }
+  .welcome-info-header, .welcome-info-body, .welcome-info-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .welcome-info-footer {
+    flex-direction: column;
+  }
+  .welcome-info-footer .btn {
+    width: 100%;
+  }
+}
+
+
 
 
