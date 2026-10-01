@@ -3,6 +3,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  initWelcomeScreen();
   initHeader();
   initMobileMenu();
   initSplitCalculator();
@@ -16,6 +17,32 @@ const WHATSAPP_PHONE = '556181426321';
 
 export function createWhatsAppUrl(message) {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+}
+
+// 0. Welcome Screen / Splash Landing
+function initWelcomeScreen() {
+  const welcomeScreen = document.getElementById('welcomeScreen');
+  const enterBtn = document.getElementById('enterSiteBtn');
+
+  if (!welcomeScreen || !enterBtn) return;
+
+  const hash = window.location.hash;
+  if (hash && hash !== '#welcome' && hash !== '#inicio') {
+    welcomeScreen.style.display = 'none';
+    return;
+  }
+
+  enterBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    welcomeScreen.classList.add('fade-out');
+    setTimeout(() => {
+      welcomeScreen.style.display = 'none';
+      const hero = document.getElementById('inicio');
+      if (hero) {
+        hero.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 450);
+  });
 }
 
 // 1. Header scroll effect

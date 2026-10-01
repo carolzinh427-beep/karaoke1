@@ -2549,3 +2549,204 @@ img, video {
     padding-bottom: 40px !important;
   }
 }
+
+/* ==========================================================================
+   WELCOME SCREEN / SPLASH LANDING INDEPENDENTE
+   ========================================================================== */
+.welcome-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 99999;
+  background-color: #000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 16px;
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.45s;
+}
+
+.welcome-screen.fade-out {
+  opacity: 0;
+  transform: translateY(-30px) scale(0.98);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Pink Dotted Soundwave at the Top */
+.welcome-wave-bg {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 650px;
+  height: 240px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.95;
+  overflow: hidden;
+}
+
+.welcome-wave-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  filter: drop-shadow(0 0 14px rgba(255, 0, 122, 0.7));
+}
+
+.welcome-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: auto 0;
+}
+
+.welcome-logo-box {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+  margin-bottom: 8px;
+}
+
+.welcome-logo-img {
+  width: min(300px, 82vw);
+  height: auto;
+  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.45));
+}
+
+.welcome-phrase {
+  font-family: var(--font-heading);
+  font-size: clamp(0.92rem, 3.2vw, 1.05rem);
+  font-weight: 900;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 22px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.welcome-buttons-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+/* Speed-lines capsule buttons */
+.welcome-btn {
+  position: relative;
+  width: 100%;
+  background: #009bbd;
+  color: #FFFFFF;
+  border-radius: 9999px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(0.95rem, 3.6vw, 1.15rem);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  padding: 13px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.welcome-btn:hover {
+  background: #00add4;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 173, 212, 0.45);
+}
+
+.welcome-btn:active {
+  transform: translateY(1px);
+}
+
+/* Horizontal Speed Lines on Left & Right */
+.welcome-btn::before,
+.welcome-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 3.5px,
+    #000000 3.5px,
+    #000000 7px
+  );
+  z-index: 1;
+}
+
+.welcome-btn::before {
+  left: 0;
+  -webkit-mask-image: linear-gradient(90deg, #000000 40%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000000 40%, transparent 100%);
+}
+
+.welcome-btn::after {
+  right: 0;
+  -webkit-mask-image: linear-gradient(270deg, #000000 40%, transparent 100%);
+  mask-image: linear-gradient(270deg, #000000 40%, transparent 100%);
+}
+
+.welcome-btn span {
+  position: relative;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+/* Featured Button Outline (Violet/Magenta Glow as in user screenshot) */
+.welcome-btn.welcome-btn-featured {
+  background: #009bbd;
+}
+
+.welcome-btn-featured .btn-inner-border {
+  border: 2px solid #c084fc;
+  border-radius: 6px;
+  padding: 2px 14px;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.65);
+  background: rgba(147, 51, 234, 0.15);
+  display: inline-block;
+}
+
+.welcome-btn-featured:hover {
+  box-shadow: 0 0 25px rgba(192, 132, 252, 0.5), 0 8px 25px rgba(0, 0, 0, 0.6);
+}
+
+/* Bottom Stylized Neon KARAOKE matching user screenshot */
+.welcome-footer-neon {
+  margin-top: 26px;
+  font-family: 'Outfit', 'Montserrat', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px #FF007A;
+  text-shadow: 0 0 16px rgba(255, 0, 122, 0.45);
+  text-transform: uppercase;
+  pointer-events: none;
+}
