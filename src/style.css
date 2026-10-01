@@ -2829,13 +2829,63 @@ img, video {
   margin-bottom: 28px;
 }
 
+/* Perfect Horizontal & Vertical Centering for Backstage Logo */
+.header-centered-layout {
+  position: relative;
+}
+
+@media (min-width: 992px) {
+  .header-centered-layout .site-logo.centered-brand {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
+}
+
 .cardapio-page-view .site-header .nav-container {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
 }
 
-@media (max-width: 540px) {
+.cardapio-page-view .header-nav-left {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+}
+
+.cardapio-page-view .site-header .site-logo.centered-brand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.cardapio-page-view .header-nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .cardapio-page-view .site-header .nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cardapio-page-view .site-header .site-logo.centered-brand {
+    position: static;
+    transform: none;
+  }
   .cardapio-page-view #voltarAoSiteBtn {
     padding: 6px 10px;
     font-size: 0.75rem;
@@ -2847,5 +2897,6 @@ img, video {
     height: 34px;
   }
 }
+
 
 
