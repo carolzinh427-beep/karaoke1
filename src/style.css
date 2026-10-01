@@ -470,13 +470,25 @@ img, video {
    ========================================================================== */
 .hero-section {
   position: relative;
-  min-height: 100vh;
+  min-height: 85vh;
+  min-height: 85dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 130px 0 70px;
-  background-color: var(--bg-deep);
+  padding: 0;
+  background-color: #04060d;
+  background-image: 
+    radial-gradient(ellipse 65% 55% at 0% 20%, rgba(19, 55, 129, 0.45) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 60% at 100% 75%, rgba(124, 35, 71, 0.45) 0%, transparent 65%),
+    radial-gradient(circle at 50% 50%, #080b18 0%, #02040a 100%);
   overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .hero-section {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
 }
 
 .hero-bg-container {
@@ -493,28 +505,8 @@ img, video {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  filter: brightness(0.4) contrast(1.2);
-  transform: scale(1.05);
-  animation: subtleZoom 20s infinite alternate ease-in-out;
-}
-
-@keyframes subtleZoom {
-  0% { transform: scale(1.02); }
-  100% { transform: scale(1.08); }
-}
-
-.hero-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    180deg, 
-    rgba(5, 8, 19, 0.7) 0%, 
-    rgba(5, 8, 19, 0.82) 50%, 
-    rgba(5, 8, 19, 1) 100%
-  );
+  filter: brightness(1) contrast(1.02);
+  transform: none;
 }
 
 .hero-ambient-lights {
@@ -524,8 +516,18 @@ img, video {
   width: 100%;
   height: 100%;
   background: 
-    radial-gradient(ellipse at 20% 30%, rgba(255, 0, 122, 0.22) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 25%, rgba(0, 240, 255, 0.2) 0%, transparent 50%);
+    radial-gradient(ellipse 65% 55% at 0% 20%, rgba(19, 55, 129, 0.45) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 60% at 100% 75%, rgba(124, 35, 71, 0.45) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-bottom-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(to bottom, transparent 0%, rgba(5, 8, 19, 0.6) 50%, var(--bg-deep) 100%);
   pointer-events: none;
 }
 
@@ -2145,8 +2147,10 @@ img, video {
   }
 
   .hero-section {
-    padding: 100px 0 60px !important;
-    min-height: auto !important;
+    padding: 0 !important;
+    min-height: 65vh !important;
+    min-height: 65dvh !important;
+    width: 100% !important;
   }
 
   /* Centralização Universal */
