@@ -32,17 +32,31 @@ function initWelcomeScreen() {
     return;
   }
 
-  enterBtn.addEventListener('click', (e) => {
-    e.preventDefault();
+  function dismiss(targetId) {
     welcomeScreen.classList.add('fade-out');
     setTimeout(() => {
       welcomeScreen.style.display = 'none';
-      const hero = document.getElementById('inicio');
-      if (hero) {
-        hero.scrollIntoView({ behavior: 'smooth' });
+      if (targetId) {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
       }
     }, 450);
+  }
+
+  enterBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    dismiss('inicio');
   });
+
+  const salasBtn = document.getElementById('welcomeSalasBtn');
+  if (salasBtn) {
+    salasBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      dismiss('salas');
+    });
+  }
 }
 
 // 1. Header scroll effect

@@ -77,9 +77,9 @@
        1. WELCOME SCREEN / SPLASH LANDING INDEPENDENTE
        ======================================================================== -->
   <aside class="welcome-screen" id="welcomeScreen" aria-label="Tela de entrada do Backstage Karaokê">
-    <!-- Dotted Wave Visual Background -->
+    <!-- Dotted Wave Visual Background spanning 100% width -->
     <div class="welcome-wave-bg">
-      <img src="/assets/brand/welcome-wave.svg" alt="" class="welcome-wave-img" width="600" height="260" aria-hidden="true">
+      <img src="/assets/brand/welcome-wave.svg" alt="" class="welcome-wave-img" width="1920" height="380" aria-hidden="true">
     </div>
 
     <div class="welcome-container">
@@ -88,42 +88,44 @@
         <img src="/assets/brand/logo.svg" alt="Backstage Karaokê" class="welcome-logo-img" width="340" height="74">
       </div>
 
-      <!-- Short Slogan -->
-      <div class="welcome-phrase">ONDE O SOM É MAIS ALTO QUE O PREÇO</div>
-
-      <!-- Button stack matching screenshot -->
+      <!-- Button stack matching screenshot with alternating speed-lines -->
       <div class="welcome-buttons-list">
-        <!-- 1. Conhecer o Site (Destacado com borda neon) -->
-        <button type="button" class="welcome-btn welcome-btn-featured" id="enterSiteBtn">
-          <span class="btn-inner-border">Conhecer o Site</span>
-        </button>
-
-        <!-- 2. WhatsApp -->
-        <a href="https://wa.me/556181426321?text=Ol%C3%A1!%20Gostaria%20de%20fazer%20uma%20reserva%20no%20Backstage%20Karaok%C3%AA" 
-           class="welcome-btn" 
+        <!-- 1. Clique aqui antes (Linhas na Esquerda) -->
+        <a href="https://wa.me/556181426321?text=Ol%C3%A1!%20Gostaria%20de%20tirar%20d%C3%BAvidas%20antes%20de%20reservar%20no%20Backstage%20Karaok%C3%AA" 
+           class="welcome-btn welcome-btn-left" 
            target="_blank" 
            rel="noopener noreferrer"
-           id="welcomeWppBtn">
-          <span>Falar no WhatsApp</span>
+           id="welcomeAntesBtn">
+          <span>Clique aqui antes</span>
         </a>
 
-        <!-- 3. Cardápio -->
-        <a href="/cardapio.html" class="welcome-btn" id="welcomeCardapioBtn">
-          <span>Ver Cardápio</span>
+        <!-- 2. Site para reservas (Destacado com borda neon violeta + Linhas na Direita) -->
+        <button type="button" class="welcome-btn welcome-btn-featured welcome-btn-right" id="enterSiteBtn">
+          <span class="btn-inner-border">Site para reservas</span>
+        </button>
+
+        <!-- 3. Galeria das salas (Linhas na Esquerda) -->
+        <a href="#salas" class="welcome-btn welcome-btn-left" id="welcomeSalasBtn">
+          <span>Galeria das salas</span>
         </a>
 
-        <!-- 4. Localização -->
+        <!-- 4. Cardápio (Linhas na Direita) -->
+        <a href="/cardapio.html" class="welcome-btn welcome-btn-right" id="welcomeCardapioBtn">
+          <span>Cardápio</span>
+        </a>
+
+        <!-- 5. Localização (Linhas na Esquerda) -->
         <a href="https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6" 
-           class="welcome-btn" 
+           class="welcome-btn welcome-btn-left" 
            target="_blank" 
            rel="noopener noreferrer"
            id="welcomeMapsBtn">
           <span>Localização</span>
         </a>
 
-        <!-- 5. Instagram -->
+        <!-- 6. Instagram (Linhas na Direita) -->
         <a href="https://www.instagram.com/barbackstagekaraoke" 
-           class="welcome-btn" 
+           class="welcome-btn welcome-btn-right" 
            target="_blank" 
            rel="noopener noreferrer"
            id="welcomeInstaBtn">
