@@ -77,6 +77,13 @@
        1. WELCOME SCREEN / SPLASH LANDING INDEPENDENTE
        ======================================================================== -->
   <aside class="welcome-screen" id="welcomeScreen" aria-label="Tela de entrada do Backstage Karaokê">
+    <script>
+      try {
+        if (sessionStorage.getItem('backstage_entered') === 'true' && window.location.hash !== '#welcome') {
+          document.getElementById('welcomeScreen').style.display = 'none';
+        }
+      } catch(e) {}
+    </script>
     <!-- Dotted Wave Visual Background spanning 100% width -->
     <div class="welcome-wave-bg">
       <img src="/assets/brand/welcome-wave.svg" alt="" class="welcome-wave-img" width="1920" height="380" aria-hidden="true">
@@ -100,17 +107,26 @@
         </a>
 
         <!-- 2. Site para reservas (Linhas na Direita) -->
-        <button type="button" class="welcome-btn welcome-btn-right" id="enterSiteBtn">
+        <a href="#inicio" 
+           class="welcome-btn welcome-btn-right" 
+           id="enterSiteBtn"
+           onclick="if(window.dismissWelcome){window.dismissWelcome(event,'inicio');}else{document.getElementById('welcomeScreen').style.display='none';try{sessionStorage.setItem('backstage_entered','true');}catch(e){}}">
           <span>Site para reservas</span>
-        </button>
+        </a>
 
         <!-- 3. Galeria das salas (Linhas na Esquerda) -->
-        <a href="#salas" class="welcome-btn welcome-btn-left" id="welcomeSalasBtn">
+        <a href="#salas" 
+           class="welcome-btn welcome-btn-left" 
+           id="welcomeSalasBtn"
+           onclick="if(window.dismissWelcome){window.dismissWelcome(event,'salas');}else{document.getElementById('welcomeScreen').style.display='none';try{sessionStorage.setItem('backstage_entered','true');}catch(e){}}">
           <span>Galeria das salas</span>
         </a>
 
         <!-- 4. Cardápio (Linhas na Direita) -->
-        <a href="/cardapio.html" class="welcome-btn welcome-btn-right" id="welcomeCardapioBtn">
+        <a href="/cardapio.html" 
+           class="welcome-btn welcome-btn-right" 
+           id="welcomeCardapioBtn"
+           onclick="try{sessionStorage.setItem('backstage_entered','true');}catch(e){}">
           <span>Cardápio</span>
         </a>
 

@@ -2,7 +2,7 @@
  * Backstage Karaokê - Interactive Application Script
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+function bootstrap() {
   initWelcomeScreen();
   initHeader();
   initMobileMenu();
@@ -10,7 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initMenuTabs();
   initLightbox();
   initSmoothScroll();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrap);
+} else {
+  bootstrap();
+}
 
 // WhatsApp Link Generator
 const WHATSAPP_PHONE = '556181426321';
@@ -22,9 +28,15 @@ export function createWhatsAppUrl(message) {
 // 0. Welcome Screen / Splash Landing
 function initWelcomeScreen() {
   const welcomeScreen = document.getElementById('welcomeScreen');
-  const enterBtn = document.getElementById('enterSiteBtn');
+  if (!welcomeScreen) return;
 
-  if (!welcomeScreen || !enterBtn) return;
+  // Persist exit within session
+  try {
+    if (sessionStorage.getItem('backstage_entered') === 'true' && window.location.hash !== '#welcome') {
+      welcomeScreen.style.display = 'none';
+      return;
+    }
+  } catch(e) {}
 
   const hash = window.location.hash;
   if (hash && hash !== '#welcome' && hash !== '#inicio') {
@@ -33,6 +45,10 @@ function initWelcomeScreen() {
   }
 
   function dismiss(targetId) {
+    try {
+      sessionStorage.setItem('backstage_entered', 'true');
+    } catch(err) {}
+
     welcomeScreen.classList.add('fade-out');
     setTimeout(() => {
       welcomeScreen.style.display = 'none';
@@ -42,19 +58,37 @@ function initWelcomeScreen() {
           el.scrollIntoView({ behavior: 'smooth' });
         }
       }
-    }, 450);
+    }, 380);
   }
 
-  enterBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    dismiss('inicio');
-  });
+  // Expose globally for instant inline clicks
+  window.dismissWelcome = (e, targetId) => {
+    if (e && e.preventDefault) e.preventDefault();
+    dismiss(targetId);
+  };
+
+  const enterBtn = document.getElementById('enterSiteBtn');
+  if (enterBtn) {
+    enterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      dismiss('inicio');
+    });
+  }
 
   const salasBtn = document.getElementById('welcomeSalasBtn');
   if (salasBtn) {
     salasBtn.addEventListener('click', (e) => {
       e.preventDefault();
       dismiss('salas');
+    });
+  }
+
+  const cardapioBtn = document.getElementById('welcomeCardapioBtn');
+  if (cardapioBtn) {
+    cardapioBtn.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem('backstage_entered', 'true');
+      } catch(err) {}
     });
   }
 }

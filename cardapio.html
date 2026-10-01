@@ -29,7 +29,7 @@
     <div class="container nav-container header-centered-layout">
       <!-- Botão Voltar ao Site -->
       <div class="header-nav-left">
-        <a href="/" class="btn btn-outline btn-sm" id="voltarAoSiteBtn">
+        <a href="/#inicio" class="btn btn-outline btn-sm" id="voltarAoSiteBtn" onclick="try{sessionStorage.setItem('backstage_entered','true');}catch(e){}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
@@ -39,7 +39,7 @@
       </div>
 
       <!-- Logo Oficial Centrada -->
-      <a href="/" class="site-logo centered-brand" aria-label="Backstage Karaokê - Início">
+      <a href="/#inicio" class="site-logo centered-brand" aria-label="Backstage Karaokê - Início" onclick="try{sessionStorage.setItem('backstage_entered','true');}catch(e){}">
         <img src="/assets/brand/logo.svg" alt="Backstage Karaokê Logo" class="logo-img" width="220" height="48">
       </a>
 
