@@ -79,8 +79,19 @@
   <aside class="welcome-screen" id="welcomeScreen" aria-label="Tela de entrada do Backstage Karaokê">
     <script>
       try {
+        if (window.location.hash === '#welcome' || sessionStorage.getItem('backstage_show_welcome') === 'true') {
+          sessionStorage.removeItem('backstage_entered');
+          sessionStorage.removeItem('backstage_show_welcome');
+        }
         if (sessionStorage.getItem('backstage_entered') === 'true' && window.location.hash !== '#welcome') {
           document.getElementById('welcomeScreen').style.display = 'none';
+        } else {
+          var ws = document.getElementById('welcomeScreen');
+          if (ws) {
+            ws.style.display = 'flex';
+            ws.classList.remove('fade-out');
+          }
+          window.scrollTo(0, 0);
         }
       } catch(e) {}
     </script>
@@ -786,7 +797,7 @@
                 Ver Cardápio Completo (Página Individual)
               </a>
 
-              <a href="/cardapio-oficialpdf" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" id="gatewayPdfBtn">
+              <a href="/cardapio-oficial.pdf" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" id="gatewayPdfBtn">
                 Baixar PDF Oficial
               </a>
 

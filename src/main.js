@@ -32,7 +32,13 @@ function initWelcomeScreen() {
 
   // Persist exit within session
   try {
-    if (sessionStorage.getItem('backstage_entered') === 'true' && window.location.hash !== '#welcome') {
+    if (window.location.hash === '#welcome' || sessionStorage.getItem('backstage_show_welcome') === 'true') {
+      sessionStorage.removeItem('backstage_entered');
+      sessionStorage.removeItem('backstage_show_welcome');
+      welcomeScreen.style.display = 'flex';
+      welcomeScreen.classList.remove('fade-out');
+      window.scrollTo(0, 0);
+    } else if (sessionStorage.getItem('backstage_entered') === 'true') {
       welcomeScreen.style.display = 'none';
       return;
     }
@@ -43,6 +49,15 @@ function initWelcomeScreen() {
     welcomeScreen.style.display = 'none';
     return;
   }
+
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#welcome') {
+      try { sessionStorage.removeItem('backstage_entered'); } catch(e) {}
+      welcomeScreen.style.display = 'flex';
+      welcomeScreen.classList.remove('fade-out');
+      window.scrollTo(0, 0);
+    }
+  });
 
   function dismiss(targetId) {
     try {
