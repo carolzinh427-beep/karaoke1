@@ -2727,23 +2727,6 @@ img, video {
   white-space: nowrap;
 }
 
-/* Featured Button Outline (Violet/Magenta Glow as in user screenshot) */
-.welcome-btn.welcome-btn-featured {
-  background: #009bbd;
-}
-
-.welcome-btn-featured .btn-inner-border {
-  border: 2px solid #c084fc;
-  border-radius: 6px;
-  padding: 2px 14px;
-  box-shadow: 0 0 12px rgba(192, 132, 252, 0.65);
-  background: rgba(147, 51, 234, 0.15);
-  display: inline-block;
-}
-
-.welcome-btn-featured:hover {
-  box-shadow: 0 0 25px rgba(192, 132, 252, 0.5), 0 8px 25px rgba(0, 0, 0, 0.6);
-}
 
 /* Bottom Stylized Neon KARAOKE matching user screenshot */
 .welcome-footer-neon {
