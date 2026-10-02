@@ -52,6 +52,8 @@ const state = {
   categorias: [...DEFAULT_CATEGORIAS],
   activeFilterCardapio: 'todas',
   searchTermCardapio: '',
+  cardapioPage: 1,
+  cardapioPageSize: 12,
   galeria: [],
   activeFilterGaleria: 'todas',
   configuracoes: { ...DEFAULT_CONFIGURACOES },
@@ -1278,17 +1280,188 @@ function renderSalasView() {
 }
 
 // 7.6 Cardápio
-function renderCardapioView() {
+function getFilteredCardapioItems() {
   const currentCat = state.activeFilterCardapio || 'todas';
   const searchTerm = (state.searchTermCardapio || '').toLowerCase().trim();
 
-  let items = state.cardapio;
+  let items = state.cardapio || [];
   if (currentCat !== 'todas') {
     items = items.filter(it => it.categoriaId === currentCat || (it.categoria || '').toLowerCase().includes(currentCat));
   }
   if (searchTerm) {
-    items = items.filter(it => (it.nome || '').toLowerCase().includes(searchTerm) || (it.descricao || '').toLowerCase().includes(searchTerm));
+    items = items.filter(it => 
+      (it.nome || '').toLowerCase().includes(searchTerm) || 
+      (it.descricao || '').toLowerCase().includes(searchTerm) ||
+      (it.categoria || '').toLowerCase().includes(searchTerm)
+    );
   }
+  return items;
+}
+
+function renderCardapioPagination(totalItems, currentPage, totalPages, fromItem, toItem) {
+  if (totalPages <= 1) {
+    return `
+      <div class="cardapio-pagination-bar">
+        <span class="cardapio-page-info">Total: <strong>${totalItems}</strong> ${totalItems === 1 ? 'item' : 'itens'}</span>
+      </div>
+    `;
+  }
+
+  let pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== '...') {
+      pages.push('...');
+    }
+  }
+
+  return `
+    <div class="cardapio-pagination-bar">
+      <div class="cardapio-page-info">
+        Mostrando <strong>${fromItem}–${toItem}</strong> de <strong>${totalItems}</strong> itens (Pág. ${currentPage}/${totalPages})
+      </div>
+      <div class="cardapio-page-nav">
+        <button type="button" 
+                class="btn-admin btn-admin-outline btn-admin-xs page-nav-btn" 
+                ${currentPage <= 1 ? 'disabled style="opacity: 0.35; cursor: not-allowed;"' : ''} 
+                onclick="window.changeCardapioPage(${currentPage - 1})">
+          ← Anterior
+        </button>
+        <div class="cardapio-page-pills">
+          ${pages.map(p => {
+            if (p === '...') {
+              return `<span class="page-ellipsis">…</span>`;
+            }
+            return `
+              <button type="button" 
+                      class="page-num-pill ${p === currentPage ? 'active' : ''}" 
+                      onclick="window.changeCardapioPage(${p})">
+                ${p}
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <button type="button" 
+                class="btn-admin btn-admin-outline btn-admin-xs page-nav-btn" 
+                ${currentPage >= totalPages ? 'disabled style="opacity: 0.35; cursor: not-allowed;"' : ''} 
+                onclick="window.changeCardapioPage(${currentPage + 1})">
+          Próxima →
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderCardapioTableRows(filteredItems) {
+  const page = state.cardapioPage || 1;
+  const pageSize = state.cardapioPageSize || 12;
+  const totalItems = filteredItems.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  state.cardapioPage = currentPage;
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const pageItems = filteredItems.slice(startIndex, endIndex);
+
+  if (totalItems === 0) {
+    return `
+      <div class="empty-state" style="padding: 40px 20px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+        <div class="empty-state-title">Nenhum item encontrado</div>
+        <p class="empty-state-desc">Nenhum prato ou bebida corresponde aos filtros aplicados.</p>
+        ${state.searchTermCardapio ? `
+          <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" style="margin-top: 14px;" onclick="window.clearSearchCardapio()">
+            Limpar Busca
+          </button>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Item / Descrição</th>
+            <th>Categoria</th>
+            <th>Preço Oficial</th>
+            <th>Disponibilidade</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageItems.map(it => `
+            <tr>
+              <td>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  ${it.imagem ? `<img src="${it.imagem}" alt="${it.nome}" style="width: 42px; height: 42px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--admin-border);">` : ''}
+                  <div style="min-width: 0;">
+                    <strong style="color: #FFFFFF; font-size: 0.92rem; display: block; word-break: break-word;">${it.nome}</strong>
+                    <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin-top: 2px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${it.descricao || ''}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px; color: var(--admin-cyan); white-space: nowrap;">
+                  ${it.categoria || it.categoriaId || '-'}
+                </span>
+              </td>
+              <td>
+                <strong style="color: var(--admin-cyan); font-size: 0.95rem; white-space: nowrap;">
+                  R$ ${(it.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </strong>
+              </td>
+              <td>
+                <span class="badge-status ${it.ativo !== false ? 'confirmed' : 'cancelled'}" style="white-space: nowrap;">
+                  ${it.ativo !== false ? 'Ativo no Site' : 'Pausado'}
+                </span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap;">
+                  <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.editarItemCardapio('${it.id}')" title="Editar item">
+                    Editar
+                  </button>
+                  <button type="button" class="btn-admin btn-admin-xs ${it.ativo !== false ? 'btn-admin-danger' : 'btn-admin-success'}" onclick="window.toggleAtivoItemCardapio('${it.id}', ${it.ativo === false})" title="${it.ativo !== false ? 'Pausar item no site' : 'Reativar item'}">
+                    ${it.ativo !== false ? 'Pausar' : 'Ativar'}
+                  </button>
+                  <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemCardapio('${it.id}')" title="Excluir item permanentemente">
+                    &times;
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    ${renderCardapioPagination(totalItems, currentPage, totalPages, startIndex + 1, endIndex)}
+  `;
+}
+
+function updateCardapioItemsOnly() {
+  const container = document.getElementById('cardapioTableContainer');
+  const countBadge = document.getElementById('cardapioCountBadge');
+  const clearBtn = document.getElementById('cardapioSearchClearBtn');
+  const filtered = getFilteredCardapioItems();
+
+  if (countBadge) {
+    countBadge.innerHTML = `Exibindo <strong style="color: var(--admin-cyan);">${filtered.length}</strong> de <strong style="color: #FFF;">${state.cardapio.length}</strong> itens cadastrados`;
+  }
+  if (clearBtn) {
+    clearBtn.style.display = (state.searchTermCardapio && state.searchTermCardapio.length > 0) ? 'flex' : 'none';
+  }
+  if (container) {
+    container.innerHTML = renderCardapioTableRows(filtered);
+  }
+}
+
+function renderCardapioView() {
+  const currentCat = state.activeFilterCardapio || 'todas';
+  const items = getFilteredCardapioItems();
 
   return `
     <div class="view-header">
@@ -1306,28 +1479,44 @@ function renderCardapioView() {
       </div>
     </div>
 
-    <!-- Barra de Filtros e Busca Rápida -->
-    <div class="admin-card" style="margin-bottom: 20px; padding: 16px 20px;">
-      <div style="display: flex; gap: 14px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
-        <!-- Campo de Busca -->
-        <div style="flex: 1; min-width: 260px; max-width: 440px;">
+    <!-- Barra de Filtros e Busca Rápida Otimizada -->
+    <div class="admin-card cardapio-controls-card">
+      <div class="cardapio-search-row">
+        <!-- Campo de Busca Otimizado para Mobile e Desktop -->
+        <div class="cardapio-search-box-wrap">
+          <svg class="cardapio-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
           <input type="text" 
-                 class="form-input" 
-                 placeholder="Buscar por nome ou ingrediente (ex: Picanha, Chopp, Gin)..." 
+                 id="inputSearchCardapio"
+                 class="cardapio-search-input" 
+                 placeholder="Buscar prato, drink ou porção..." 
                  value="${state.searchTermCardapio || ''}" 
-                 oninput="window.handleSearchCardapio(event)">
+                 oninput="window.handleSearchCardapio(event)"
+                 autocomplete="off"
+                 spellcheck="false">
+          <button type="button" 
+                  id="cardapioSearchClearBtn" 
+                  class="cardapio-search-clear-btn" 
+                  onclick="window.clearSearchCardapio()" 
+                  title="Limpar pesquisa"
+                  style="display: ${state.searchTermCardapio ? 'flex' : 'none'};">
+            &times;
+          </button>
         </div>
 
         <!-- Totalizadores -->
-        <div style="font-size: 0.85rem; color: var(--admin-text-muted);">
+        <div id="cardapioCountBadge" class="cardapio-count-badge">
           Exibindo <strong style="color: var(--admin-cyan);">${items.length}</strong> de <strong style="color: #FFF;">${state.cardapio.length}</strong> itens cadastrados
         </div>
       </div>
 
-      <!-- Abas de Categorias -->
-      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--admin-border);">
+      <!-- Abas de Categorias com Rolagem no Mobile -->
+      <div class="cardapio-cat-pills-row">
         <button type="button" 
-                class="btn-admin btn-admin-xs ${currentCat === 'todas' ? 'btn-admin-primary' : 'btn-admin-outline'}" 
+                class="btn-admin btn-admin-xs cat-pill-btn ${currentCat === 'todas' ? 'btn-admin-primary' : 'btn-admin-outline'}" 
+                data-cat="todas"
                 onclick="window.setCardapioFilter('todas')">
           Todas (${state.cardapio.length})
         </button>
@@ -1335,7 +1524,8 @@ function renderCardapioView() {
           const count = state.cardapio.filter(it => it.categoriaId === c.id || (it.categoria || '').toLowerCase().includes(c.id)).length;
           return `
             <button type="button" 
-                    class="btn-admin btn-admin-xs ${currentCat === c.id ? 'btn-admin-primary' : 'btn-admin-outline'}" 
+                    class="btn-admin btn-admin-xs cat-pill-btn ${currentCat === c.id ? 'btn-admin-primary' : 'btn-admin-outline'}" 
+                    data-cat="${c.id}"
                     onclick="window.setCardapioFilter('${c.id}')">
               ${c.nome} (${count})
             </button>
@@ -1344,79 +1534,18 @@ function renderCardapioView() {
       </div>
     </div>
 
-    <!-- Tabela de Itens do Cardápio -->
-    <div class="admin-card">
+    <!-- Tabela de Itens com Paginação -->
+    <div class="admin-card" id="cardapioTableCard">
       <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 class="admin-card-title">Itens do Cardápio (${items.length})</h3>
+        <h3 class="admin-card-title">Itens do Cardápio</h3>
         <button type="button" class="btn-admin btn-admin-primary btn-admin-xs" onclick="window.openModalItemCardapio()">
           + Adicionar Item
         </button>
       </div>
 
-      ${items.length === 0 ? `
-        <div class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
-          <div class="empty-state-title">Nenhum item encontrado</div>
-          <p class="empty-state-desc">Nenhum item corresponde ao filtro ou busca selecionada.</p>
-        </div>
-      ` : `
-        <div class="table-responsive">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Item / Descrição</th>
-                <th>Categoria</th>
-                <th>Preço Oficial</th>
-                <th>Disponibilidade</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${items.map(it => `
-                <tr>
-                  <td>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      ${it.imagem ? `<img src="${it.imagem}" alt="${it.nome}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">` : ''}
-                      <div>
-                        <strong style="color: #FFFFFF; font-size: 0.92rem;">${it.nome}</strong>
-                        <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin-top: 2px;">${it.descricao || ''}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span style="font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px; color: var(--admin-cyan);">
-                      ${it.categoria || it.categoriaId || '-'}
-                    </span>
-                  </td>
-                  <td>
-                    <strong style="color: var(--admin-cyan); font-size: 0.95rem;">
-                      R$ ${(it.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </strong>
-                  </td>
-                  <td>
-                    <span class="badge-status ${it.ativo !== false ? 'confirmed' : 'cancelled'}">
-                      ${it.ativo !== false ? 'Ativo no Site' : 'Pausado'}
-                    </span>
-                  </td>
-                  <td>
-                    <div style="display: flex; gap: 6px; align-items: center;">
-                      <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.editarItemCardapio('${it.id}')">
-                        Editar
-                      </button>
-                      <button type="button" class="btn-admin btn-admin-xs ${it.ativo !== false ? 'btn-admin-danger' : 'btn-admin-success'}" onclick="window.toggleAtivoItemCardapio('${it.id}', ${it.ativo === false})">
-                        ${it.ativo !== false ? 'Pausar' : 'Ativar'}
-                      </button>
-                      <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemCardapio('${it.id}')" title="Excluir item">
-                        &times;
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `}
+      <div id="cardapioTableContainer">
+        ${renderCardapioTableRows(items)}
+      </div>
     </div>
   `;
 }
@@ -2244,7 +2373,11 @@ window.saveCardapioItem = async (e) => {
     }
 
     window.closeCardapioItemModal();
-    renderApp();
+    if (document.getElementById('cardapioTableContainer')) {
+      updateCardapioItemsOnly();
+    } else {
+      renderApp();
+    }
   } catch (err) {
     console.error('Erro ao salvar item do cardápio:', err);
     showToast('Erro ao salvar no Firestore: ' + err.message, 'error');
@@ -2258,20 +2391,45 @@ window.saveCardapioItem = async (e) => {
 
 window.setCardapioFilter = (catId) => {
   state.activeFilterCardapio = catId;
-  renderApp();
+  state.cardapioPage = 1;
+  // Atualiza classes ativas diretamente nos botões para resposta instantânea
+  document.querySelectorAll('.cat-pill-btn').forEach(btn => {
+    if (btn.dataset.cat === catId) {
+      btn.classList.remove('btn-admin-outline');
+      btn.classList.add('btn-admin-primary');
+    } else {
+      btn.classList.remove('btn-admin-primary');
+      btn.classList.add('btn-admin-outline');
+    }
+  });
+  updateCardapioItemsOnly();
 };
 
 window.handleSearchCardapio = (e) => {
   state.searchTermCardapio = e.target.value;
-  renderApp();
-  // Mantém foco e posição do cursor no input
-  setTimeout(() => {
-    const input = document.querySelector('input[placeholder*="Buscar por nome"]');
-    if (input) {
-      input.focus();
-      input.setSelectionRange(input.value.length, input.value.length);
-    }
-  }, 10);
+  state.cardapioPage = 1;
+  // Atualiza exclusivamente a tabela sem destruir o DOM nem perder o foco
+  updateCardapioItemsOnly();
+};
+
+window.clearSearchCardapio = () => {
+  state.searchTermCardapio = '';
+  state.cardapioPage = 1;
+  const input = document.getElementById('inputSearchCardapio');
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+  updateCardapioItemsOnly();
+};
+
+window.changeCardapioPage = (page) => {
+  state.cardapioPage = page;
+  updateCardapioItemsOnly();
+  const card = document.getElementById('cardapioTableCard');
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 };
 
 window.toggleAtivoItemCardapio = async (id, novoAtivo) => {
@@ -2280,7 +2438,7 @@ window.toggleAtivoItemCardapio = async (id, novoAtivo) => {
     const item = state.cardapio.find(it => it.id === id);
     if (item) item.ativo = novoAtivo;
     showToast(novoAtivo ? 'Item reativado no cardápio.' : 'Item pausado no cardápio.', 'info');
-    renderApp();
+    updateCardapioItemsOnly();
   } catch (err) {
     console.error('Erro ao alterar status do item:', err);
     showToast('Erro ao atualizar item no Firestore: ' + err.message, 'error');
@@ -2298,7 +2456,7 @@ window.excluirItemCardapio = (id) => {
         await deleteDoc(doc(db, 'cardapio', id));
         state.cardapio = state.cardapio.filter(it => it.id !== id);
         showToast('Item excluído com sucesso.', 'info');
-        renderApp();
+        updateCardapioItemsOnly();
       } catch (err) {
         console.error('Erro excluir item:', err);
         showToast('Erro ao excluir item: ' + err.message, 'error');

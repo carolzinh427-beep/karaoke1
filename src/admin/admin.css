@@ -1215,3 +1215,221 @@ body.admin-body {
     text-align: center;
   }
 }
+
+/* ==========================================================================
+   CARDÁPIO ADMIN CONTROLS, SEARCH BAR & PAGINATION
+   ========================================================================== */
+.cardapio-controls-card {
+  margin-bottom: 20px;
+  padding: 18px 20px;
+}
+
+.cardapio-search-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.cardapio-search-box-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0 !important;
+  max-width: 520px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.cardapio-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--admin-text-muted);
+  pointer-events: none;
+}
+
+.cardapio-search-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  background: var(--admin-bg-input);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  padding: 11px 38px 11px 40px;
+  color: var(--admin-text-main);
+  font-family: inherit;
+  font-size: 0.92rem;
+  transition: var(--admin-transition);
+}
+
+.cardapio-search-input:focus {
+  outline: none;
+  border-color: var(--admin-cyan);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+}
+
+.cardapio-search-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--admin-text-muted);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  transition: var(--admin-transition);
+}
+
+.cardapio-search-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.cardapio-count-badge {
+  font-size: 0.85rem;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cardapio-cat-pills-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border);
+}
+
+/* Pagination Bar */
+.cardapio-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cardapio-page-info {
+  font-size: 0.85rem;
+  color: var(--admin-text-muted);
+}
+
+.cardapio-page-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardapio-page-pills {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-num-pill {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--admin-transition);
+}
+
+.page-num-pill:hover {
+  background: rgba(0, 240, 255, 0.12);
+  color: var(--admin-cyan);
+  border-color: rgba(0, 240, 255, 0.4);
+}
+
+.page-num-pill.active {
+  background: var(--admin-cyan);
+  color: #060914;
+  border-color: var(--admin-cyan);
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.page-ellipsis {
+  padding: 0 4px;
+  color: var(--admin-text-dim);
+  font-size: 0.85rem;
+}
+
+/* Mobile & Tablet Specific Rules for Cardapio and Search */
+@media (max-width: 768px) {
+  .cardapio-controls-card {
+    padding: 14px 12px !important;
+  }
+
+  .cardapio-search-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .cardapio-search-box-wrap {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .cardapio-search-input {
+    font-size: 0.9rem !important;
+    padding: 10px 34px 10px 36px !important;
+  }
+
+  .cardapio-count-badge {
+    font-size: 0.78rem;
+    text-align: right;
+  }
+
+  .cardapio-cat-pills-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .cardapio-cat-pills-row .cat-pill-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .cardapio-pagination-bar {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 12px;
+  }
+
+  .cardapio-page-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
