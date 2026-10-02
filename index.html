@@ -605,8 +605,103 @@
               </div>
 
               <div class="calendar-days-grid" id="calDaysGrid">
-                <!-- Preenchido via JavaScript -->
+                <!-- Preenchido dinamicamente via Script -->
               </div>
+              <script>
+                (function() {
+                  try {
+                    var grid = document.getElementById('calDaysGrid');
+                    var label = document.getElementById('calMonthLabel');
+                    if (!grid) return;
+                    var monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                    var weekDays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+                    var d = new Date();
+                    var yr = d.getFullYear();
+                    var mo = d.getMonth();
+                    if (label) label.textContent = monthNames[mo] + ' ' + yr;
+                    var firstDay = new Date(yr, mo, 1).getDay();
+                    var daysInMonth = new Date(yr, mo + 1, 0).getDate();
+                    grid.innerHTML = '';
+                    for (var b = 0; b < firstDay; b++) {
+                      var blank = document.createElement('div');
+                      blank.className = 'calendar-day-cell blank';
+                      grid.appendChild(blank);
+                    }
+                    var today = new Date();
+                    today.setHours(0,0,0,0);
+                    for (var day = 1; day <= daysInMonth; day++) {
+                      (function(dayNum) {
+                        var cellDate = new Date(yr, mo, dayNum);
+                        cellDate.setHours(0,0,0,0);
+                        var dow = cellDate.getDay();
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'calendar-day-btn';
+                        btn.textContent = dayNum;
+                        var dateStr = yr + '-' + String(mo + 1).padStart(2, '0') + '-' + String(dayNum).padStart(2, '0');
+                        var formattedDisplay = weekDays[dow] + ', ' + String(dayNum).padStart(2, '0') + '/' + String(mo + 1).padStart(2, '0') + '/' + yr;
+                        if (cellDate < today) {
+                          btn.className += ' disabled past';
+                          btn.disabled = true;
+                        } else if (dow === 0 || dow === 1) {
+                          btn.className += ' closed';
+                          btn.title = 'Fechado ao público (Disponível sob consulta no WhatsApp)';
+                          btn.onclick = function() {
+                            alert('Domingos e segundas o Backstage é fechado ao público regular. Para eventos fechados exclusivos, consulte pelo WhatsApp!');
+                          };
+                        } else {
+                          btn.className += ' open';
+                          if (dow >= 2 && dow <= 4) {
+                            btn.className += ' promo';
+                            btn.title = 'Promoção: Ganhe R$ 200 em consumação!';
+                          }
+                          btn.onclick = function() {
+                            document.querySelectorAll('.calendar-day-btn.selected').forEach(function(b) { b.classList.remove('selected'); });
+                            btn.classList.add('selected');
+                            window.selectedBookingDate = {
+                              dateStr: dateStr,
+                              formattedDisplay: formattedDisplay,
+                              day: dayNum,
+                              isPromo: (dow >= 2 && dow <= 4)
+                            };
+                            var displayEl = document.getElementById('selectedDateDisplay');
+                            if (displayEl) {
+                              displayEl.textContent = '(' + formattedDisplay + ')';
+                              displayEl.style.color = '#00F0FF';
+                            }
+                            var summaryDate = document.getElementById('summaryDateVal');
+                            if (summaryDate) {
+                              summaryDate.textContent = formattedDisplay;
+                            }
+                          };
+                        }
+                        grid.appendChild(btn);
+                      })(day);
+                    }
+                  } catch(e) { console.error('Erro ao renderizar calendário inicial:', e); }
+                })();
+
+                window.selectBookingRoom = function(element) {
+                  document.querySelectorAll('.room-pick-card').forEach(function(c) { c.classList.remove('active'); });
+                  element.classList.add('active');
+                  var roomName = element.getAttribute('data-room');
+                  window.selectedBookingRoom = roomName;
+                  var summaryRoom = document.getElementById('summaryRoomName');
+                  if (summaryRoom) {
+                    summaryRoom.textContent = roomName;
+                    if (roomName === 'Sala Red') summaryRoom.style.color = 'var(--room-red)';
+                    else if (roomName === 'Sala Green') summaryRoom.style.color = 'var(--room-green)';
+                    else if (roomName === 'Sala Blue') summaryRoom.style.color = 'var(--room-blue)';
+                  }
+                  var dataStep = document.getElementById('bookingDataStep');
+                  if (dataStep) {
+                    dataStep.style.display = 'block';
+                    setTimeout(function() {
+                      dataStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+                  }
+                };
+              </script>
 
               <!-- Legenda do Calendário -->
               <div class="calendar-legend-bar">
@@ -1069,13 +1164,13 @@
   </main>
 
   <!-- Footer -->
-  <footer class="site-footer">
-    <div class="container footer-container">
-      <div class="footer-centered-wrap">
-        <div class="footer-brand-box centered">
-          <img src="/assets/brand/logo.svg" alt="Backstage Karaokê" class="footer-logo-img centered" width="240" height="52">
-          <div class="footer-slogan">Onde o som é mais alto que o preço!</div>
-          <p class="footer-desc centered">
+  <footer class="site-footer" style="text-align: center;">
+    <div class="container footer-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+      <div class="footer-centered-wrap" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin: 0 auto;">
+        <div class="footer-brand-box centered" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin: 0 auto;">
+          <img src="/assets/brand/logo.svg" alt="Backstage Karaokê" class="footer-logo-img centered" width="240" height="52" style="margin: 0 auto 12px auto; display: block; align-self: center;">
+          <div class="footer-slogan" style="text-align: center; margin: 0 auto;">Onde o som é mais alto que o preço!</div>
+          <p class="footer-desc centered" style="text-align: center; margin: 0 auto; max-width: 500px;">
             A principal referência em karaokê de Brasília. Palco aberto no Salão Principal ou exclusividade premium nas salas Red, Green e Blue.
           </p>
           <div style="margin-top: 10px;">

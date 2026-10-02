@@ -5,16 +5,16 @@
 import { salvarAgendamento } from './lib/firebase.js';
 
 function bootstrap() {
-  initWelcomeScreen();
-  initHeader();
-  initMobileMenu();
-  initSplitCalculator();
-  initMenuTabs();
-  initLightbox();
-  initSmoothScroll();
-  initSectionTracking();
-  initBookingSystem();
-  handleInitialHashNavigation();
+  try { initWelcomeScreen(); } catch(e) { console.warn('initWelcomeScreen error:', e); }
+  try { initHeader(); } catch(e) { console.warn('initHeader error:', e); }
+  try { initMobileMenu(); } catch(e) { console.warn('initMobileMenu error:', e); }
+  try { initSplitCalculator(); } catch(e) { console.warn('initSplitCalculator error:', e); }
+  try { initMenuTabs(); } catch(e) { console.warn('initMenuTabs error:', e); }
+  try { initLightbox(); } catch(e) { console.warn('initLightbox error:', e); }
+  try { initSmoothScroll(); } catch(e) { console.warn('initSmoothScroll error:', e); }
+  try { initSectionTracking(); } catch(e) { console.warn('initSectionTracking error:', e); }
+  try { initBookingSystem(); } catch(e) { console.warn('initBookingSystem error:', e); }
+  try { handleInitialHashNavigation(); } catch(e) { console.warn('handleInitialHashNavigation error:', e); }
 }
 
 if (document.readyState === 'loading') {

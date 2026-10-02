@@ -4,20 +4,31 @@ import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/fire
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: import.meta.env?.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env?.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env?.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_API_KEY) || 'AIzaSyAS6XWac_dB_hMI0M-ZaC5Qju2_zquYYcE',
+  authDomain: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN) || 'backstagekaraoke.firebaseapp.com',
+  projectId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_PROJECT_ID) || 'backstagekaraoke',
+  storageBucket: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET) || 'backstagekaraoke.firebasestorage.app',
+  messagingSenderId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID) || '992202842654',
+  appId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_APP_ID) || '1:992202842654:web:7915994ec43e6e95abc40f',
+  measurementId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MEASUREMENT_ID) || 'G-64DTM5WGG5',
 };
 
-// Inicialização segura do Firebase
-export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
+// Inicialização segura e blindada do Firebase
+let app = null;
+let db = null;
+let auth = null;
+let storage = null;
+
+try {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  db = getFirestore(app);
+  auth = getAuth(app);
+  storage = getStorage(app);
+} catch (e) {
+  console.warn('Firebase inicialização resiliente:', e);
+}
+
+export { app, db, auth, storage };
 
 /**
  * Salva agendamento nas coleções 'reservas' e 'agendamentos' do Firestore
