@@ -35,24 +35,17 @@ function initWelcomeScreen() {
   const welcomeScreen = document.getElementById('welcomeScreen');
   if (!welcomeScreen) return;
 
-  // Persist exit within session
-  try {
-    if (window.location.hash === '#welcome' || sessionStorage.getItem('backstage_show_welcome') === 'true') {
+  const hash = window.location.hash;
+  if (!hash || hash === '#welcome' || hash === '#' || sessionStorage.getItem('backstage_show_welcome') === 'true') {
+    try {
       sessionStorage.removeItem('backstage_entered');
       sessionStorage.removeItem('backstage_show_welcome');
-      welcomeScreen.style.display = 'flex';
-      welcomeScreen.classList.remove('fade-out');
-      window.scrollTo(0, 0);
-    } else if (sessionStorage.getItem('backstage_entered') === 'true') {
-      welcomeScreen.style.display = 'none';
-      return;
-    }
-  } catch(e) {}
-
-  const hash = window.location.hash;
-  if (hash && hash !== '#welcome' && hash !== '#inicio') {
+    } catch(e) {}
+    welcomeScreen.style.display = 'flex';
+    welcomeScreen.classList.remove('fade-out');
+    window.scrollTo(0, 0);
+  } else if (sessionStorage.getItem('backstage_entered') === 'true') {
     welcomeScreen.style.display = 'none';
-    return;
   }
 
   window.addEventListener('hashchange', () => {
@@ -91,14 +84,14 @@ function initWelcomeScreen() {
   // Expose globally for instant inline clicks
   window.dismissWelcome = (e, targetId) => {
     if (e && e.preventDefault) e.preventDefault();
-    dismiss(targetId);
+    dismiss(targetId || 'inicio');
   };
 
   const enterBtn = document.getElementById('enterSiteBtn');
   if (enterBtn) {
     enterBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      dismiss('agendamento');
+      dismiss('inicio'); // Direciona ao Hero do site (#inicio)
     });
   }
 
@@ -143,6 +136,30 @@ function initHeader() {
 }
 
 // 2. Mobile Menu Drawer
+window.toggleMobileMenu = function() {
+  const toggleBtn = document.getElementById('menuToggleBtn') || document.querySelector('.menu-toggle');
+  const drawer = document.getElementById('mobileDrawer') || document.querySelector('.mobile-drawer');
+  if (!drawer) return;
+
+  const isOpen = drawer.classList.toggle('open');
+  if (toggleBtn) {
+    toggleBtn.classList.toggle('active', isOpen);
+    toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+};
+
+window.closeMobileMenu = function() {
+  const toggleBtn = document.getElementById('menuToggleBtn') || document.querySelector('.menu-toggle');
+  const drawer = document.getElementById('mobileDrawer') || document.querySelector('.mobile-drawer');
+  if (drawer) drawer.classList.remove('open');
+  if (toggleBtn) {
+    toggleBtn.classList.remove('active');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+  }
+  document.body.style.overflow = '';
+};
+
 function initMobileMenu() {
   const toggleBtn = document.querySelector('.menu-toggle');
   const drawer = document.querySelector('.mobile-drawer');
@@ -150,20 +167,22 @@ function initMobileMenu() {
 
   if (!toggleBtn || !drawer) return;
 
-  const toggleMenu = () => {
-    const isOpen = drawer.classList.toggle('open');
-    toggleBtn.classList.toggle('active', isOpen);
-    document.body.style.overflow = isOpen ? 'hidden' : '';
-  };
-
-  toggleBtn.addEventListener('click', toggleMenu);
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.toggleMobileMenu();
+  });
 
   navLinks.forEach(link => {
     link.addEventListener('click', () => {
-      drawer.classList.remove('open');
-      toggleBtn.classList.remove('active');
-      document.body.style.overflow = '';
+      window.closeMobileMenu();
     });
+  });
+
+  // Close when clicking outside drawer
+  document.addEventListener('click', (e) => {
+    if (drawer.classList.contains('open') && !drawer.contains(e.target) && !toggleBtn.contains(e.target)) {
+      window.closeMobileMenu();
+    }
   });
 }
 
@@ -212,24 +231,45 @@ function initSplitCalculator() {
 }
 
 // 4. Menu Tabs System
-function initMenuTabs() {
+window.switchMenuCategory = function(targetCategory) {
   const tabBtns = document.querySelectorAll('.menu-tab-btn');
   const panels = document.querySelectorAll('.menu-category-panel');
 
+  tabBtns.forEach(b => {
+    if (b.getAttribute('data-category') === targetCategory) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+
+  panels.forEach(p => {
+    if (p.id === `cat-${targetCategory}`) {
+      p.classList.add('active');
+      p.style.display = 'block';
+    } else {
+      p.classList.remove('active');
+      p.style.display = 'none';
+    }
+  });
+};
+
+function initMenuTabs() {
+  const tabBtns = document.querySelectorAll('.menu-tab-btn');
+  if (!tabBtns.length) return;
+
   tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const targetCategory = btn.getAttribute('data-category');
-
-      tabBtns.forEach(b => b.classList.remove('active'));
-      panels.forEach(p => p.classList.remove('active'));
-
-      btn.classList.add('active');
-      const activePanel = document.getElementById(`cat-${targetCategory}`);
-      if (activePanel) {
-        activePanel.classList.add('active');
-      }
+      window.switchMenuCategory(targetCategory);
     });
   });
+
+  // Ensure initial active tab panel is displayed
+  const activeBtn = document.querySelector('.menu-tab-btn.active');
+  const initialCategory = activeBtn ? activeBtn.getAttribute('data-category') : 'petiscos';
+  window.switchMenuCategory(initialCategory);
 }
 
 // 5. Lightbox Modal for Menu PDF Pages

@@ -43,6 +43,30 @@
       }
     }
 
+    function switchMenuCategory(category) {
+      var tabBtns = document.querySelectorAll('.menu-tab-btn');
+      var panels = document.querySelectorAll('.menu-category-panel');
+
+      tabBtns.forEach(function(btn) {
+        if (btn.getAttribute('data-category') === category) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      panels.forEach(function(panel) {
+        if (panel.id === 'cat-' + category) {
+          panel.classList.add('active');
+          panel.style.display = 'block';
+        } else {
+          panel.classList.remove('active');
+          panel.style.display = 'none';
+        }
+      });
+    }
+    window.switchMenuCategory = switchMenuCategory;
+
     document.addEventListener('DOMContentLoaded', function() {
       try {
         var fromWelcome = sessionStorage.getItem('backstage_from_welcome') === 'true';
@@ -59,6 +83,13 @@
           }
         }
       } catch(err) {}
+
+      // Initial active category panel enforcement
+      try {
+        var activeBtn = document.querySelector('.menu-tab-btn.active');
+        var initialCat = activeBtn ? activeBtn.getAttribute('data-category') : 'petiscos';
+        switchMenuCategory(initialCat);
+      } catch(tabErr) {}
     });
   </script>
 
@@ -115,15 +146,15 @@
         <!-- Category Tabs -->
         <div class="menu-tabs-wrapper">
           <div class="menu-tabs-list" role="tablist">
-            <button class="menu-tab-btn active" data-category="petiscos" role="tab">Porções & Petiscos</button>
-            <button class="menu-tab-btn" data-category="coqueteis-alcool" role="tab">Coquetéis com Álcool</button>
-            <button class="menu-tab-btn" data-category="cervejas" role="tab">Cervejas & Chopp</button>
-            <button class="menu-tab-btn" data-category="drinks-especiais" role="tab">Drinks Especiais</button>
-            <button class="menu-tab-btn" data-category="caipiras" role="tab">Caipiras & Autorais</button>
-            <button class="menu-tab-btn" data-category="sem-alcool" role="tab">Sem Álcool</button>
-            <button class="menu-tab-btn" data-category="whisky" role="tab">Whisky & Combos</button>
-            <button class="menu-tab-btn" data-category="destilados" role="tab">Destilados & Licores</button>
-            <button class="menu-tab-btn" data-category="bebidas" role="tab">Bebidas Gerais</button>
+            <button class="menu-tab-btn active" data-category="petiscos" onclick="switchMenuCategory('petiscos')" role="tab">Porções & Petiscos</button>
+            <button class="menu-tab-btn" data-category="coqueteis-alcool" onclick="switchMenuCategory('coqueteis-alcool')" role="tab">Coquetéis com Álcool</button>
+            <button class="menu-tab-btn" data-category="cervejas" onclick="switchMenuCategory('cervejas')" role="tab">Cervejas & Chopp</button>
+            <button class="menu-tab-btn" data-category="drinks-especiais" onclick="switchMenuCategory('drinks-especiais')" role="tab">Drinks Especiais</button>
+            <button class="menu-tab-btn" data-category="caipiras" onclick="switchMenuCategory('caipiras')" role="tab">Caipiras & Autorais</button>
+            <button class="menu-tab-btn" data-category="sem-alcool" onclick="switchMenuCategory('sem-alcool')" role="tab">Sem Álcool</button>
+            <button class="menu-tab-btn" data-category="whisky" onclick="switchMenuCategory('whisky')" role="tab">Whisky & Combos</button>
+            <button class="menu-tab-btn" data-category="destilados" onclick="switchMenuCategory('destilados')" role="tab">Destilados & Licores</button>
+            <button class="menu-tab-btn" data-category="bebidas" onclick="switchMenuCategory('bebidas')" role="tab">Bebidas Gerais</button>
           </div>
         </div>
 

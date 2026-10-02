@@ -79,19 +79,21 @@
   <aside class="welcome-screen" id="welcomeScreen" aria-label="Tela de entrada do Backstage Karaokê">
     <script>
       try {
-        if (window.location.hash === '#welcome' || sessionStorage.getItem('backstage_show_welcome') === 'true') {
+        var h = window.location.hash;
+        if (!h || h === '#welcome' || h === '#' || sessionStorage.getItem('backstage_show_welcome') === 'true') {
           sessionStorage.removeItem('backstage_entered');
           sessionStorage.removeItem('backstage_show_welcome');
-        }
-        if (sessionStorage.getItem('backstage_entered') === 'true' && window.location.hash !== '#welcome') {
-          document.getElementById('welcomeScreen').style.display = 'none';
-        } else {
           var ws = document.getElementById('welcomeScreen');
           if (ws) {
             ws.style.display = 'flex';
             ws.classList.remove('fade-out');
           }
           window.scrollTo(0, 0);
+        } else if (sessionStorage.getItem('backstage_entered') === 'true') {
+          var ws = document.getElementById('welcomeScreen');
+          if (ws) {
+            ws.style.display = 'none';
+          }
         }
       } catch(e) {}
     </script>
@@ -119,11 +121,11 @@
           </div>
         </button>
 
-        <!-- 2. Reservar pelo site (Linhas na Direita) -->
-        <a href="#agendamento" 
+        <!-- 2. Reservar pelo site (Linhas na Direita) - Direciona ao Hero do site (#inicio) -->
+        <a href="#inicio" 
            class="welcome-btn welcome-btn-right" 
            id="enterSiteBtn"
-           onclick="if(window.dismissWelcome){window.dismissWelcome(event,'agendamento');}else{document.getElementById('welcomeScreen').style.display='none';try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','false');sessionStorage.setItem('backstage_last_section','agendamento');}catch(e){}}">
+           onclick="if(window.dismissWelcome){window.dismissWelcome(event,'inicio');}else{document.getElementById('welcomeScreen').style.display='none';try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','false');sessionStorage.setItem('backstage_last_section','inicio');}catch(e){}}">
           <span>Reservar pelo site</span>
         </a>
 
@@ -403,7 +405,7 @@
         </a>
 
         <!-- Mobile Menu Toggle Button -->
-        <button class="menu-toggle" id="menuToggleBtn" aria-label="Abrir menu de navegação" aria-expanded="false">
+        <button class="menu-toggle" id="menuToggleBtn" onclick="toggleMobileMenu()" aria-label="Abrir menu de navegação" aria-expanded="false">
           <span></span>
           <span></span>
           <span></span>
@@ -414,25 +416,30 @@
 
   <!-- Mobile Drawer Menu -->
   <div class="mobile-drawer" id="mobileDrawer">
+    <div class="mobile-drawer-top">
+      <span class="mobile-drawer-title">Menu de Navegação</span>
+      <button type="button" class="mobile-drawer-close" onclick="closeMobileMenu()" aria-label="Fechar menu">&times;</button>
+    </div>
+
     <ul class="mobile-nav-list">
-      <li><a href="#inicio" class="mobile-nav-link">Início <span>→</span></a></li>
-      <li><a href="#agendamento" class="mobile-nav-link" style="color: var(--primary-cyan); font-weight: 800;">Agendar Sala <span>→</span></a></li>
-      <li><a href="#aniversario" class="mobile-nav-link">Aniversário <span>→</span></a></li>
-      <li><a href="#salas" class="mobile-nav-link">Salas Privadas <span>→</span></a></li>
-      <li><a href="#salao-principal" class="mobile-nav-link">Salão Principal <span>→</span></a></li>
-      <li><a href="#termos" class="mobile-nav-link" onclick="openTermosModal(event)">Ciência das Responsabilidades <span>→</span></a></li>
-      <li><a href="#regras" class="mobile-nav-link" onclick="openInfoAntesModal(event)">Regras & Avisos <span>→</span></a></li>
-      <li><a href="/cardapio.html" class="mobile-nav-link" style="color: var(--primary-magenta);">Cardápio Oficial <span>→</span></a></li>
-      <li><a href="#galeria" class="mobile-nav-link">Galeria & Vibe <span>→</span></a></li>
-      <li><a href="#localizacao" class="mobile-nav-link">Localização <span>→</span></a></li>
-      <li><a href="#horarios" class="mobile-nav-link">Horários <span>→</span></a></li>
+      <li><a href="#inicio" class="mobile-nav-link" onclick="closeMobileMenu()">Início <span>→</span></a></li>
+      <li><a href="#agendamento" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--primary-cyan); font-weight: 800;">Agendar Sala <span>→</span></a></li>
+      <li><a href="#aniversario" class="mobile-nav-link" onclick="closeMobileMenu()">Aniversário <span>→</span></a></li>
+      <li><a href="#salas" class="mobile-nav-link" onclick="closeMobileMenu()">Salas Privadas <span>→</span></a></li>
+      <li><a href="#salao-principal" class="mobile-nav-link" onclick="closeMobileMenu()">Salão Principal <span>→</span></a></li>
+      <li><a href="#termos" class="mobile-nav-link" onclick="closeMobileMenu(); openTermosModal(event)">Ciência das Responsabilidades <span>→</span></a></li>
+      <li><a href="#regras" class="mobile-nav-link" onclick="closeMobileMenu(); openInfoAntesModal(event)">Regras & Avisos <span>→</span></a></li>
+      <li><a href="/cardapio.html" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--primary-magenta);">Cardápio Oficial <span>→</span></a></li>
+      <li><a href="#galeria" class="mobile-nav-link" onclick="closeMobileMenu()">Galeria & Vibe <span>→</span></a></li>
+      <li><a href="#localizacao" class="mobile-nav-link" onclick="closeMobileMenu()">Localização <span>→</span></a></li>
     </ul>
 
     <div class="mobile-drawer-footer">
       <a href="https://wa.me/556181426321?text=Ol%C3%A1!%20Gostaria%20de%20fazer%20uma%20reserva%20no%20Backstage%20Karaok%C3%AA" 
          class="btn btn-primary btn-full btn-lg" 
          target="_blank" 
-         rel="noopener noreferrer">
+         rel="noopener noreferrer"
+         onclick="closeMobileMenu()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/>
         </svg>
