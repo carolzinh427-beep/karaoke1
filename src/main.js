@@ -497,9 +497,9 @@ function initBookingSystem() {
   }
 
   // Máscara e formatação de telefone celular (WhatsApp)
-  const phoneInput = document.getElementById('bookingWhatsapp');
-  if (phoneInput) {
-    phoneInput.addEventListener('input', (e) => {
+  const setupPhoneMask = (input) => {
+    if (!input) return;
+    input.addEventListener('input', (e) => {
       let v = e.target.value.replace(/\D/g, '');
       if (v.length > 11) v = v.substring(0, 11);
       if (v.length > 6) {
@@ -510,7 +510,10 @@ function initBookingSystem() {
         e.target.value = `(${v}`;
       }
     });
-  }
+  };
+
+  setupPhoneMask(document.getElementById('bookingWhatsapp'));
+  setupPhoneMask(document.getElementById('modalBookingWhatsapp'));
 
   renderCalendar();
 }
@@ -525,17 +528,21 @@ function renderCalendar() {
 
   const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
   const totalDays = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+  const prevMonthTotalDays = new Date(currentCalYear, currentCalMonth, 0).getDate();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Blank filler cells for alignment
-  for (let i = 0; i < firstDayIndex; i++) {
+  // 1. Dias do mês anterior para completar o início da grade (sem buracos)
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    const prevDayNum = prevMonthTotalDays - i;
     const blank = document.createElement('div');
-    blank.className = 'calendar-day-cell blank';
+    blank.className = 'calendar-day-btn other-month';
+    blank.textContent = prevDayNum;
+    blank.setAttribute('aria-hidden', 'true');
     daysGrid.appendChild(blank);
   }
 
-  // Day buttons
+  // 2. Dias do mês atual
   for (let d = 1; d <= totalDays; d++) {
     const cellDate = new Date(currentCalYear, currentCalMonth, d);
     cellDate.setHours(0, 0, 0, 0);
@@ -552,11 +559,17 @@ function renderCalendar() {
     const dateStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const formattedDisplay = `${WEEKDAY_NAMES[dayOfWeek]}, ${String(d).padStart(2, '0')}/${String(currentCalMonth + 1).padStart(2, '0')}/${currentCalYear}`;
 
-    const isBlocked = activeBlockedDates.some(b => b.data === dateStr && (b.tipo === 'dia_inteiro' || b.sala === 'todas'));
+    const isBlocked = (activeBlockedDates || []).some(b => {
+      if (!b) return false;
+      const bData = b.data || b.dataBloqueio || b.date;
+      if (bData !== dateStr) return false;
+      return !b.sala || b.sala === 'todas' || b.tipo === 'dia_inteiro';
+    });
 
     if (isPast) {
       dayBtn.classList.add('disabled', 'past');
       dayBtn.disabled = true;
+      dayBtn.title = 'Data anterior ao dia de hoje';
     } else if (isBlocked) {
       dayBtn.classList.add('disabled', 'blocked');
       dayBtn.disabled = true;
@@ -596,6 +609,7 @@ function renderCalendar() {
 
         if (confirmBar) {
           confirmBar.style.display = 'flex';
+          confirmBar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
         if (displayText) {
           displayText.textContent = formattedDisplay;
@@ -604,9 +618,12 @@ function renderCalendar() {
           promoNotice.style.display = isPromo ? 'block' : 'none';
         }
 
-        // Atualiza resumos nos passos 2 e 3
+        // Atualiza resumos nos passos e modais
         const step2Date = document.getElementById('step2DateSummary');
         if (step2Date) step2Date.textContent = formattedDisplay;
+
+        const modalDate = document.getElementById('modalDateBadge');
+        if (modalDate) modalDate.textContent = `📅 ${formattedDisplay}`;
 
         const summaryDate = document.getElementById('summaryDateVal');
         if (summaryDate) summaryDate.textContent = formattedDisplay;
@@ -614,6 +631,19 @@ function renderCalendar() {
     }
 
     daysGrid.appendChild(dayBtn);
+  }
+
+  // 3. Dias do próximo mês para completar a grade em um retângulo perfeito (35 ou 42 células)
+  const totalCellsRendered = firstDayIndex + totalDays;
+  const targetTotal = totalCellsRendered > 35 ? 42 : 35;
+  const nextDaysNeeded = targetTotal - totalCellsRendered;
+
+  for (let n = 1; n <= nextDaysNeeded; n++) {
+    const nextBtn = document.createElement('div');
+    nextBtn.className = 'calendar-day-btn other-month';
+    nextBtn.textContent = n;
+    nextBtn.setAttribute('aria-hidden', 'true');
+    daysGrid.appendChild(nextBtn);
   }
 }
 
@@ -738,7 +768,7 @@ window.confirmRoomFromPopup = () => {
     selectedBookingRoom = pendingRoomSelection;
     const room = ROOM_DATA[selectedBookingRoom];
 
-    // Atualiza resumo no Passo 3
+    // Atualiza resumo no formulário embutido caso alguém acesse
     const summaryRoom = document.getElementById('summaryRoomName');
     const summaryCap = document.getElementById('summaryCapVal');
     const summaryTotal = document.getElementById('summaryTotalVal');
@@ -758,11 +788,163 @@ window.confirmRoomFromPopup = () => {
     }
   }
 
+  // Transição direta para o Pop-up de Dados (sem jogar o usuário de volta pra tela)
   window.closeRoomPersonalityModal();
-  window.goToBookingStep(3);
+  window.openBookingDataModal();
 };
 
-// Submissão do Formulário de Agendamento (Salva e envia para WhatsApp com mensagem oficial)
+// ============================================================================
+// POP-UP DE DADOS DA RESERVA (FLUXO 100% EM MODAL DIRETO)
+// ============================================================================
+window.openBookingDataModal = () => {
+  const modal = document.getElementById('bookingDataModal');
+  if (!modal) return;
+
+  const room = ROOM_DATA[selectedBookingRoom] || ROOM_DATA['Sala Red'];
+  const roomBadge = document.getElementById('modalRoomBadge');
+  const dateBadge = document.getElementById('modalDateBadge');
+  const priceSub = document.getElementById('modalPriceSummary');
+  const glow = document.getElementById('bookingDataGlow');
+  const dialog = document.getElementById('bookingDataDialog');
+  const pessoasInput = document.getElementById('modalBookingPessoas');
+
+  if (roomBadge && room) {
+    roomBadge.textContent = `${room.name} (${room.capacidade})`;
+    roomBadge.style.color = room.themeColor;
+    roomBadge.style.borderColor = room.themeColor;
+    roomBadge.style.background = `${room.glowColor || 'rgba(0, 240, 255, 0.2)'}`;
+  }
+
+  if (dialog && room) {
+    dialog.style.borderColor = room.themeColor;
+  }
+
+  if (glow && room) {
+    glow.style.background = `radial-gradient(ellipse at center, ${room.glowColor || 'rgba(0, 240, 255, 0.4)'} 0%, transparent 70%)`;
+  }
+
+  if (dateBadge) {
+    dateBadge.textContent = selectedBookingDate ? `📅 ${selectedBookingDate.formattedDisplay}` : '📅 Data Selecionada';
+  }
+
+  if (priceSub && room) {
+    priceSub.innerHTML = `Total da Sala: <strong style="color: #FFF;">${room.precoTotal}</strong> • Sinal (50%): <strong style="color: var(--primary-cyan);">${room.sinal}</strong>`;
+  }
+
+  if (pessoasInput && room) {
+    pessoasInput.max = room.capacidadeNum;
+    pessoasInput.placeholder = `Ex: ${Math.round(room.capacidadeNum * 0.7)} pessoas (máx: ${room.capacidadeNum})`;
+  }
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeBookingDataModal = () => {
+  const modal = document.getElementById('bookingDataModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+};
+
+window.backToRoomPersonalityModal = () => {
+  window.closeBookingDataModal();
+  if (selectedBookingRoom) {
+    window.openRoomPersonalityModal(selectedBookingRoom);
+  }
+};
+
+window.handleModalBookingSubmit = async (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const feedback = document.getElementById('modalBookingFeedback');
+  const nome = document.getElementById('modalBookingNome')?.value?.trim();
+  const whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim();
+  const pessoas = document.getElementById('modalBookingPessoas')?.value?.trim();
+  const termosCheck = document.getElementById('modalBookingTermosCheck')?.checked;
+
+  if (!selectedBookingDate) {
+    alert('Por favor, selecione primeiro uma data no calendário!');
+    window.closeBookingDataModal();
+    window.goToBookingStep(1);
+    return;
+  }
+
+  if (!selectedBookingRoom) {
+    alert('Por favor, escolha uma sala privada antes de prosseguir!');
+    window.closeBookingDataModal();
+    window.goToBookingStep(2);
+    return;
+  }
+
+  if (!nome || !whatsapp || !pessoas) {
+    alert('Por favor, preencha seu Nome, WhatsApp e Quantidade de convidados!');
+    return;
+  }
+
+  if (!termosCheck) {
+    alert('É obrigatório ler e concordar com os Termos de Responsabilidade para efetuar a reserva.');
+    return;
+  }
+
+  const roomInfo = ROOM_DATA[selectedBookingRoom] || {
+    name: selectedBookingRoom,
+    capacidade: 'Conforme sala',
+    precoTotal: 'R$ 800,00',
+    sinal: 'R$ 400,00'
+  };
+
+  if (feedback) {
+    feedback.style.display = 'block';
+    feedback.className = 'booking-status-alert info';
+    feedback.textContent = 'Registrando sua reserva com segurança e abrindo o WhatsApp...';
+  }
+
+  try {
+    await salvarAgendamento({
+      nome,
+      whatsapp,
+      data: selectedBookingDate.formattedDisplay,
+      dataIso: selectedBookingDate.dateStr,
+      sala: selectedBookingRoom,
+      pessoas: parseInt(pessoas, 10),
+      valorTotal: roomInfo.precoTotal,
+      sinal: roomInfo.sinal,
+      termosAceitos: true
+    });
+  } catch (err) {
+    console.warn('Registro Firestore offline resiliente:', err);
+  }
+
+  const msg = [
+    `Olá! Gostaria de reservar minha sala no Backstage Karaokê:`,
+    ``,
+    `👤 *Nome:* ${nome}`,
+    `📱 *WhatsApp:* ${whatsapp}`,
+    `📅 *Data Escolhida:* ${selectedBookingDate.formattedDisplay}`,
+    `🎤 *Sala:* ${roomInfo.name} (${roomInfo.capacidade})`,
+    `👥 *Convidados:* ${pessoas} pessoas`,
+    `💰 *Valor da Sala:* ${roomInfo.precoTotal} (Sinal de 50%: ${roomInfo.sinal})`,
+    ``,
+    `📋 *Declaração de Ciência e Responsabilidade:*`,
+    `Eu li os termos de responsabilidade e concordo com a não devolução do valor de 50% pago na reserva em caso de desistência.`
+  ].join('\n');
+
+  const wppUrl = createWhatsAppUrl(msg);
+
+  if (feedback) {
+    feedback.className = 'booking-status-alert success';
+    feedback.textContent = '✓ Reserva registrada com sucesso! Abrindo o WhatsApp oficial...';
+  }
+
+  setTimeout(() => {
+    window.open(wppUrl, '_blank');
+    window.closeBookingDataModal();
+  }, 400);
+};
+
+// Submissão do Formulário de Agendamento Embutido (Mantido para fallback)
 window.handleBookingSubmit = async (e) => {
   if (e && e.preventDefault) e.preventDefault();
 
@@ -807,7 +989,6 @@ window.handleBookingSubmit = async (e) => {
     feedback.textContent = 'Registrando sua reserva com segurança e abrindo o WhatsApp...';
   }
 
-  // 1. Salvar no Firebase Firestore para gerenciamento no painel de administração
   try {
     await salvarAgendamento({
       nome,
@@ -824,7 +1005,6 @@ window.handleBookingSubmit = async (e) => {
     console.warn('Registro Firestore offline resiliente:', err);
   }
 
-  // 2. Montar mensagem formatada para o WhatsApp oficial com a declaração exata solicitada
   const msg = [
     `Olá! Gostaria de reservar minha sala no Backstage Karaokê:`,
     ``,
@@ -851,9 +1031,12 @@ window.handleBookingSubmit = async (e) => {
   }, 400);
 };
 
-// Global Termos Modal Trigger
+// Global Termos Modal Trigger (100% Clicável em qualquer ponto do site)
 window.openTermosModal = (e) => {
-  if (e && e.preventDefault) e.preventDefault();
+  if (e) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+  }
   const modal = document.getElementById('termosResponsabilidadeModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -866,7 +1049,10 @@ window.closeTermosModal = (e) => {
   const modal = document.getElementById('termosResponsabilidadeModal');
   if (modal) {
     modal.style.display = 'none';
-    document.body.style.overflow = '';
+    const dataModal = document.getElementById('bookingDataModal');
+    if (!dataModal || dataModal.style.display === 'none') {
+      document.body.style.overflow = '';
+    }
   }
 };
 
