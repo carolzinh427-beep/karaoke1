@@ -3,7 +3,7 @@
  * Arquitetura SPA moderna integrada com Firebase Auth, Firestore e Firebase Storage.
  */
 
-import { auth, db, storage } from '../lib/firebase.js';
+import { auth, db } from '../lib/firebase.js';
 import {
   DEFAULT_SALAS,
   DEFAULT_CATEGORIAS,
@@ -32,12 +32,11 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import {
-  ref,
-  uploadBytes,
-  uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
-} from 'firebase/storage';
+  uploadToCloudinary,
+  deleteFromCloudinary,
+  validateMediaFile,
+  LIMITS,
+} from '../lib/cloudinary.js';
 
 // ============================================================================
 // 1. ESTADO GLOBAL E ROTEAMENTO
@@ -410,7 +409,9 @@ async function fetchCardapio() {
 async function fetchGaleria() {
   try {
     const snap = await getDocs(collection(db, 'galeria'));
-    state.galeria = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    list.sort((a, b) => (a.ordem || 999) - (b.ordem || 999));
+    state.galeria = list;
     return state.galeria;
   } catch (err) {
     console.warn('Erro ao carregar galeria:', err);
@@ -1583,12 +1584,12 @@ function renderCardapioPdfView() {
       <form onsubmit="window.handleUploadPdf(event)" style="border: 2px dashed var(--admin-border); border-radius: 12px; padding: 32px; text-align: center;">
         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--admin-cyan); margin-bottom: 12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div style="font-size: 1.1rem; font-weight: 800; margin-bottom: 6px;">Enviar ou Substituir PDF do Cardápio</div>
-        <p style="font-size: 0.85rem; color: var(--admin-text-muted); margin-bottom: 18px;">Selecione o arquivo em formato PDF (máximo 25MB). Ele será enviado ao Firebase Storage.</p>
+        <p style="font-size: 0.85rem; color: var(--admin-text-muted); margin-bottom: 18px;">Selecione o arquivo em formato PDF (máximo 25MB). Ele será enviado com segurança ao Cloudinary.</p>
 
         <input type="file" id="inputPdfCardapio" accept="application/pdf" class="form-input" style="max-width: 380px; margin: 0 auto 16px auto;" required>
 
         <div id="pdfUploadProgress" style="display: none; max-width: 380px; margin: 0 auto 16px auto;">
-          <div style="font-size: 0.8rem; font-weight: 700; color: var(--admin-cyan); margin-bottom: 4px;">Enviando ao Firebase Storage...</div>
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--admin-cyan); margin-bottom: 4px;">Enviando ao Cloudinary...</div>
           <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
             <div style="height: 100%; width: 100%; background: var(--admin-cyan); animation: pulse 1s infinite;"></div>
           </div>
@@ -1703,16 +1704,31 @@ function renderGaleriaView() {
                 </div>
                 <div class="admin-item-body">
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
-                    <h4 class="admin-item-title" style="margin: 0; font-size: 0.95rem;">${vid.titulo || 'Vídeo sem título'}</h4>
+                    <h4 class="admin-item-title" style="margin: 0; font-size: 0.95rem; word-break: break-word;">${vid.titulo || 'Vídeo sem título'}</h4>
                     ${roomBadge}
                   </div>
-                  <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 10px;">
-                    ${vid.tamanhoBytes ? `Tamanho: ${(vid.tamanhoBytes / (1024 * 1024)).toFixed(1)} MB • ` : ''}
-                    ${vid.criadoEm?.toDate ? vid.criadoEm.toDate().toLocaleDateString('pt-BR') : 'Adicionado recentemente'}
+                  <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px;">
+                    <div>${vid.tamanhoBytes ? `Tamanho: ${(vid.tamanhoBytes / (1024 * 1024)).toFixed(1)} MB` : ''} • ${vid.criadoEm?.toDate ? vid.criadoEm.toDate().toLocaleDateString('pt-BR') : 'Recente'}</div>
+                    ${vid.publicId ? `<div style="color: var(--admin-cyan); font-family: monospace; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${vid.publicId}">Cloudinary: ${vid.publicId}</div>` : ''}
                   </div>
-                  <div class="admin-item-footer">
-                    <span class="badge-status ${vid.ativo ? 'confirmed' : 'cancelled'}">${vid.ativo ? 'Ativo' : 'Inativo'}</span>
-                    <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemGaleria('${vid.id}', '${vid.url}', '${vid.storagePath || ''}')">
+
+                  <!-- Controles de Reordenação e Visibilidade -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 6px 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--admin-border); border-radius: 6px;">
+                    <span class="badge-status ${vid.ativo !== false ? 'confirmed' : 'cancelled'}" style="cursor: pointer; margin: 0;" title="Toque para alternar visibilidade no site" onclick="window.toggleAtivoItemGaleria('${vid.id}', ${vid.ativo === false})">
+                      ${vid.ativo !== false ? '✓ Ativo no Site' : 'Oculto'}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" style="padding: 2px 7px; font-weight: 800;" title="Mover para cima" onclick="window.reordenarItemGaleria('${vid.id}', -1)">↑</button>
+                      <span style="font-size: 0.75rem; color: var(--admin-text-muted); font-weight: 700;">#${vid.ordem || 1}</span>
+                      <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" style="padding: 2px 7px; font-weight: 800;" title="Mover para baixo" onclick="window.reordenarItemGaleria('${vid.id}', 1)">↓</button>
+                    </div>
+                  </div>
+
+                  <div class="admin-item-footer" style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.editarItemGaleria('${vid.id}')">
+                      Editar / Substituir
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemGaleria('${vid.id}', '${vid.url}', '${vid.publicId || ''}', 'video')">
                       Excluir
                     </button>
                   </div>
@@ -1745,19 +1761,34 @@ function renderGaleriaView() {
             const roomBadge = getRoomBadge(img.sala);
             return `
               <div class="admin-item-card">
-                <img src="${img.url}" alt="${img.titulo}" class="admin-item-thumb" style="cursor: pointer;" onclick="window.open('${img.url}', '_blank')">
+                <img src="${img.url}" alt="${img.titulo}" class="admin-item-thumb" style="cursor: pointer; height: 180px; width: 100%; object-fit: cover;" onclick="window.open('${img.url}', '_blank')">
                 <div class="admin-item-body">
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
-                    <h4 class="admin-item-title" style="margin: 0; font-size: 0.95rem;">${img.titulo || 'Foto sem título'}</h4>
+                    <h4 class="admin-item-title" style="margin: 0; font-size: 0.95rem; word-break: break-word;">${img.titulo || 'Foto sem título'}</h4>
                     ${roomBadge}
                   </div>
-                  <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 10px;">
-                    ${img.tamanhoBytes ? `Tamanho: ${(img.tamanhoBytes / 1024).toFixed(0)} KB • ` : ''}
-                    ${img.criadoEm?.toDate ? img.criadoEm.toDate().toLocaleDateString('pt-BR') : 'Adicionada recentemente'}
+                  <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px;">
+                    <div>${img.tamanhoBytes ? `Tamanho: ${(img.tamanhoBytes / 1024).toFixed(0)} KB` : ''} • ${img.criadoEm?.toDate ? img.criadoEm.toDate().toLocaleDateString('pt-BR') : 'Recente'}</div>
+                    ${img.publicId ? `<div style="color: var(--admin-cyan); font-family: monospace; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${img.publicId}">Cloudinary: ${img.publicId}</div>` : ''}
                   </div>
-                  <div class="admin-item-footer">
-                    <span class="badge-status ${img.ativo ? 'confirmed' : 'cancelled'}">${img.ativo ? 'Ativa' : 'Inativa'}</span>
-                    <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemGaleria('${img.id}', '${img.url}', '${img.storagePath || ''}')">
+
+                  <!-- Controles de Reordenação e Visibilidade -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 6px 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--admin-border); border-radius: 6px;">
+                    <span class="badge-status ${img.ativo !== false ? 'confirmed' : 'cancelled'}" style="cursor: pointer; margin: 0;" title="Toque para alternar visibilidade no site" onclick="window.toggleAtivoItemGaleria('${img.id}', ${img.ativo === false})">
+                      ${img.ativo !== false ? '✓ Ativa no Site' : 'Oculta'}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" style="padding: 2px 7px; font-weight: 800;" title="Mover para cima" onclick="window.reordenarItemGaleria('${img.id}', -1)">↑</button>
+                      <span style="font-size: 0.75rem; color: var(--admin-text-muted); font-weight: 700;">#${img.ordem || 1}</span>
+                      <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" style="padding: 2px 7px; font-weight: 800;" title="Mover para baixo" onclick="window.reordenarItemGaleria('${img.id}', 1)">↓</button>
+                    </div>
+                  </div>
+
+                  <div class="admin-item-footer" style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.editarItemGaleria('${img.id}')">
+                      Editar / Substituir
+                    </button>
+                    <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemGaleria('${img.id}', '${img.url}', '${img.publicId || ''}', 'image')">
                       Excluir
                     </button>
                   </div>
@@ -2153,17 +2184,26 @@ window.saveSala = async (e) => {
       atualizadoEm: serverTimestamp()
     };
 
-    // Upload rápido e funcional da foto se selecionada
+    // Upload rápido e funcional da foto no Cloudinary se selecionada
     if (fotoFile) {
-      if (btn) btn.textContent = 'Otimizando e enviando foto...';
+      const val = validateMediaFile(fotoFile, 'imagem');
+      if (!val.ok) {
+        alert(val.error);
+        if (btn) btn.disabled = false;
+        return;
+      }
+      if (btn) btn.textContent = 'Enviando foto ao Cloudinary...';
       try {
+        const idToken = await auth.currentUser?.getIdToken();
         const compressed = await compressImageIfNeeded(fotoFile, 1920, 0.82);
-        const cleanName = compressed.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const sRef = ref(storage, `salas/${salaId}-${Date.now()}-${cleanName}`);
-        const snap = await uploadBytes(sRef, compressed);
-        payload.imagem = await getDownloadURL(snap.ref);
+        const cRes = await uploadToCloudinary({ file: compressed, folder: 'backstage/salas', idToken });
+        payload.imagem = cRes.url;
+        payload.publicId = cRes.publicId;
       } catch (fotoErr) {
         console.warn('Aviso upload foto sala:', fotoErr);
+        showToast('Falha no upload da sala para o Cloudinary: ' + fotoErr.message, 'error');
+        if (btn) btn.disabled = false;
+        return;
       }
     }
 
@@ -2321,16 +2361,34 @@ window.saveCardapioItem = async (e) => {
 
   try {
     let fotoUrl = null;
+    let fotoPublicId = null;
     if (fotoFile) {
-      if (btn) btn.textContent = 'Otimizando e enviando foto...';
+      const val = validateMediaFile(fotoFile, 'imagem');
+      if (!val.ok) {
+        alert(val.error);
+        if (btn) btn.disabled = false;
+        return;
+      }
+
+      if (btn) btn.textContent = 'Enviando foto ao Cloudinary...';
       try {
+        const idToken = await auth.currentUser?.getIdToken();
         const compressed = await compressImageIfNeeded(fotoFile, 1280, 0.82);
-        const cleanName = compressed.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const sRef = ref(storage, `cardapio/item-${Date.now()}-${cleanName}`);
-        const snap = await uploadBytes(sRef, compressed);
-        fotoUrl = await getDownloadURL(snap.ref);
+        const cRes = await uploadToCloudinary({
+          file: compressed,
+          folder: 'backstage/cardapio',
+          idToken
+        });
+        fotoUrl = cRes.url;
+        fotoPublicId = cRes.publicId;
       } catch (fotoErr) {
-        console.warn('Aviso upload foto cardápio:', fotoErr);
+        console.error('Erro upload foto cardápio:', fotoErr);
+        showToast('Erro no upload da foto para Cloudinary: ' + fotoErr.message, 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Salvar no Banco de Dados';
+        }
+        return;
       }
     }
 
@@ -2345,7 +2403,10 @@ window.saveCardapioItem = async (e) => {
         ativo,
         atualizadoEm: serverTimestamp()
       };
-      if (fotoUrl) payload.imagem = fotoUrl;
+      if (fotoUrl) {
+        payload.imagem = fotoUrl;
+        payload.imagemPublicId = fotoPublicId;
+      }
 
       await updateDoc(doc(db, 'cardapio', id), payload);
 
@@ -2364,6 +2425,7 @@ window.saveCardapioItem = async (e) => {
         ativo,
         ordem: state.cardapio.length + 1,
         imagem: fotoUrl || '',
+        imagemPublicId: fotoPublicId || '',
         criadoEm: serverTimestamp()
       };
       const docRef = await addDoc(collection(db, 'cardapio'), payload);
@@ -2465,7 +2527,7 @@ window.excluirItemCardapio = (id) => {
   });
 };
 
-// 8.6 Ações de PDF
+// 8.6 Ações de PDF (Upload Direto no Cloudinary)
 window.handleUploadPdf = async (e) => {
   e.preventDefault();
   const fileInput = document.getElementById('inputPdfCardapio');
@@ -2476,65 +2538,130 @@ window.handleUploadPdf = async (e) => {
     return;
   }
 
-  if (file.type !== 'application/pdf') {
-    alert('O arquivo selecionado deve ser exclusivamente um PDF.');
+  const val = validateMediaFile(file, 'pdf');
+  if (!val.ok) {
+    alert(val.error);
     return;
   }
 
+  const progressEl = document.getElementById('pdfUploadProgress');
+  const submitBtn = document.getElementById('btnUploadPdf');
+
   try {
-    const progressEl = document.getElementById('pdfUploadProgress');
-    const submitBtn = document.getElementById('btnUploadPdf');
-    if (progressEl) progressEl.style.display = 'block';
-    if (submitBtn) submitBtn.disabled = true;
+    if (progressEl) {
+      progressEl.style.display = 'block';
+      const textEl = progressEl.querySelector('div:first-child');
+      if (textEl) textEl.textContent = 'Enviando PDF ao Cloudinary (0%)...';
+    }
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando PDF...';
+    }
 
-    const storageRef = ref(storage, `cardapio/cardapio-oficial-${Date.now()}.pdf`);
-    const snap = await uploadBytes(storageRef, file);
-    const downloadUrl = await getDownloadURL(snap.ref);
+    const idToken = await auth.currentUser?.getIdToken();
+    const cRes = await uploadToCloudinary({
+      file,
+      folder: 'backstage/documentos',
+      idToken,
+      onProgress: (percent) => {
+        if (progressEl) {
+          const textEl = progressEl.querySelector('div:first-child');
+          if (textEl) textEl.textContent = `Enviando PDF ao Cloudinary (${percent}%)...`;
+        }
+      }
+    });
 
-    // Salva URL no Firestore
+    // Salva URL e metadados no Firestore
     await updateDoc(doc(db, 'configuracoes', 'geral'), {
-      pdfUrl: downloadUrl,
+      pdfUrl: cRes.url,
+      pdfPublicId: cRes.publicId,
       pdfAtualizadoEm: serverTimestamp()
     });
 
     if (state.configuracoes) {
-      state.configuracoes.pdfUrl = downloadUrl;
+      state.configuracoes.pdfUrl = cRes.url;
+      state.configuracoes.pdfPublicId = cRes.publicId;
     }
 
-    showToast('PDF do cardápio atualizado com sucesso.', 'success');
+    showToast('PDF do cardápio atualizado com sucesso no Cloudinary.', 'success');
     renderApp();
   } catch (err) {
     console.error('Erro upload PDF:', err);
-    showToast('Erro ao enviar PDF para o Firebase Storage.', 'error');
+    showToast('Erro ao enviar PDF: ' + err.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Salvar e Atualizar PDF';
+    }
+    if (progressEl) progressEl.style.display = 'none';
   }
 };
 
-// 8.7 Ações de Galeria (100% Upload de Fotos e Vídeos)
+// 8.7 Ações de Galeria (100% Upload Direto Cloudinary)
+let currentPreviewBlobUrl = null;
+
+function clearMediaPreview() {
+  if (currentPreviewBlobUrl) {
+    URL.revokeObjectURL(currentPreviewBlobUrl);
+    currentPreviewBlobUrl = null;
+  }
+  const previewBox = document.getElementById('uploadMediaPreviewBox');
+  const imgWrap = document.getElementById('uploadMediaImgPreviewWrap');
+  const vidWrap = document.getElementById('uploadMediaVidPreviewWrap');
+  const imgEl = document.getElementById('uploadMediaImgPreview');
+  const vidEl = document.getElementById('uploadMediaVidPreview');
+  const infoEl = document.getElementById('uploadMediaFileInfo');
+
+  if (previewBox) previewBox.style.display = 'none';
+  if (imgWrap) imgWrap.style.display = 'none';
+  if (vidWrap) vidWrap.style.display = 'none';
+  if (imgEl) imgEl.src = '';
+  if (vidEl) {
+    vidEl.pause();
+    vidEl.src = '';
+  }
+  if (infoEl) infoEl.textContent = '';
+}
+
 window.openMediaUploadModal = (preselectedRoom = null, preselectedType = null) => {
   const modal = document.getElementById('adminMediaUploadModal');
   if (!modal) return;
 
+  clearMediaPreview();
+
+  // Reset IDs
+  const editIdInput = document.getElementById('uploadMediaEditId');
+  if (editIdInput) editIdInput.value = '';
+  const curPubInput = document.getElementById('uploadMediaCurrentPublicId');
+  if (curPubInput) curPubInput.value = '';
+  const curUrlInput = document.getElementById('uploadMediaCurrentUrl');
+  if (curUrlInput) curUrlInput.value = '';
+
+  const titleEl = document.getElementById('mediaUploadModalTitle');
+  if (titleEl) titleEl.textContent = 'Upload de Mídia (Cloudinary)';
+
   const salaSelect = document.getElementById('uploadMediaSala');
-  if (salaSelect && preselectedRoom) {
-    salaSelect.value = preselectedRoom;
+  if (salaSelect) salaSelect.value = preselectedRoom || 'sala-red';
+
+  const tituloInput = document.getElementById('uploadMediaTitulo');
+  if (tituloInput) tituloInput.value = '';
+
+  const fileInput = document.getElementById('uploadMediaFileInput');
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.required = true;
   }
 
-  if (preselectedType) {
-    window.handleMediaTypeChange(preselectedType);
-  } else {
-    window.handleMediaTypeChange('imagem');
-  }
+  const ordemInput = document.getElementById('uploadMediaOrdem');
+  if (ordemInput) ordemInput.value = (state.galeria.length + 1).toString();
 
-  // Reset form
-  const form = document.getElementById('formUploadMedia');
-  if (form) form.reset();
-  if (salaSelect && preselectedRoom) salaSelect.value = preselectedRoom;
+  const ativoInput = document.getElementById('uploadMediaAtivo');
+  if (ativoInput) ativoInput.checked = true;
+
+  window.handleMediaTypeChange(preselectedType || 'imagem');
 
   const progressWrap = document.getElementById('mediaUploadProgressWrap');
   if (progressWrap) progressWrap.style.display = 'none';
-
-  const fileInfo = document.getElementById('uploadMediaFileInfo');
-  if (fileInfo) fileInfo.style.display = 'none';
 
   const submitBtn = document.getElementById('btnSubmitMediaUpload');
   if (submitBtn) {
@@ -2545,9 +2672,86 @@ window.openMediaUploadModal = (preselectedRoom = null, preselectedType = null) =
   modal.classList.add('open');
 };
 
+window.editarItemGaleria = (id) => {
+  const item = state.galeria.find(g => g.id === id);
+  if (!item) return;
+
+  const modal = document.getElementById('adminMediaUploadModal');
+  if (!modal) return;
+
+  clearMediaPreview();
+
+  const editIdInput = document.getElementById('uploadMediaEditId');
+  if (editIdInput) editIdInput.value = item.id;
+  const curPubInput = document.getElementById('uploadMediaCurrentPublicId');
+  if (curPubInput) curPubInput.value = item.publicId || '';
+  const curUrlInput = document.getElementById('uploadMediaCurrentUrl');
+  if (curUrlInput) curUrlInput.value = item.url || '';
+
+  const titleEl = document.getElementById('mediaUploadModalTitle');
+  if (titleEl) titleEl.textContent = 'Editar Mídia / Substituir Arquivo';
+
+  const salaSelect = document.getElementById('uploadMediaSala');
+  if (salaSelect) salaSelect.value = item.sala || 'sala-red';
+
+  const tituloInput = document.getElementById('uploadMediaTitulo');
+  if (tituloInput) tituloInput.value = item.titulo || '';
+
+  const ordemInput = document.getElementById('uploadMediaOrdem');
+  if (ordemInput) ordemInput.value = (item.ordem || 1).toString();
+
+  const ativoInput = document.getElementById('uploadMediaAtivo');
+  if (ativoInput) ativoInput.checked = item.ativo !== false;
+
+  const fileInput = document.getElementById('uploadMediaFileInput');
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.required = false; // Opcional ao editar
+  }
+
+  const isVideo = item.tipo === 'video';
+  window.handleMediaTypeChange(isVideo ? 'video' : 'imagem');
+
+  // Mostra prévia do arquivo atual já existente
+  const previewBox = document.getElementById('uploadMediaPreviewBox');
+  const previewLabel = document.getElementById('uploadMediaPreviewLabel');
+  const imgWrap = document.getElementById('uploadMediaImgPreviewWrap');
+  const vidWrap = document.getElementById('uploadMediaVidPreviewWrap');
+  const imgEl = document.getElementById('uploadMediaImgPreview');
+  const vidEl = document.getElementById('uploadMediaVidPreview');
+  const infoEl = document.getElementById('uploadMediaFileInfo');
+
+  if (previewBox) previewBox.style.display = 'block';
+  if (previewLabel) previewLabel.textContent = 'Mídia Atual Cadastrada (Selecione um arquivo abaixo se desejar substituir):';
+
+  if (isVideo) {
+    if (vidWrap) vidWrap.style.display = 'block';
+    if (vidEl) vidEl.src = item.url;
+  } else {
+    if (imgWrap) imgWrap.style.display = 'block';
+    if (imgEl) imgEl.src = item.url;
+  }
+
+  if (infoEl) {
+    infoEl.textContent = `Arquivo cadastrado: ${item.nomeArquivo || 'Mídia'} • ${item.publicId ? 'Cloudinary: ' + item.publicId : ''}`;
+  }
+
+  const progressWrap = document.getElementById('mediaUploadProgressWrap');
+  if (progressWrap) progressWrap.style.display = 'none';
+
+  const submitBtn = document.getElementById('btnSubmitMediaUpload');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Salvar Alterações';
+  }
+
+  modal.classList.add('open');
+};
+
 window.closeMediaUploadModal = () => {
   const modal = document.getElementById('adminMediaUploadModal');
   if (modal) modal.classList.remove('open');
+  clearMediaPreview();
 };
 
 window.openModalGaleria = (tipo) => {
@@ -2565,7 +2769,7 @@ window.handleMediaTypeChange = (tipo) => {
   if (tipo === 'video') {
     if (radioVideo) radioVideo.checked = true;
     if (fileInput) fileInput.accept = 'video/*,video/mp4,video/webm,video/quicktime';
-    if (fileLabel) fileLabel.textContent = 'Arquivo de Vídeo (MP4, WebM, MOV)';
+    if (fileLabel) fileLabel.textContent = 'Arquivo de Vídeo (MP4, WebM, MOV - até 150MB)';
     if (labelVideo) {
       labelVideo.style.borderColor = 'var(--admin-magenta)';
       labelVideo.style.background = 'rgba(255, 0, 85, 0.12)';
@@ -2577,7 +2781,7 @@ window.handleMediaTypeChange = (tipo) => {
   } else {
     if (radioFoto) radioFoto.checked = true;
     if (fileInput) fileInput.accept = 'image/*,image/jpeg,image/png,image/webp';
-    if (fileLabel) fileLabel.textContent = 'Arquivo de Imagem (JPG, PNG, WebP)';
+    if (fileLabel) fileLabel.textContent = 'Arquivo de Imagem (JPG, PNG, WebP - até 20MB)';
     if (labelFoto) {
       labelFoto.style.borderColor = 'var(--admin-cyan)';
       labelFoto.style.background = 'rgba(0, 240, 255, 0.08)';
@@ -2591,96 +2795,126 @@ window.handleMediaTypeChange = (tipo) => {
 
 window.handleMediaFileSelected = (e) => {
   const file = e.target.files?.[0];
+  const previewBox = document.getElementById('uploadMediaPreviewBox');
+  const previewLabel = document.getElementById('uploadMediaPreviewLabel');
+  const imgWrap = document.getElementById('uploadMediaImgPreviewWrap');
+  const vidWrap = document.getElementById('uploadMediaVidPreviewWrap');
+  const imgEl = document.getElementById('uploadMediaImgPreview');
+  const vidEl = document.getElementById('uploadMediaVidPreview');
   const infoEl = document.getElementById('uploadMediaFileInfo');
-  if (!infoEl) return;
-  if (file) {
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
-    infoEl.style.display = 'block';
-    infoEl.textContent = `Arquivo selecionado: ${file.name} (${sizeMb} MB)`;
+  const radioTipo = document.querySelector('input[name="mediaTypeRadio"]:checked')?.value || 'imagem';
+
+  if (!file) {
+    return;
+  }
+
+  // Validação prévia
+  const val = validateMediaFile(file, radioTipo);
+  if (!val.ok) {
+    alert(val.error);
+    e.target.value = '';
+    return;
+  }
+
+  // Revoga prévia anterior de blob
+  if (currentPreviewBlobUrl) {
+    URL.revokeObjectURL(currentPreviewBlobUrl);
+    currentPreviewBlobUrl = null;
+  }
+
+  currentPreviewBlobUrl = URL.createObjectURL(file);
+  const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+
+  if (previewBox) previewBox.style.display = 'block';
+  if (previewLabel) previewLabel.textContent = 'Novo Arquivo Selecionado (Prévia):';
+
+  if (radioTipo === 'video' || file.type.startsWith('video/')) {
+    if (imgWrap) imgWrap.style.display = 'none';
+    if (vidWrap) vidWrap.style.display = 'block';
+    if (vidEl) {
+      vidEl.src = currentPreviewBlobUrl;
+      vidEl.load();
+    }
   } else {
-    infoEl.style.display = 'none';
+    if (vidWrap) vidWrap.style.display = 'none';
+    if (imgWrap) imgWrap.style.display = 'block';
+    if (imgEl) imgEl.src = currentPreviewBlobUrl;
+  }
+
+  if (infoEl) {
+    infoEl.textContent = `Arquivo: ${file.name} (${sizeMb} MB) • Tipo: ${file.type || 'Detectado'}`;
   }
 };
 
-window.setGaleriaFilter = (filtro) => {
-  state.activeFilterGaleria = filtro;
-  renderApp();
+window.toggleAtivoItemGaleria = async (id, novoAtivo) => {
+  try {
+    await updateDoc(doc(db, 'galeria', id), {
+      ativo: novoAtivo,
+      atualizadoEm: serverTimestamp()
+    });
+    const item = state.galeria.find(g => g.id === id);
+    if (item) item.ativo = novoAtivo;
+    showToast(novoAtivo ? 'Mídia ativada na galeria pública.' : 'Mídia oculta na galeria pública.', 'info');
+    renderApp();
+  } catch (err) {
+    console.error('Erro ao alterar status da mídia:', err);
+    showToast('Erro ao atualizar mídia: ' + err.message, 'error');
+  }
 };
 
-/**
- * Otimiza e comprime imagens no navegador antes do upload para garantir envio ultrarrápido (<1s)
- */
-async function compressImageIfNeeded(file, maxDimension = 1920, quality = 0.82) {
-  if (!file || !file.type.startsWith('image/')) return file;
-  if (file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
-  if (file.size < 350 * 1024) return file; // Já está leve o suficiente
+window.reordenarItemGaleria = async (id, direcao) => {
+  const idx = state.galeria.findIndex(g => g.id === id);
+  if (idx < 0) return;
 
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxDimension || height > maxDimension) {
-          if (width > height) {
-            height = Math.round((height * maxDimension) / width);
-            width = maxDimension;
-          } else {
-            width = Math.round((width * maxDimension) / height);
-            height = maxDimension;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+  const targetIdx = idx + direcao;
+  if (targetIdx < 0 || targetIdx >= state.galeria.length) return;
 
-        canvas.toBlob(
-          (blob) => {
-            if (blob && blob.size < file.size) {
-              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
-                type: 'image/webp',
-                lastModified: Date.now()
-              });
-              resolve(compressedFile);
-            } else {
-              resolve(file);
-            }
-          },
-          'image/webp',
-          quality
-        );
-      };
-      img.onerror = () => resolve(file);
-      img.src = e.target.result;
-    };
-    reader.onerror = () => resolve(file);
-    reader.readAsDataURL(file);
-  });
-}
+  const currentItem = state.galeria[idx];
+  const targetItem = state.galeria[targetIdx];
+
+  // Troca ordem
+  const currentOrdem = currentItem.ordem || (idx + 1);
+  const targetOrdem = targetItem.ordem || (targetIdx + 1);
+
+  currentItem.ordem = targetOrdem;
+  targetItem.ordem = currentOrdem;
+
+  // Swap no array
+  state.galeria[idx] = targetItem;
+  state.galeria[targetIdx] = currentItem;
+
+  renderApp();
+
+  try {
+    await Promise.all([
+      updateDoc(doc(db, 'galeria', currentItem.id), { ordem: currentItem.ordem, atualizadoEm: serverTimestamp() }),
+      updateDoc(doc(db, 'galeria', targetItem.id), { ordem: targetItem.ordem, atualizadoEm: serverTimestamp() })
+    ]);
+    showToast('Ordem da galeria atualizada.', 'info');
+  } catch (err) {
+    console.error('Erro ao reordenar mídia:', err);
+    showToast('Erro ao salvar nova ordem: ' + err.message, 'error');
+  }
+};
 
 window.submitMediaUpload = async (e) => {
   e.preventDefault();
+  const editId = document.getElementById('uploadMediaEditId')?.value?.trim();
+  const currentPublicId = document.getElementById('uploadMediaCurrentPublicId')?.value?.trim();
+  const currentUrl = document.getElementById('uploadMediaCurrentUrl')?.value?.trim();
+
   const sala = document.getElementById('uploadMediaSala')?.value || 'geral';
   const tipoRadio = document.querySelector('input[name="mediaTypeRadio"]:checked')?.value || 'imagem';
   const titulo = document.getElementById('uploadMediaTitulo')?.value?.trim() || 'Mídia Backstage';
+  const ordem = parseInt(document.getElementById('uploadMediaOrdem')?.value, 10) || (state.galeria.length + 1);
+  const ativo = document.getElementById('uploadMediaAtivo')?.checked !== false;
+
   const fileInput = document.getElementById('uploadMediaFileInput');
   const file = fileInput?.files?.[0];
 
-  if (!file) {
+  // Se não for edição, o arquivo é obrigatório
+  if (!editId && !file) {
     alert('Por favor, selecione um arquivo para upload.');
-    return;
-  }
-
-  // Validação simples de tipo
-  if (tipoRadio === 'video' && !file.type.startsWith('video/')) {
-    alert('Por favor, selecione um arquivo de vídeo válido (MP4, WebM, MOV).');
-    return;
-  }
-  if (tipoRadio === 'imagem' && !file.type.startsWith('image/')) {
-    alert('Por favor, selecione uma imagem válida (JPG, PNG, WebP).');
     return;
   }
 
@@ -2690,125 +2924,186 @@ window.submitMediaUpload = async (e) => {
   const progressText = document.getElementById('mediaUploadProgressText');
   const submitBtn = document.getElementById('btnSubmitMediaUpload');
 
-  if (progressWrap) progressWrap.style.display = 'block';
   if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Processando...';
   }
 
   try {
-    let fileToUpload = file;
-    if (tipoRadio === 'imagem') {
-      if (progressText) progressText.textContent = 'Otimizando imagem para envio rápido...';
-      try {
-        fileToUpload = await compressImageIfNeeded(file);
-      } catch (compErr) {
-        console.warn('Compressão falhou, enviando arquivo original:', compErr);
+    let finalUrl = currentUrl;
+    let finalPublicId = currentPublicId;
+    let finalTamanho = null;
+    let finalNomeArquivo = null;
+    let finalTipo = tipoRadio;
+    let finalFormato = null;
+    let finalLargura = null;
+    let finalAltura = null;
+    let finalDuracao = null;
+
+    // Se um arquivo novo foi selecionado, faz upload seguro no Cloudinary
+    if (file) {
+      const val = validateMediaFile(file, tipoRadio);
+      if (!val.ok) {
+        alert(val.error);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = editId ? 'Salvar Alterações' : 'Fazer Upload';
+        }
+        return;
       }
-    }
 
-    if (progressText) progressText.textContent = 'Iniciando upload...';
+      if (progressWrap) progressWrap.style.display = 'block';
+      if (progressBar) progressBar.style.width = '0%';
+      if (progressPercent) progressPercent.textContent = '0%';
 
-    const cleanFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const storagePath = `galeria/${sala}/${Date.now()}-${cleanFileName}`;
-    const storageRef = ref(storage, storagePath);
+      let fileToUpload = file;
+      if (tipoRadio === 'imagem') {
+        if (progressText) progressText.textContent = 'Otimizando imagem para envio rápido...';
+        try {
+          fileToUpload = await compressImageIfNeeded(file, 2048, 0.85);
+        } catch (compErr) {
+          console.warn('Compressão ignorada:', compErr);
+        }
+      }
 
-    const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
+      if (progressText) progressText.textContent = 'Enviando com segurança para a CDN do Cloudinary...';
 
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        if (snapshot.totalBytes > 0) {
-          const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+      const idToken = await auth.currentUser?.getIdToken();
+      const cRes = await uploadToCloudinary({
+        file: fileToUpload,
+        folder: 'backstage/galeria',
+        idToken,
+        onProgress: (percent) => {
           if (progressBar) progressBar.style.width = percent + '%';
           if (progressPercent) progressPercent.textContent = percent + '%';
           if (progressText) {
-            progressText.textContent = tipoRadio === 'video' 
-              ? `Fazendo upload do vídeo (${percent}%)...` 
-              : `Fazendo upload da imagem (${percent}%)...`;
+            progressText.textContent = tipoRadio === 'video'
+              ? `Enviando vídeo ao Cloudinary (${percent}%)...`
+              : `Enviando foto ao Cloudinary (${percent}%)...`;
           }
         }
-      },
-      (error) => {
-        console.error('Erro upload:', error);
-        showToast('Erro ao realizar upload no Firebase Storage: ' + error.message, 'error');
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Tentar Novamente';
-        }
-      },
-      async () => {
+      });
+
+      finalUrl = cRes.url;
+      finalPublicId = cRes.publicId;
+      finalTamanho = cRes.bytes;
+      finalNomeArquivo = file.name;
+      finalTipo = cRes.resourceType === 'video' ? 'video' : 'imagem';
+      finalFormato = cRes.format;
+      finalLargura = cRes.width;
+      finalAltura = cRes.height;
+      finalDuracao = cRes.duration;
+
+      // Se estiver substituindo um arquivo antigo com publicId no Cloudinary, exclui a mídia antiga do Cloudinary
+      if (editId && currentPublicId && currentPublicId !== finalPublicId) {
         try {
-          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-
-          const payload = {
-            tipo: tipoRadio,
-            sala,
-            titulo,
-            url: downloadUrl,
-            storagePath,
-            tamanhoBytes: file.size,
-            nomeArquivo: file.name,
-            ativo: true,
-            ordem: state.galeria.length + 1,
-            criadoEm: serverTimestamp()
-          };
-
-          const docRef = await addDoc(collection(db, 'galeria'), payload);
-          state.galeria.unshift({ id: docRef.id, ...payload });
-
-          showToast(tipoRadio === 'video' ? 'Vídeo enviado com sucesso!' : 'Foto enviada com sucesso!', 'success');
-          window.closeMediaUploadModal();
-          renderApp();
-        } catch (dbErr) {
-          console.error('Erro salvando Firestore:', dbErr);
-          showToast('Arquivo enviado, mas ocorreu erro ao salvar informações: ' + dbErr.message, 'error');
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Fazer Upload';
-          }
+          await deleteFromCloudinary({
+            publicId: currentPublicId,
+            resourceType: tipoRadio === 'video' ? 'video' : 'image',
+            idToken
+          });
+        } catch (delOldErr) {
+          console.warn('Aviso ao excluir mídia anterior no Cloudinary:', delOldErr);
         }
       }
-    );
+    }
+
+    if (editId) {
+      // Atualiza item existente no Firestore
+      const payload = {
+        sala,
+        tipo: finalTipo,
+        titulo,
+        ordem,
+        ativo,
+        atualizadoEm: serverTimestamp()
+      };
+      if (file) {
+        payload.url = finalUrl;
+        payload.publicId = finalPublicId;
+        payload.tamanhoBytes = finalTamanho;
+        payload.nomeArquivo = finalNomeArquivo;
+        if (finalFormato) payload.formato = finalFormato;
+        if (finalLargura) payload.largura = finalLargura;
+        if (finalAltura) payload.altura = finalAltura;
+        if (finalDuracao) payload.duracao = finalDuracao;
+      }
+
+      await updateDoc(doc(db, 'galeria', editId), payload);
+
+      const item = state.galeria.find(g => g.id === editId);
+      if (item) Object.assign(item, payload);
+
+      showToast('Mídia atualizada com sucesso no banco de dados e Cloudinary!', 'success');
+    } else {
+      // Cria novo item no Firestore
+      const payload = {
+        tipo: finalTipo,
+        sala,
+        titulo,
+        url: finalUrl,
+        publicId: finalPublicId,
+        formato: finalFormato,
+        largura: finalLargura,
+        altura: finalAltura,
+        duracao: finalDuracao || null,
+        tamanhoBytes: finalTamanho || file.size,
+        nomeArquivo: finalNomeArquivo || file.name,
+        ativo,
+        ordem,
+        criadoEm: serverTimestamp(),
+        atualizadoEm: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, 'galeria'), payload);
+      state.galeria.unshift({ id: docRef.id, ...payload });
+
+      showToast(finalTipo === 'video' ? 'Vídeo enviado com sucesso ao Cloudinary!' : 'Foto enviada com sucesso ao Cloudinary!', 'success');
+    }
+
+    window.closeMediaUploadModal();
+    renderApp();
   } catch (err) {
-    console.error('Erro no processo de upload:', err);
-    showToast('Falha ao iniciar upload: ' + err.message, 'error');
+    console.error('Erro no upload Cloudinary / Firestore:', err);
+    showToast('Falha no upload: ' + err.message, 'error');
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Fazer Upload';
+      submitBtn.textContent = editId ? 'Salvar Alterações' : 'Tentar Novamente';
     }
   }
 };
 
-window.excluirItemGaleria = (id, fileUrl, storagePath) => {
+window.excluirItemGaleria = (id, fileUrl, publicId, resourceType = 'image') => {
   showConfirmModal({
-    title: 'Excluir Item da Galeria',
-    message: 'Deseja realmente remover esta mídia da galeria e do armazenamento?',
+    title: 'Excluir Mídia Permanentemente',
+    message: 'Deseja realmente remover esta mídia da galeria pública, do Firestore e do Cloudinary?',
     confirmText: 'Excluir',
     confirmBtnClass: 'btn-admin-danger',
     onConfirm: async () => {
       try {
+        // 1. Remove do Firestore
         await deleteDoc(doc(db, 'galeria', id));
         state.galeria = state.galeria.filter(g => g.id !== id);
 
-        // Tenta remover do Storage se for arquivo hospedado
-        try {
-          if (storagePath) {
-            const fileRef = ref(storage, storagePath);
-            await deleteObject(fileRef);
-          } else if (fileUrl && fileUrl.includes('firebasestorage')) {
-            const fileRef = ref(storage, fileUrl);
-            await deleteObject(fileRef);
+        // 2. Remove do Cloudinary se possuir publicId
+        if (publicId) {
+          try {
+            const idToken = await auth.currentUser?.getIdToken();
+            await deleteFromCloudinary({
+              publicId,
+              resourceType: resourceType === 'video' ? 'video' : 'image',
+              idToken
+            });
+          } catch (cloudErr) {
+            console.warn('Aviso exclusão Cloudinary:', cloudErr);
           }
-        } catch(stErr) {
-          console.warn('Aviso exclusão Storage:', stErr);
         }
 
-        showToast('Mídia excluída com sucesso.', 'info');
+        showToast('Mídia excluída com sucesso da galeria e do Cloudinary.', 'info');
         renderApp();
       } catch (err) {
-        console.error('Erro excluir item galeria:', err);
-        showToast('Erro ao excluir item: ' + err.message, 'error');
+        console.error('Erro ao excluir mídia:', err);
+        showToast('Erro ao excluir mídia: ' + err.message, 'error');
       }
     }
   });

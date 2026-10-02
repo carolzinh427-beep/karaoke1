@@ -60,6 +60,9 @@
         <button type="button" class="admin-modal-close" onclick="window.closeMediaUploadModal()">&times;</button>
       </div>
       <form id="formUploadMedia" onsubmit="window.submitMediaUpload(event)">
+        <input type="hidden" id="uploadMediaEditId">
+        <input type="hidden" id="uploadMediaCurrentPublicId">
+        <input type="hidden" id="uploadMediaCurrentUrl">
         <div class="admin-modal-body">
           <!-- Sala / Destino -->
           <div class="form-group" style="margin-bottom: 16px;">
@@ -96,14 +99,40 @@
           <!-- Seleção do Arquivo de Upload -->
           <div class="form-group" style="margin-bottom: 16px;">
             <label class="form-label" id="uploadMediaFileLabel">Arquivo de Imagem (JPG, PNG, WebP)</label>
-            <input type="file" id="uploadMediaFileInput" class="form-input" accept="image/*" required onchange="window.handleMediaFileSelected(event)" style="padding: 10px;">
-            <div id="uploadMediaFileInfo" style="font-size: 0.8rem; color: var(--admin-cyan); margin-top: 6px; display: none;"></div>
+            <input type="file" id="uploadMediaFileInput" class="form-input" accept="image/*" onchange="window.handleMediaFileSelected(event)" style="padding: 10px;">
+            <span id="uploadMediaFileHint" style="font-size: 0.74rem; color: var(--admin-text-muted); display: block; margin-top: 4px;">Tamanho máximo: Fotos até 20MB • Vídeos até 150MB</span>
           </div>
 
-          <!-- Barra de Progresso de Upload -->
+          <!-- Pré-visualização do Arquivo (Imagem ou Vídeo) antes do envio ou arquivo atual -->
+          <div id="uploadMediaPreviewBox" style="display: none; margin-bottom: 16px; border: 1px dashed var(--admin-border); border-radius: 8px; padding: 12px; text-align: center; background: rgba(0,0,0,0.35);">
+            <div style="font-size: 0.76rem; text-transform: uppercase; color: var(--admin-cyan); font-weight: 700; margin-bottom: 8px;" id="uploadMediaPreviewLabel">Pré-visualização da Mídia</div>
+            <div id="uploadMediaImgPreviewWrap" style="display: none;">
+              <img id="uploadMediaImgPreview" src="" alt="Prévia" style="max-height: 190px; max-width: 100%; border-radius: 6px; object-fit: contain; margin: 0 auto; display: block; border: 1px solid rgba(255,255,255,0.1);">
+            </div>
+            <div id="uploadMediaVidPreviewWrap" style="display: none;">
+              <video id="uploadMediaVidPreview" controls playsinline style="max-height: 200px; width: 100%; border-radius: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1);"></video>
+            </div>
+            <div id="uploadMediaFileInfo" style="font-size: 0.8rem; color: var(--admin-text-main); margin-top: 8px;"></div>
+          </div>
+
+          <!-- Ordem e Estado Ativo -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="uploadMediaOrdem">Ordem na Galeria</label>
+              <input type="number" min="1" id="uploadMediaOrdem" class="form-input" placeholder="1" value="1">
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #FFFFFF; font-weight: 600; font-size: 0.88rem;">
+                <input type="checkbox" id="uploadMediaAtivo" checked style="width: 18px; height: 18px; accent-color: var(--admin-cyan);">
+                <span>Ativo no Site</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Barra de Progresso de Upload com Cloudinary -->
           <div id="mediaUploadProgressWrap" style="display: none; margin-top: 14px;">
             <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
-              <span id="mediaUploadProgressText" style="color: var(--admin-cyan); font-weight: 600;">Enviando ao Firebase Storage...</span>
+              <span id="mediaUploadProgressText" style="color: var(--admin-cyan); font-weight: 600;">Enviando ao Cloudinary...</span>
               <span id="mediaUploadProgressPercent" style="color: #FFFFFF; font-weight: 700;">0%</span>
             </div>
             <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">

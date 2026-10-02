@@ -1103,6 +1103,9 @@ function renderMediaParaSala(container, salaId, allItems, roomLabel, roomColor) 
     return false;
   });
 
+  // Ordena pela ordem definida no painel administrativo (1, 2, 3...)
+  roomItems.sort((a, b) => (a.ordem || 999) - (b.ordem || 999));
+
   if (roomItems.length === 0) {
     container.innerHTML = `
       <div class="media-placeholder-content">
