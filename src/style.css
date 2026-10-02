@@ -4400,10 +4400,908 @@ img, video {
   border: 1px solid rgba(37, 211, 102, 0.4);
 }
 
+/* ==========================================================================
+   STEPPER PROGRESS BAR (1. DATA -> 2. SALA -> 3. SEUS DADOS)
+   ========================================================================== */
+.booking-stepper-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 620px;
+  margin: 28px auto 36px auto;
+  padding: 10px 16px;
+  background: rgba(5, 8, 19, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(10px);
+}
+
+.stepper-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  transition: var(--transition-fast);
+}
+
+.stepper-step:hover {
+  color: #FFFFFF;
+}
+
+.stepper-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.stepper-label {
+  font-family: var(--font-heading);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.stepper-line {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  max-width: 50px;
+  border-radius: 2px;
+  transition: var(--transition-fast);
+}
+
+.stepper-step.active {
+  color: #FFFFFF;
+  background: rgba(0, 240, 255, 0.1);
+}
+
+.stepper-step.active .stepper-num {
+  background: var(--primary-cyan);
+  color: #050813;
+  border-color: var(--primary-cyan);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+}
+
+.stepper-step.completed {
+  color: var(--primary-cyan);
+}
+
+.stepper-step.completed .stepper-num {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: var(--primary-cyan);
+  color: var(--primary-cyan);
+}
+
+.stepper-line.active {
+  background: var(--primary-cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+
+/* ==========================================================================
+   BOOKING STEP PANELS
+   ========================================================================== */
+.booking-step-panel {
+  animation: fadeInPanel 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInPanel {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.booking-step-intro {
+  margin-bottom: 24px;
+}
+
+.step-panel-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.step-panel-desc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.step-panel-top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.btn-step-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  color: var(--primary-cyan);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-step-back:hover {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: var(--primary-cyan);
+  color: #FFFFFF;
+  transform: translateX(-3px);
+}
+
+.step-panel-current-tag {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ==========================================================================
+   PASSO 1: CALENDÁRIO COM LARGURA HARMONIOSA E CONFIRMAÇÃO
+   ========================================================================== */
+.calendar-card-single-wrap {
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.booking-date-confirm-bar {
+  margin-top: 18px;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.12) 0%, rgba(5, 8, 19, 0.95) 100%);
+  border: 1px solid var(--primary-cyan);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  animation: slideUpConfirm 0.3s ease forwards;
+}
+
+@keyframes slideUpConfirm {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.date-confirm-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.date-confirm-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid var(--primary-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-cyan);
+  flex-shrink: 0;
+}
+
+.date-confirm-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--primary-cyan);
+  letter-spacing: 0.05em;
+}
+
+.date-confirm-val {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.date-confirm-promo {
+  font-size: 0.8rem;
+  color: #FFDE00;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   PASSO 2: CARDS MODERNOS DAS 3 SALAS
+   ========================================================================== */
+.step-rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.step-room-card {
+  position: relative;
+  background: rgba(5, 8, 19, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.step-room-card:hover {
+  transform: translateY(-6px);
+}
+
+.room-card-glow-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  opacity: 0.15;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.step-room-card:hover .room-card-glow-bg {
+  opacity: 0.35;
+}
+
+/* Room Themes */
+.room-theme-red {
+  border-color: rgba(255, 51, 102, 0.25);
+}
+.room-theme-red .room-card-glow-bg {
+  background: radial-gradient(circle at 50% 0%, #FF3366 0%, transparent 70%);
+}
+.room-theme-red:hover {
+  border-color: #FF3366;
+  box-shadow: 0 10px 30px rgba(255, 51, 102, 0.25);
+}
+
+.room-theme-green {
+  border-color: rgba(0, 230, 153, 0.25);
+}
+.room-theme-green .room-card-glow-bg {
+  background: radial-gradient(circle at 50% 0%, #00E699 0%, transparent 70%);
+}
+.room-theme-green:hover {
+  border-color: #00E699;
+  box-shadow: 0 10px 30px rgba(0, 230, 153, 0.25);
+}
+
+.room-theme-blue {
+  border-color: rgba(0, 166, 255, 0.25);
+}
+.room-theme-blue .room-card-glow-bg {
+  background: radial-gradient(circle at 50% 0%, #00A6FF 0%, transparent 70%);
+}
+.room-theme-blue:hover {
+  border-color: #00A6FF;
+  box-shadow: 0 10px 30px rgba(0, 166, 255, 0.25);
+}
+
+.room-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.room-card-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+.room-card-tag.red {
+  background: rgba(255, 51, 102, 0.18);
+  color: #FF3366;
+  border: 1px solid rgba(255, 51, 102, 0.4);
+}
+
+.room-card-tag.green {
+  background: rgba(0, 230, 153, 0.18);
+  color: #00E699;
+  border: 1px solid rgba(0, 230, 153, 0.4);
+}
+
+.room-card-tag.blue {
+  background: rgba(0, 166, 255, 0.18);
+  color: #00A6FF;
+  border: 1px solid rgba(0, 166, 255, 0.4);
+}
+
+.room-card-capacity-pill {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.room-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.room-card-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-bottom: 18px;
+  flex: 1;
+}
+
+.room-card-pricing-box {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.room-card-total-price {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.room-card-signal-split {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.room-card-signal-split strong {
+  color: var(--primary-cyan);
+}
+
+.room-card-perks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.btn-room-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  border: 1px solid;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-room-select-trigger.red {
+  background: rgba(255, 51, 102, 0.15);
+  border-color: #FF3366;
+  color: #FFFFFF;
+}
+.btn-room-select-trigger.red:hover {
+  background: #FF3366;
+  color: #050813;
+  box-shadow: 0 0 15px rgba(255, 51, 102, 0.6);
+}
+
+.btn-room-select-trigger.green {
+  background: rgba(0, 230, 153, 0.15);
+  border-color: #00E699;
+  color: #FFFFFF;
+}
+.btn-room-select-trigger.green:hover {
+  background: #00E699;
+  color: #050813;
+  box-shadow: 0 0 15px rgba(0, 230, 153, 0.6);
+}
+
+.btn-room-select-trigger.blue {
+  background: rgba(0, 166, 255, 0.15);
+  border-color: #00A6FF;
+  color: #FFFFFF;
+}
+.btn-room-select-trigger.blue:hover {
+  background: #00A6FF;
+  color: #050813;
+  box-shadow: 0 0 15px rgba(0, 166, 255, 0.6);
+}
+
+/* ==========================================================================
+   PASSO 3: FORMULÁRIO DE DADOS E RESUMO
+   ========================================================================= */
+.booking-data-form-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.booking-confirmed-summary-box {
+  background: rgba(5, 8, 19, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+
+.summary-badge-title {
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--primary-cyan);
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-item-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.summary-item-val {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-top: 2px;
+}
+
+.summary-sub-val {
+  font-size: 0.78rem;
+  color: var(--primary-cyan);
+  font-weight: 600;
+}
+
+.summary-change-link {
+  background: none;
+  border: none;
+  color: var(--primary-magenta);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+  text-decoration: underline;
+}
+
+.summary-change-link:hover {
+  color: #FFFFFF;
+}
+
+.readonly-box {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+  cursor: default;
+}
+
+/* ==========================================================================
+   POP-UP PERSONALIDADE DA SALA (FALA DIRETAMENTE COM O CLIENTE)
+   ========================================================================== */
+.room-personality-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.room-personality-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 5, 12, 0.85);
+  backdrop-filter: blur(14px);
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.room-personality-dialog {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 520px;
+  background: #080D1A;
+  border: 2px solid var(--primary-cyan);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.25);
+  animation: scaleUpDialog 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+@keyframes scaleUpDialog {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.room-personality-glow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 140px;
+  background: radial-gradient(ellipse at center, rgba(0, 240, 255, 0.35) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.personality-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.personality-modal-close:hover {
+  background: #FF0055;
+  border-color: #FF0055;
+  transform: rotate(90deg);
+}
+
+.personality-room-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid var(--primary-cyan);
+  color: var(--primary-cyan);
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.personality-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-cyan);
+  box-shadow: 0 0 8px var(--primary-cyan);
+}
+
+/* Balão de Fala Charismático */
+.personality-speech-bubble {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.bubble-quote-mark {
+  font-family: Georgia, serif;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--primary-cyan);
+  opacity: 0.8;
+}
+
+.bubble-quote-open {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+}
+
+.bubble-quote-close {
+  position: absolute;
+  bottom: -4px;
+  right: 14px;
+}
+
+.bubble-phrase {
+  font-family: var(--font-heading);
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.45;
+  margin: 0;
+  padding: 6px 12px;
+  letter-spacing: 0.01em;
+}
+
+.personality-specs-box {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 22px;
+}
+
+.specs-grid-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  text-align: center;
+}
+
+.spec-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spec-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.spec-value {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.spec-value.highlight {
+  color: var(--primary-cyan);
+}
+
+.spec-terms-notice {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ==========================================================================
+   MODAL DE TERMOS DE RESPONSABILIDADE & CIÊNCIA DA RESERVA
+   ========================================================================== */
+.termos-responsabilidade-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.termos-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 5, 12, 0.85);
+  backdrop-filter: blur(14px);
+}
+
+.termos-dialog {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 620px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: #0A0E1A;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 240, 255, 0.2);
+  animation: scaleUpDialog 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+.termos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.termos-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.termos-sub {
+  font-size: 0.78rem;
+  color: var(--primary-cyan);
+  font-weight: 600;
+}
+
+.termos-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.termos-close-btn:hover {
+  background: #FF0055;
+  border-color: #FF0055;
+}
+
+.termos-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.termos-alert-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 0, 85, 0.12);
+  border: 1px solid rgba(255, 0, 85, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  color: #FFFFFF;
+  font-size: 0.88rem;
+}
+
+.termos-alert-box strong {
+  color: #FF0055;
+}
+
+.termos-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.termos-list li {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.termos-list strong {
+  color: #FFFFFF;
+}
+
+.termos-footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 8, 19, 0.6);
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE DO AGENDAMENTO
+   ========================================================================== */
 @media (max-width: 960px) {
-  .booking-grid-wrapper {
+  .step-rooms-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 18px;
+  }
+  .booking-stepper-bar {
+    max-width: 100%;
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .stepper-label {
+    font-size: 0.74rem;
+  }
+  .stepper-step {
+    padding: 4px 8px;
+  }
+  .stepper-line {
+    max-width: 25px;
   }
 }
 
@@ -4411,8 +5309,27 @@ img, video {
   .form-inputs-row {
     grid-template-columns: 1fr;
   }
-  .booking-col {
-    padding: 20px 16px;
+  .summary-details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .specs-grid-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .booking-date-confirm-bar {
+    flex-direction: column;
+    text-align: center;
+  }
+  .date-confirm-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  .stepper-label {
+    display: none;
+  }
+  .stepper-step {
+    padding: 4px;
   }
 }
 

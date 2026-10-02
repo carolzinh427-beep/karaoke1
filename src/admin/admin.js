@@ -1956,6 +1956,10 @@ window.openModalNovaSala = () => {
   document.getElementById('modalSalaPrecoTotal').value = '800';
   document.getElementById('modalSalaDesc').value = '';
   document.getElementById('modalSalaAtiva').checked = true;
+  const fotoInput = document.getElementById('modalSalaFoto');
+  if (fotoInput) fotoInput.value = '';
+  const fotoInfo = document.getElementById('modalSalaFotoInfo');
+  if (fotoInfo) { fotoInfo.style.display = 'none'; fotoInfo.textContent = ''; }
   modal.classList.add('open');
 };
 
@@ -1971,6 +1975,18 @@ window.editarSala = (id) => {
   document.getElementById('modalSalaPrecoTotal').value = s.precoTotal || 800;
   document.getElementById('modalSalaDesc').value = s.descricao || '';
   document.getElementById('modalSalaAtiva').checked = s.ativo !== false;
+  const fotoInput = document.getElementById('modalSalaFoto');
+  if (fotoInput) fotoInput.value = '';
+  const fotoInfo = document.getElementById('modalSalaFotoInfo');
+  if (fotoInfo) {
+    if (s.imagem) {
+      fotoInfo.style.display = 'block';
+      fotoInfo.textContent = `Imagem atual configurada. Selecione outra foto para substituir.`;
+    } else {
+      fotoInfo.style.display = 'none';
+      fotoInfo.textContent = '';
+    }
+  }
   modal.classList.add('open');
 };
 
@@ -1987,6 +2003,8 @@ window.saveSala = async (e) => {
   const precoTotal = parseFloat(document.getElementById('modalSalaPrecoTotal').value) || 0;
   const descricao = document.getElementById('modalSalaDesc').value.trim();
   const ativo = document.getElementById('modalSalaAtiva').checked;
+  const fotoInput = document.getElementById('modalSalaFoto');
+  const fotoFile = fotoInput?.files?.[0];
 
   const btn = document.getElementById('btnSalvarSala');
   if (btn) btn.disabled = true;
@@ -2006,13 +2024,27 @@ window.saveSala = async (e) => {
       atualizadoEm: serverTimestamp()
     };
 
+    // Upload rápido e funcional da foto se selecionada
+    if (fotoFile) {
+      if (btn) btn.textContent = 'Otimizando e enviando foto...';
+      try {
+        const compressed = await compressImageIfNeeded(fotoFile, 1920, 0.82);
+        const cleanName = compressed.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const sRef = ref(storage, `salas/${salaId}-${Date.now()}-${cleanName}`);
+        const snap = await uploadBytes(sRef, compressed);
+        payload.imagem = await getDownloadURL(snap.ref);
+      } catch (fotoErr) {
+        console.warn('Aviso upload foto sala:', fotoErr);
+      }
+    }
+
     await setDoc(doc(db, 'salas', salaId), payload, { merge: true });
 
     const existingIdx = state.salas.findIndex(s => s.id === salaId);
     if (existingIdx >= 0) {
       state.salas[existingIdx] = { ...state.salas[existingIdx], ...payload };
     } else {
-      payload.imagem = '/assets/brand/hero-bg.webp';
+      if (!payload.imagem) payload.imagem = '/assets/brand/hero-bg.webp';
       payload.ordem = state.salas.length + 1;
       state.salas.push(payload);
     }
@@ -2024,7 +2056,10 @@ window.saveSala = async (e) => {
     console.error('Erro ao salvar sala:', err);
     showToast('Erro ao salvar sala: ' + err.message, 'error');
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Alterações';
+    }
   }
 };
 
@@ -2080,6 +2115,10 @@ window.openModalItemCardapio = () => {
   document.getElementById('modalItemPreco').value = '';
   document.getElementById('modalItemDesc').value = '';
   document.getElementById('modalItemAtivo').checked = true;
+  const fotoInput = document.getElementById('modalItemFoto');
+  if (fotoInput) fotoInput.value = '';
+  const fotoInfo = document.getElementById('modalItemFotoInfo');
+  if (fotoInfo) { fotoInfo.style.display = 'none'; fotoInfo.textContent = ''; }
 
   const selectCat = document.getElementById('modalItemCategoria');
   if (selectCat) {
@@ -2107,6 +2146,18 @@ window.editarItemCardapio = (id) => {
   document.getElementById('modalItemPreco').value = it.preco || '';
   document.getElementById('modalItemDesc').value = it.descricao || '';
   document.getElementById('modalItemAtivo').checked = it.ativo !== false;
+  const fotoInput = document.getElementById('modalItemFoto');
+  if (fotoInput) fotoInput.value = '';
+  const fotoInfo = document.getElementById('modalItemFotoInfo');
+  if (fotoInfo) {
+    if (it.imagem) {
+      fotoInfo.style.display = 'block';
+      fotoInfo.textContent = 'Imagem atual configurada. Selecione outra foto para substituir.';
+    } else {
+      fotoInfo.style.display = 'none';
+      fotoInfo.textContent = '';
+    }
+  }
 
   const selectCat = document.getElementById('modalItemCategoria');
   if (selectCat) {
@@ -2133,11 +2184,27 @@ window.saveCardapioItem = async (e) => {
   const categoriaNome = catObj ? catObj.nome : categoriaId;
   const descricao = document.getElementById('modalItemDesc').value.trim();
   const ativo = document.getElementById('modalItemAtivo').checked;
+  const fotoInput = document.getElementById('modalItemFoto');
+  const fotoFile = fotoInput?.files?.[0];
 
   const btn = document.getElementById('btnSalvarItemCardapio');
   if (btn) btn.disabled = true;
 
   try {
+    let fotoUrl = null;
+    if (fotoFile) {
+      if (btn) btn.textContent = 'Otimizando e enviando foto...';
+      try {
+        const compressed = await compressImageIfNeeded(fotoFile, 1280, 0.82);
+        const cleanName = compressed.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const sRef = ref(storage, `cardapio/item-${Date.now()}-${cleanName}`);
+        const snap = await uploadBytes(sRef, compressed);
+        fotoUrl = await getDownloadURL(snap.ref);
+      } catch (fotoErr) {
+        console.warn('Aviso upload foto cardápio:', fotoErr);
+      }
+    }
+
     if (id) {
       // Edição de item existente no Firestore
       const payload = {
@@ -2149,6 +2216,8 @@ window.saveCardapioItem = async (e) => {
         ativo,
         atualizadoEm: serverTimestamp()
       };
+      if (fotoUrl) payload.imagem = fotoUrl;
+
       await updateDoc(doc(db, 'cardapio', id), payload);
 
       const item = state.cardapio.find(it => it.id === id);
@@ -2165,7 +2234,7 @@ window.saveCardapioItem = async (e) => {
         descricao,
         ativo,
         ordem: state.cardapio.length + 1,
-        imagem: '',
+        imagem: fotoUrl || '',
         criadoEm: serverTimestamp()
       };
       const docRef = await addDoc(collection(db, 'cardapio'), payload);
@@ -2180,7 +2249,10 @@ window.saveCardapioItem = async (e) => {
     console.error('Erro ao salvar item do cardápio:', err);
     showToast('Erro ao salvar no Firestore: ' + err.message, 'error');
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Salvar no Banco de Dados';
+    }
   }
 };
 
@@ -2377,6 +2449,60 @@ window.setGaleriaFilter = (filtro) => {
   renderApp();
 };
 
+/**
+ * Otimiza e comprime imagens no navegador antes do upload para garantir envio ultrarrápido (<1s)
+ */
+async function compressImageIfNeeded(file, maxDimension = 1920, quality = 0.82) {
+  if (!file || !file.type.startsWith('image/')) return file;
+  if (file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
+  if (file.size < 350 * 1024) return file; // Já está leve o suficiente
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
+                type: 'image/webp',
+                lastModified: Date.now()
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/webp',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
 window.submitMediaUpload = async (e) => {
   e.preventDefault();
   const sala = document.getElementById('uploadMediaSala')?.value || 'geral';
@@ -2409,15 +2535,27 @@ window.submitMediaUpload = async (e) => {
   if (progressWrap) progressWrap.style.display = 'block';
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Enviando...';
+    submitBtn.textContent = 'Processando...';
   }
 
   try {
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    let fileToUpload = file;
+    if (tipoRadio === 'imagem') {
+      if (progressText) progressText.textContent = 'Otimizando imagem para envio rápido...';
+      try {
+        fileToUpload = await compressImageIfNeeded(file);
+      } catch (compErr) {
+        console.warn('Compressão falhou, enviando arquivo original:', compErr);
+      }
+    }
+
+    if (progressText) progressText.textContent = 'Iniciando upload...';
+
+    const cleanFileName = fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const storagePath = `galeria/${sala}/${Date.now()}-${cleanFileName}`;
     const storageRef = ref(storage, storagePath);
 
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
 
     uploadTask.on(
       'state_changed',

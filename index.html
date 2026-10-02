@@ -563,7 +563,7 @@
           <span class="booking-tag-badge">Agendamento de Salas</span>
           <h2 class="section-title">Reserve Sua Sala Privada</h2>
           <p class="section-subtitle">
-            Selecione a data no calendário para ver as salas disponíveis, preencha seus dados e garanta sua noite sem fila nem espera
+            Siga os 3 passos rápidos para garantir sua noite com exclusividade, acústica perfeita e sem fila nem espera
           </p>
 
           <!-- Botão Ciência das Responsabilidades em destaque -->
@@ -574,20 +574,41 @@
                 <line x1="12" y1="16" x2="12" y2="12"/>
                 <line x1="12" y1="8" x2="12.01" y2="8"/>
               </svg>
-              <span>Ver Ciência das Responsabilidades (Termos da Reserva)</span>
+              <span>Ciência das Responsabilidades (Termos da Reserva)</span>
             </button>
           </div>
         </div>
 
-        <div class="booking-grid-wrapper">
-          <!-- Coluna 1: Calendário Interativo -->
-          <div class="booking-col booking-calendar-col">
-            <div class="booking-step-header">
-              <span class="step-badge">1</span>
-              <h3 class="step-title">Escolha a Data no Calendário</h3>
-            </div>
+        <!-- ====================================================================
+             STEPPER PROGRESS BAR (1. DATA -> 2. SALA -> 3. SEUS DADOS)
+             ==================================================================== -->
+        <div class="booking-stepper-bar" id="bookingStepper">
+          <button type="button" class="stepper-step active" id="stepperStep1" onclick="goToBookingStep(1)">
+            <span class="stepper-num">1</span>
+            <span class="stepper-label">Data da Reserva</span>
+          </button>
+          <div class="stepper-line" id="stepperLine1"></div>
+          <button type="button" class="stepper-step" id="stepperStep2" onclick="goToBookingStep(2)">
+            <span class="stepper-num">2</span>
+            <span class="stepper-label">Escolha da Sala</span>
+          </button>
+          <div class="stepper-line" id="stepperLine2"></div>
+          <button type="button" class="stepper-step" id="stepperStep3" onclick="goToBookingStep(3)">
+            <span class="stepper-num">3</span>
+            <span class="stepper-label">Seus Dados</span>
+          </button>
+        </div>
 
-            <!-- Calendário Widget -->
+        <!-- ====================================================================
+             PASSO 1: MOSTRAR PRIMEIRO O CALENDÁRIO NO SITE
+             ==================================================================== -->
+        <div class="booking-step-panel active" id="bookingStep1">
+          <div class="booking-step-intro text-center">
+            <h3 class="step-panel-title">1. Escolha a Data no Calendário</h3>
+            <p class="step-panel-desc">Toque no dia desejado para iniciar sua reserva de sala privada</p>
+          </div>
+
+          <div class="calendar-card-single-wrap">
             <div class="calendar-card" id="bookingCalendar">
               <div class="calendar-top-bar">
                 <button type="button" class="cal-nav-btn" id="calPrevMonth" aria-label="Mês anterior">
@@ -612,101 +633,6 @@
               <div class="calendar-days-grid" id="calDaysGrid">
                 <!-- Preenchido dinamicamente via Script -->
               </div>
-              <script>
-                (function() {
-                  try {
-                    var grid = document.getElementById('calDaysGrid');
-                    var label = document.getElementById('calMonthLabel');
-                    if (!grid) return;
-                    var monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                    var weekDays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-                    var d = new Date();
-                    var yr = d.getFullYear();
-                    var mo = d.getMonth();
-                    if (label) label.textContent = monthNames[mo] + ' ' + yr;
-                    var firstDay = new Date(yr, mo, 1).getDay();
-                    var daysInMonth = new Date(yr, mo + 1, 0).getDate();
-                    grid.innerHTML = '';
-                    for (var b = 0; b < firstDay; b++) {
-                      var blank = document.createElement('div');
-                      blank.className = 'calendar-day-cell blank';
-                      grid.appendChild(blank);
-                    }
-                    var today = new Date();
-                    today.setHours(0,0,0,0);
-                    for (var day = 1; day <= daysInMonth; day++) {
-                      (function(dayNum) {
-                        var cellDate = new Date(yr, mo, dayNum);
-                        cellDate.setHours(0,0,0,0);
-                        var dow = cellDate.getDay();
-                        var btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'calendar-day-btn';
-                        btn.textContent = dayNum;
-                        var dateStr = yr + '-' + String(mo + 1).padStart(2, '0') + '-' + String(dayNum).padStart(2, '0');
-                        var formattedDisplay = weekDays[dow] + ', ' + String(dayNum).padStart(2, '0') + '/' + String(mo + 1).padStart(2, '0') + '/' + yr;
-                        if (cellDate < today) {
-                          btn.className += ' disabled past';
-                          btn.disabled = true;
-                        } else if (dow === 0 || dow === 1) {
-                          btn.className += ' closed';
-                          btn.title = 'Fechado ao público (Disponível sob consulta no WhatsApp)';
-                          btn.onclick = function() {
-                            alert('Domingos e segundas o Backstage é fechado ao público regular. Para eventos fechados exclusivos, consulte pelo WhatsApp!');
-                          };
-                        } else {
-                          btn.className += ' open';
-                          if (dow >= 2 && dow <= 4) {
-                            btn.className += ' promo';
-                            btn.title = 'Promoção: Ganhe R$ 200 em consumação!';
-                          }
-                          btn.onclick = function() {
-                            document.querySelectorAll('.calendar-day-btn.selected').forEach(function(b) { b.classList.remove('selected'); });
-                            btn.classList.add('selected');
-                            window.selectedBookingDate = {
-                              dateStr: dateStr,
-                              formattedDisplay: formattedDisplay,
-                              day: dayNum,
-                              isPromo: (dow >= 2 && dow <= 4)
-                            };
-                            var displayEl = document.getElementById('selectedDateDisplay');
-                            if (displayEl) {
-                              displayEl.textContent = '(' + formattedDisplay + ')';
-                              displayEl.style.color = '#00F0FF';
-                            }
-                            var summaryDate = document.getElementById('summaryDateVal');
-                            if (summaryDate) {
-                              summaryDate.textContent = formattedDisplay;
-                            }
-                          };
-                        }
-                        grid.appendChild(btn);
-                      })(day);
-                    }
-                  } catch(e) { console.error('Erro ao renderizar calendário inicial:', e); }
-                })();
-
-                window.selectBookingRoom = function(element) {
-                  document.querySelectorAll('.room-pick-card').forEach(function(c) { c.classList.remove('active'); });
-                  element.classList.add('active');
-                  var roomName = element.getAttribute('data-room');
-                  window.selectedBookingRoom = roomName;
-                  var summaryRoom = document.getElementById('summaryRoomName');
-                  if (summaryRoom) {
-                    summaryRoom.textContent = roomName;
-                    if (roomName === 'Sala Red') summaryRoom.style.color = 'var(--room-red)';
-                    else if (roomName === 'Sala Green') summaryRoom.style.color = 'var(--room-green)';
-                    else if (roomName === 'Sala Blue') summaryRoom.style.color = 'var(--room-blue)';
-                  }
-                  var dataStep = document.getElementById('bookingDataStep');
-                  if (dataStep) {
-                    dataStep.style.display = 'block';
-                    setTimeout(function() {
-                      dataStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }, 100);
-                  }
-                };
-              </script>
 
               <!-- Legenda do Calendário -->
               <div class="calendar-legend-bar">
@@ -715,159 +641,256 @@
                 <div class="legend-pill"><span class="legend-circle closed-circle"></span> Dom e Seg (Fechado)</div>
               </div>
             </div>
-          </div>
 
-          <!-- Coluna 2: Escolha de Sala e Formulário -->
-          <div class="booking-col booking-form-col">
-            <!-- Passo 2: Salas Disponíveis (Valores e Descrições) -->
-            <div class="booking-step-header">
-              <span class="step-badge">2</span>
-              <h3 class="step-title">Salas Disponíveis <span id="selectedDateDisplay" class="selected-date-inline">(Escolha uma data no calendário ao lado)</span></h3>
-            </div>
-
-            <div class="booking-rooms-list" id="roomsSelector">
-              <!-- SALA RED -->
-              <div class="room-pick-card room-pick-red" data-room="Sala Red" data-price="800" data-signal="400" data-capacity="30" onclick="selectBookingRoom(this)">
-                <div class="room-pick-info">
-                  <div class="room-pick-tags">
-                    <span class="room-num-badge red">Sala 1</span>
-                    <span class="room-cap-badge">Até 30 pessoas</span>
-                  </div>
-                  <h4 class="room-pick-name">Sala Red</h4>
-                  <p class="room-pick-desc">Ambiente intimista e vibrante com iluminação vermelha cênica</p>
-                  <div class="room-pick-prices">
-                    <span class="total-val">R$ 800,00</span>
-                    <span class="signal-val">Sinal 50%: R$ 400,00 • No dia: R$ 400,00</span>
-                  </div>
-                  <div class="room-pick-perk">
-                    ✓ Menores de idade são bem-vindos nas salas
-                  </div>
+            <!-- Banner que surge assim que a pessoa clica na data -->
+            <div class="booking-date-confirm-bar" id="dateConfirmBar" style="display: none;">
+              <div class="date-confirm-info">
+                <div class="date-confirm-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
                 </div>
-                <div class="room-pick-check">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                <div>
+                  <div class="date-confirm-title" id="selectedDateDisplayTitle">Data Selecionada:</div>
+                  <div class="date-confirm-val" id="selectedDateDisplayText">Terça-feira, 06/10/2026</div>
+                  <div class="date-confirm-promo" id="selectedDatePromoNotice" style="display: none;">
+                    🎁 <strong>Promoção ativa:</strong> Ganhe R$ 200 em consumação nesta data!
+                  </div>
                 </div>
               </div>
-
-              <!-- SALA GREEN -->
-              <div class="room-pick-card room-pick-green" data-room="Sala Green" data-price="900" data-signal="450" data-capacity="40" onclick="selectBookingRoom(this)">
-                <div class="room-pick-info">
-                  <div class="room-pick-tags">
-                    <span class="room-num-badge green">Sala 2</span>
-                    <span class="room-cap-badge">Até 40 pessoas</span>
-                  </div>
-                  <h4 class="room-pick-name">Sala Green</h4>
-                  <p class="room-pick-desc">Recomendado entre 30 e 35 pessoas para ficar mais confortável</p>
-                  <div class="room-pick-prices">
-                    <span class="total-val">R$ 900,00</span>
-                    <span class="signal-val">Sinal 50%: R$ 450,00 • No dia: R$ 450,00</span>
-                  </div>
-                  <div class="room-pick-perk">
-                    ✓ Menores de idade são bem-vindos nas salas
-                  </div>
-                </div>
-                <div class="room-pick-check">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-              </div>
-
-              <!-- SALA BLUE -->
-              <div class="room-pick-card room-pick-blue" data-room="Sala Blue" data-price="1000" data-signal="500" data-capacity="50" onclick="selectBookingRoom(this)">
-                <div class="room-pick-info">
-                  <div class="room-pick-tags">
-                    <span class="room-num-badge blue">Sala 3</span>
-                    <span class="room-cap-badge">Até 50 pessoas</span>
-                  </div>
-                  <h4 class="room-pick-name">Sala Blue</h4>
-                  <p class="room-pick-desc">Nossa maior sala vip com capacidade estendida e sistema premium</p>
-                  <div class="room-pick-prices">
-                    <span class="total-val">R$ 1.000,00</span>
-                    <span class="signal-val">Sinal 50%: R$ 500,00 • No dia: R$ 500,00</span>
-                  </div>
-                  <div class="room-pick-perk">
-                    ✓ Menores de idade são bem-vindos nas salas
-                  </div>
-                </div>
-                <div class="room-pick-check">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-              </div>
-            </div>
-
-            <div style="text-align: center; margin-top: 14px; margin-bottom: 18px;">
-              <a href="/salas.html" class="btn btn-outline btn-xs" id="verGaleriaSalasBtn" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; padding: 6px 16px; color: var(--primary-cyan); border-color: rgba(0, 240, 255, 0.3);">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="2" width="20" height="20" rx="4" ry="4"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <polyline points="21 15 16 10 5 21"/>
-                </svg>
-                <span>Ver Fotos e Vídeos das Salas (Galeria) →</span>
-              </a>
-            </div>
-
-            <!-- Passo 3: Dados do Cliente (Oculto inicialmente, só aparece após escolher uma sala) -->
-            <div id="bookingDataStep" style="display: none; margin-top: 24px;">
-              <div class="booking-step-header">
-                <span class="step-badge">3</span>
-                <h3 class="step-title">Dados do Agendamento</h3>
-              </div>
-
-              <form id="bookingClientForm" class="booking-client-form" onsubmit="handleBookingSubmit(event)">
-                <div class="form-inputs-row">
-                  <div class="form-field-group">
-                    <label for="bookingNome" class="field-label">Nome e Sobrenome *</label>
-                    <input type="text" id="bookingNome" class="field-input" placeholder="Ex: Lucas Mendes" required>
-                  </div>
-
-                  <div class="form-field-group">
-                    <label for="bookingWhatsapp" class="field-label">WhatsApp com DDD *</label>
-                    <input type="tel" id="bookingWhatsapp" class="field-input" placeholder="(61) 98765-4321" required>
-                  </div>
-                </div>
-
-                <div class="form-inputs-row">
-                  <div class="form-field-group">
-                    <label for="bookingPessoas" class="field-label">Quantidade de Pessoas *</label>
-                    <input type="number" id="bookingPessoas" class="field-input" min="1" max="60" placeholder="Ex: 25 convidados" required>
-                  </div>
-
-                  <div class="form-field-group">
-                    <label class="field-label">Resumo da Reserva</label>
-                    <div class="summary-pill-display" id="bookingSummaryPill">
-                      <strong id="summaryRoomName" style="color: var(--room-red);">Sala Selecionada</strong> • <span id="summaryDateVal">Data a definir</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Termos de Responsabilidade Obrigatório -->
-                <div class="booking-terms-acknowledgment">
-                  <label class="terms-label-check">
-                    <input type="checkbox" id="bookingTermosCheck" required checked>
-                    <span class="terms-check-text">
-                      Li e concordo com os 
-                      <button type="button" class="terms-inline-link" onclick="openTermosModal(event)">
-                        Termos de Responsabilidade
-                      </button>
-                      (incluindo a <strong>não devolução do valor de 50% pago na reserva</strong> em caso de desistência).
-                    </span>
-                  </label>
-                </div>
-
-                <!-- Botão Submit -->
-                <div class="booking-action-row">
-                  <button type="submit" class="btn btn-primary btn-lg btn-full" id="btnConfirmarAgendamento">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/>
-                    </svg>
-                    <span>Confirmar Agendamento no WhatsApp</span>
-                  </button>
-                </div>
-
-                <!-- Mensagem de Status -->
-                <div id="bookingStatusAlert" class="booking-status-alert" style="display: none;"></div>
-              </form>
+              <button type="button" class="btn btn-primary btn-md" onclick="goToBookingStep(2)">
+                <span>Avançar para Escolher a Sala →</span>
+              </button>
             </div>
           </div>
         </div>
+
+        <!-- ====================================================================
+             PASSO 2: TELINHA DE QUAL SALA QUER, QUANTAS PESSOAS CABE E VALOR
+             ==================================================================== -->
+        <div class="booking-step-panel" id="bookingStep2" style="display: none;">
+          <div class="step-panel-top-nav">
+            <button type="button" class="btn-step-back" onclick="goToBookingStep(1)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              <span>Alterar Data (<span id="step2DateSummary">Definida</span>)</span>
+            </button>
+            <div class="step-panel-current-tag">Passo 2 de 3</div>
+          </div>
+
+          <div class="booking-step-intro text-center">
+            <h3 class="step-panel-title">Qual Sala Você Quer Reservar?</h3>
+            <p class="step-panel-desc">
+              Toque na sala desejada para ver a mensagem e confirmar sua escolha:
+            </p>
+          </div>
+
+          <!-- Cards das 3 Salas (Red, Green, Blue) -->
+          <div class="step-rooms-grid" id="stepRoomsGrid">
+            <!-- SALA RED -->
+            <div class="step-room-card room-theme-red" onclick="openRoomPersonalityModal('Sala Red')">
+              <div class="room-card-glow-bg"></div>
+              <div class="room-card-head">
+                <span class="room-card-tag red">Sala 1</span>
+                <span class="room-card-capacity-pill">Até 30 pessoas</span>
+              </div>
+              <h4 class="room-card-title">Sala Red</h4>
+              <p class="room-card-desc">Ambiente intimista e vibrante com iluminação vermelha cênica e acústica de alta performance.</p>
+              
+              <div class="room-card-pricing-box">
+                <div class="room-card-total-price">R$ 800,00</div>
+                <div class="room-card-signal-split">
+                  <span>Sinal (50%): <strong>R$ 400,00</strong></span>
+                  <span>No dia: <strong>R$ 400,00</strong></span>
+                </div>
+              </div>
+
+              <div class="room-card-perks-list">
+                <div>✓ Menores de idade são bem-vindos</div>
+                <div>✓ Som profissional e 2 microfones sem fio</div>
+              </div>
+
+              <button type="button" class="btn-room-select-trigger red">
+                <span>Ver Sala Red &amp; Reservar 💬</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <!-- SALA GREEN -->
+            <div class="step-room-card room-theme-green" onclick="openRoomPersonalityModal('Sala Green')">
+              <div class="room-card-glow-bg"></div>
+              <div class="room-card-head">
+                <span class="room-card-tag green">Sala 2</span>
+                <span class="room-card-capacity-pill">Até 40 pessoas</span>
+              </div>
+              <h4 class="room-card-title">Sala Green</h4>
+              <p class="room-card-desc">Recomendado entre 30 e 35 pessoas para máximo conforto com luzes esmeralda e sofás amplos.</p>
+              
+              <div class="room-card-pricing-box">
+                <div class="room-card-total-price">R$ 900,00</div>
+                <div class="room-card-signal-split">
+                  <span>Sinal (50%): <strong>R$ 450,00</strong></span>
+                  <span>No dia: <strong>R$ 450,00</strong></span>
+                </div>
+              </div>
+
+              <div class="room-card-perks-list">
+                <div>✓ Menores de idade são bem-vindos</div>
+                <div>✓ Amplo espaço para cantar e dançar</div>
+              </div>
+
+              <button type="button" class="btn-room-select-trigger green">
+                <span>Ver Sala Green &amp; Reservar 💬</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <!-- SALA BLUE -->
+            <div class="step-room-card room-theme-blue" onclick="openRoomPersonalityModal('Sala Blue')">
+              <div class="room-card-glow-bg"></div>
+              <div class="room-card-head">
+                <span class="room-card-tag blue">Sala 3 • VIP</span>
+                <span class="room-card-capacity-pill">Até 50 pessoas</span>
+              </div>
+              <h4 class="room-card-title">Sala Blue</h4>
+              <p class="room-card-desc">Nossa maior sala vip com capacidade estendida, iluminação neon azul e sonorização premium.</p>
+              
+              <div class="room-card-pricing-box">
+                <div class="room-card-total-price">R$ 1.000,00</div>
+                <div class="room-card-signal-split">
+                  <span>Sinal (50%): <strong>R$ 500,00</strong></span>
+                  <span>No dia: <strong>R$ 500,00</strong></span>
+                </div>
+              </div>
+
+              <div class="room-card-perks-list">
+                <div>✓ Menores de idade são bem-vindos</div>
+                <div>✓ Espaço VIP para grandes celebrações</div>
+              </div>
+
+              <button type="button" class="btn-room-select-trigger blue">
+                <span>Ver Sala Blue &amp; Reservar 💬</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="/salas.html" class="btn btn-outline btn-xs" style="display: inline-flex; align-items: center; gap: 8px; color: var(--primary-cyan); border-color: rgba(0, 240, 255, 0.35);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="20" rx="4" ry="4"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <span>Ver Fotos e Vídeos das Salas na Galeria Completa →</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ====================================================================
+             PASSO 3: TELINHA DOS DADOS E BOTÃO RESERVAR MINHA SALA
+             ==================================================================== -->
+        <div class="booking-step-panel" id="bookingStep3" style="display: none;">
+          <div class="step-panel-top-nav">
+            <button type="button" class="btn-step-back" onclick="goToBookingStep(2)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              <span>Escolher Outra Sala</span>
+            </button>
+            <div class="step-panel-current-tag">Passo 3 de 3</div>
+          </div>
+
+          <div class="booking-step-intro text-center">
+            <h3 class="step-panel-title">Quase lá! Preencha seus Dados</h3>
+            <p class="step-panel-desc">Confirme os detalhes da sua reserva e envie direto para o WhatsApp oficial</p>
+          </div>
+
+          <div class="booking-data-form-wrap">
+            <!-- Resumo das Escolhas -->
+            <div class="booking-confirmed-summary-box">
+              <div class="summary-badge-title">Resumo do seu Agendamento</div>
+              <div class="summary-details-grid">
+                <div class="summary-item">
+                  <span class="summary-item-label">Data da Reserva:</span>
+                  <div class="summary-item-val" id="summaryDateVal">Data a definir</div>
+                  <button type="button" class="summary-change-link" onclick="goToBookingStep(1)">Mudar data</button>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-item-label">Sala Selecionada:</span>
+                  <div class="summary-item-val" id="summaryRoomName" style="color: var(--primary-cyan);">Sala Selecionada</div>
+                  <button type="button" class="summary-change-link" onclick="goToBookingStep(2)">Mudar sala</button>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-item-label">Capacidade Máxima:</span>
+                  <div class="summary-item-val" id="summaryCapVal">Até 30 pessoas</div>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-item-label">Investimento Total:</span>
+                  <div class="summary-item-val" id="summaryTotalVal">R$ 800,00</div>
+                  <div class="summary-sub-val" id="summarySignalVal">Sinal de 50%: R$ 400,00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulário com Nome, Sobrenome, WhatsApp, Quantidade de Pessoas -->
+            <form id="bookingClientForm" class="booking-client-form" onsubmit="handleBookingSubmit(event)">
+              <div class="form-inputs-row">
+                <div class="form-field-group">
+                  <label for="bookingNome" class="field-label">Nome e Sobrenome *</label>
+                  <input type="text" id="bookingNome" class="field-input" placeholder="Ex: Maria Clara Santos" required>
+                </div>
+
+                <div class="form-field-group">
+                  <label for="bookingWhatsapp" class="field-label">WhatsApp com DDD *</label>
+                  <input type="tel" id="bookingWhatsapp" class="field-input" placeholder="(61) 98765-4321" required>
+                </div>
+              </div>
+
+              <div class="form-inputs-row">
+                <div class="form-field-group">
+                  <label for="bookingPessoas" class="field-label">Quantidade de Convidados *</label>
+                  <input type="number" id="bookingPessoas" class="field-input" min="1" max="60" placeholder="Ex: 25 convidados" required>
+                </div>
+
+                <div class="form-field-group">
+                  <label class="field-label">Horário de Funcionamento</label>
+                  <div class="field-input readonly-box" style="display: flex; align-items: center; color: var(--text-muted);">
+                    Terça a Sábado, das 18h às 02h
+                  </div>
+                </div>
+              </div>
+
+              <!-- Termos de Responsabilidade Obrigatório -->
+              <div class="booking-terms-acknowledgment">
+                <label class="terms-label-check">
+                  <input type="checkbox" id="bookingTermosCheck" required checked>
+                  <span class="terms-check-text">
+                    Eu li os 
+                    <button type="button" class="terms-inline-link" onclick="openTermosModal(event)">
+                      termos de responsabilidade
+                    </button>
+                    e concordo com a <strong>não devolução do valor de 50% pago na reserva</strong> em caso de desistência.
+                  </span>
+                </label>
+              </div>
+
+              <!-- Botão Reservar Minha Sala -->
+              <div class="booking-action-row" style="margin-top: 10px;">
+                <button type="submit" class="btn btn-primary btn-lg btn-full" id="btnConfirmarAgendamento" style="font-size: 1.1rem; padding: 18px 24px;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/>
+                  </svg>
+                  <span>Reservar Minha Sala</span>
+                </button>
+              </div>
+
+              <!-- Mensagem de Status -->
+              <div id="bookingStatusAlert" class="booking-status-alert" style="display: none; margin-top: 14px;"></div>
+            </form>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -1224,6 +1247,131 @@
     <div class="lightbox-content">
       <button class="lightbox-close" id="lightboxClose" aria-label="Fechar visualizador">&times;</button>
       <img src="" alt="Página ampliada do Cardápio Backstage" class="lightbox-img" id="lightboxImg">
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       POP-UP PERSONALIDADE DA SALA (FALA DIRETAMENTE COM O CLIENTE)
+       ======================================================================== -->
+  <div class="room-personality-modal" id="roomPersonalityModal" role="dialog" aria-modal="true" style="display: none;">
+    <div class="room-personality-backdrop" onclick="closeRoomPersonalityModal()"></div>
+    <div class="room-personality-dialog" id="roomPersonalityDialog">
+      <!-- Glow ambient light -->
+      <div class="room-personality-glow" id="roomPersonalityGlow"></div>
+      
+      <button type="button" class="personality-modal-close" onclick="closeRoomPersonalityModal()" aria-label="Fechar pop-up">&times;</button>
+      
+      <div class="personality-modal-content">
+        <!-- Room Tag Badge -->
+        <div class="personality-room-badge" id="popupRoomBadge">
+          <span class="personality-badge-dot"></span>
+          <span id="popupRoomBadgeText">Sala Blue • Até 50 pessoas</span>
+        </div>
+
+        <!-- Speech Bubble with Room's Quote -->
+        <div class="personality-speech-bubble" id="popupSpeechBubble">
+          <div class="bubble-quote-mark bubble-quote-open">“</div>
+          <p class="bubble-phrase" id="popupRoomPhrase">
+            Você quer me locar? Estou pronta para te proporcionar momentos inesquecíveis!
+          </p>
+          <div class="bubble-quote-mark bubble-quote-close">”</div>
+          <div class="speech-bubble-tail"></div>
+        </div>
+
+        <!-- Room Specs Quick Card -->
+        <div class="personality-specs-box">
+          <div class="specs-grid-row">
+            <div class="spec-pill">
+              <span class="spec-label">Capacidade:</span>
+              <strong class="spec-value" id="popupRoomCap">Até 50 pessoas</strong>
+            </div>
+            <div class="spec-pill">
+              <span class="spec-label">Valor Total:</span>
+              <strong class="spec-value highlight" id="popupRoomTotal">R$ 1.000,00</strong>
+            </div>
+            <div class="spec-pill">
+              <span class="spec-label">Sinal para Reserva (50%):</span>
+              <strong class="spec-value" id="popupRoomSignal">R$ 500,00</strong>
+            </div>
+          </div>
+          <div class="spec-terms-notice">
+            * 50% restante pago na recepção no dia. Menores de idade são bem-vindos nas salas privadas.
+          </div>
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="personality-actions-row">
+          <button type="button" class="btn btn-primary btn-lg btn-full" id="btnConfirmRoomChoice" onclick="confirmRoomFromPopup()">
+            <span id="btnConfirmRoomText">Sim, Quero Esta Sala! Continuar →</span>
+          </button>
+          <button type="button" class="btn btn-outline btn-sm btn-full" onclick="closeRoomPersonalityModal()" style="margin-top: 10px; border-color: rgba(255,255,255,0.2); color: var(--text-secondary);">
+            ← Ver Outras Salas
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL DE TERMOS DE RESPONSABILIDADE & CIÊNCIA DA RESERVA
+       ======================================================================== -->
+  <div class="termos-responsabilidade-modal" id="termosResponsabilidadeModal" role="dialog" aria-modal="true" style="display: none;">
+    <div class="termos-backdrop" onclick="closeTermosModal(event)"></div>
+    <div class="termos-dialog">
+      <div class="termos-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--primary-cyan); display: flex; align-items: center; justify-content: center; color: var(--primary-cyan);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="termos-title">Termos de Responsabilidade da Reserva</h3>
+            <span class="termos-sub">Backstage Karaokê Brasília • Salas Privadas</span>
+          </div>
+        </div>
+        <button type="button" class="termos-close-btn" onclick="closeTermosModal(event)" aria-label="Fechar termos">&times;</button>
+      </div>
+
+      <div class="termos-body">
+        <div class="termos-alert-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FF0055; flex-shrink: 0;">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div>
+            <strong>CLÁUSULA IMPORTANTE DE SINAL E NÃO DEVOLUÇÃO:</strong><br>
+            A reserva da sala privada é formalizada mediante o pagamento prévio de <strong>50% do valor total</strong> a título de sinal e garantia de exclusividade. Em virtude do bloqueio da data na nossa agenda oficial e da impossibilidade de atender outros grupos no mesmo espaço, <strong>o valor do sinal de 50% NÃO É DEVOLVIDO em caso de cancelamento, desistência ou não comparecimento</strong>.
+          </div>
+        </div>
+
+        <ul class="termos-list">
+          <li>
+            <strong>1. Pagamento do Saldo Restante:</strong> Os 50% restantes do valor da sala deverão ser quitados na recepção do Backstage Karaokê no momento da entrada dos convidados.
+          </li>
+          <li>
+            <strong>2. Capacidade e Limite de Pessoas:</strong> Cada sala possui capacidade máxima estipulada (Sala Red: até 30 pessoas; Sala Green: até 40 pessoas; Sala Blue: até 50 pessoas). Não é permitido ultrapassar a capacidade por motivos de segurança e conforto.
+          </li>
+          <li>
+            <strong>3. Menores de Idade nas Salas:</strong> Menores de 18 anos são bem-vindos nas salas privadas sob a responsabilidade e acompanhamento de seus pais ou responsáveis legais.
+          </li>
+          <li>
+            <strong>4. Cuidados com Equipamentos:</strong> A sala conta com TV de alta definição, sistema de som profissional, microfones sem fio e tablet de controle de músicas. Danos aos equipamentos por mau uso serão de responsabilidade do titular da reserva.
+          </li>
+          <li>
+            <strong>5. Promoção de Terça a Quinta:</strong> O bônus de R$ 200 em consumação é válido exclusivamente para locações realizadas nas noites de terça, quarta ou quinta-feira.
+          </li>
+        </ul>
+      </div>
+
+      <div class="termos-footer">
+        <button type="button" class="btn btn-primary btn-md btn-full" onclick="closeTermosModal(event)">
+          <span>Entendi e Concordo com os Termos</span>
+        </button>
+      </div>
     </div>
   </div>
 

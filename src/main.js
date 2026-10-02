@@ -397,9 +397,11 @@ function handleInitialHashNavigation() {
   }
 }
 
-// 9. Interactive Booking System (Calendário e Agendamento das Salas)
+// 9. Interactive Booking System (Fluxo em 3 Passos & Pop-up por Sala)
 let selectedBookingDate = null;
 let selectedBookingRoom = null;
+let pendingRoomSelection = null;
+let currentBookingStep = 1;
 let currentCalYear = new Date().getFullYear();
 let currentCalMonth = new Date().getMonth();
 
@@ -412,6 +414,55 @@ const WEEKDAY_NAMES = [
   'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
   'Quinta-feira', 'Sexta-feira', 'Sábado'
 ];
+
+// Dados e Personalidades Exclusivas das Salas
+const ROOM_DATA = {
+  'Sala Blue': {
+    name: 'Sala Blue',
+    slug: 'sala-blue',
+    num: 'Sala 3 • VIP',
+    tag: 'blue',
+    themeColor: '#00A6FF',
+    glowColor: 'rgba(0, 166, 255, 0.45)',
+    phrase: 'Você quer me locar? Estou pronta para te proporcionar momentos inesquecíveis!',
+    capacidade: 'Até 50 pessoas',
+    capacidadeNum: 50,
+    precoTotal: 'R$ 1.000,00',
+    precoTotalNum: 1000,
+    sinal: 'R$ 500,00',
+    sinalNum: 500
+  },
+  'Sala Red': {
+    name: 'Sala Red',
+    slug: 'sala-red',
+    num: 'Sala 1',
+    tag: 'red',
+    themeColor: '#FF3366',
+    glowColor: 'rgba(255, 51, 102, 0.45)',
+    phrase: 'Que bom que me escolheu, eu vou te dar momentos que nenhum outro lugar te daria!',
+    capacidade: 'Até 30 pessoas',
+    capacidadeNum: 30,
+    precoTotal: 'R$ 800,00',
+    precoTotalNum: 800,
+    sinal: 'R$ 400,00',
+    sinalNum: 400
+  },
+  'Sala Green': {
+    name: 'Sala Green',
+    slug: 'sala-green',
+    num: 'Sala 2',
+    tag: 'green',
+    themeColor: '#00E699',
+    glowColor: 'rgba(0, 230, 153, 0.45)',
+    phrase: 'Você fez a escolha perfeita! O meu palco é seu para soltar a voz e viver uma noite épica!',
+    capacidade: 'Até 40 pessoas',
+    capacidadeNum: 40,
+    precoTotal: 'R$ 900,00',
+    precoTotalNum: 900,
+    sinal: 'R$ 450,00',
+    sinalNum: 450
+  }
+};
 
 function initBookingSystem() {
   const calContainer = document.getElementById('bookingCalendar');
@@ -445,7 +496,7 @@ function initBookingSystem() {
     });
   }
 
-  // Format WhatsApp input
+  // Máscara e formatação de telefone celular (WhatsApp)
   const phoneInput = document.getElementById('bookingWhatsapp');
   if (phoneInput) {
     phoneInput.addEventListener('input', (e) => {
@@ -488,10 +539,10 @@ function renderCalendar() {
   for (let d = 1; d <= totalDays; d++) {
     const cellDate = new Date(currentCalYear, currentCalMonth, d);
     cellDate.setHours(0, 0, 0, 0);
-    const dayOfWeek = cellDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const dayOfWeek = cellDate.getDay(); // 0 = Dom, 1 = Seg, ..., 6 = Sab
     const isPast = cellDate < today;
-    const isClosed = (dayOfWeek === 0 || dayOfWeek === 1); // Sunday and Monday
-    const isPromo = (dayOfWeek >= 2 && dayOfWeek <= 4); // Tuesday to Thursday: Promo R$ 200 consumação
+    const isClosed = (dayOfWeek === 0 || dayOfWeek === 1); // Domingo e Segunda fechado regular
+    const isPromo = (dayOfWeek >= 2 && dayOfWeek <= 4); // Terça a Quinta: Ganhe R$ 200 em consumação
 
     const dayBtn = document.createElement('button');
     dayBtn.type = 'button';
@@ -538,16 +589,27 @@ function renderCalendar() {
           isPromo
         };
 
-        const displayEl = document.getElementById('selectedDateDisplay');
-        if (displayEl) {
-          displayEl.textContent = `(${formattedDisplay})`;
-          displayEl.style.color = '#00F0FF';
+        // Atualiza a barra de confirmação que aparece imediatamente abaixo do calendário
+        const confirmBar = document.getElementById('dateConfirmBar');
+        const displayText = document.getElementById('selectedDateDisplayText');
+        const promoNotice = document.getElementById('selectedDatePromoNotice');
+
+        if (confirmBar) {
+          confirmBar.style.display = 'flex';
+        }
+        if (displayText) {
+          displayText.textContent = formattedDisplay;
+        }
+        if (promoNotice) {
+          promoNotice.style.display = isPromo ? 'block' : 'none';
         }
 
+        // Atualiza resumos nos passos 2 e 3
+        const step2Date = document.getElementById('step2DateSummary');
+        if (step2Date) step2Date.textContent = formattedDisplay;
+
         const summaryDate = document.getElementById('summaryDateVal');
-        if (summaryDate) {
-          summaryDate.textContent = formattedDisplay;
-        }
+        if (summaryDate) summaryDate.textContent = formattedDisplay;
       });
     }
 
@@ -555,37 +617,152 @@ function renderCalendar() {
   }
 }
 
-// Global Room Selection Handler - Revela os dados apenas após escolher a sala
-window.selectBookingRoom = (element) => {
-  document.querySelectorAll('.room-pick-card').forEach(c => c.classList.remove('active'));
-  element.classList.add('active');
-
-  const roomName = element.getAttribute('data-room');
-  selectedBookingRoom = roomName;
-
-  const summaryRoom = document.getElementById('summaryRoomName');
-  if (summaryRoom) {
-    summaryRoom.textContent = roomName;
-    if (roomName === 'Sala Red') {
-      summaryRoom.style.color = 'var(--room-red)';
-    } else if (roomName === 'Sala Green') {
-      summaryRoom.style.color = 'var(--room-green)';
-    } else if (roomName === 'Sala Blue') {
-      summaryRoom.style.color = 'var(--room-blue)';
+// Navegação entre os 3 Passos ("Apareça uma coisa de cada vez")
+window.goToBookingStep = (step) => {
+  if (step === 2) {
+    if (!selectedBookingDate) {
+      alert('Por favor, selecione primeiro uma data disponível no calendário!');
+      const cal = document.getElementById('bookingCalendar');
+      if (cal) cal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
     }
   }
 
-  // Revela o Passo 3 (Dados do Agendamento) com transição suave
-  const dataStep = document.getElementById('bookingDataStep');
-  if (dataStep) {
-    dataStep.style.display = 'block';
-    setTimeout(() => {
-      dataStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 120);
+  if (step === 3) {
+    if (!selectedBookingDate) {
+      alert('Por favor, selecione uma data no calendário antes de continuar!');
+      window.goToBookingStep(1);
+      return;
+    }
+    if (!selectedBookingRoom) {
+      alert('Por favor, escolha uma sala privada antes de preencher seus dados!');
+      window.goToBookingStep(2);
+      return;
+    }
+  }
+
+  currentBookingStep = step;
+
+  // Alterna painéis
+  const panel1 = document.getElementById('bookingStep1');
+  const panel2 = document.getElementById('bookingStep2');
+  const panel3 = document.getElementById('bookingStep3');
+
+  if (panel1) panel1.style.display = (step === 1 ? 'block' : 'none');
+  if (panel2) panel2.style.display = (step === 2 ? 'block' : 'none');
+  if (panel3) panel3.style.display = (step === 3 ? 'block' : 'none');
+
+  // Atualiza Stepper visual
+  const s1 = document.getElementById('stepperStep1');
+  const s2 = document.getElementById('stepperStep2');
+  const s3 = document.getElementById('stepperStep3');
+  const line1 = document.getElementById('stepperLine1');
+  const line2 = document.getElementById('stepperLine2');
+
+  [s1, s2, s3].forEach((s, idx) => {
+    if (!s) return;
+    const stepNum = idx + 1;
+    s.classList.remove('active', 'completed');
+    if (stepNum === step) {
+      s.classList.add('active');
+    } else if (stepNum < step) {
+      s.classList.add('completed');
+    }
+  });
+
+  if (line1) {
+    if (step >= 2) line1.classList.add('active');
+    else line1.classList.remove('active');
+  }
+  if (line2) {
+    if (step >= 3) line2.classList.add('active');
+    else line2.classList.remove('active');
+  }
+
+  // Scroll suave para a seção de agendamento
+  const agendamentoSec = document.getElementById('agendamento');
+  if (agendamentoSec) {
+    agendamentoSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 };
 
-// Global Form Submit Handler
+// Pop-up Exclusivo por Sala ("Você quer me locar?", etc)
+window.openRoomPersonalityModal = (roomName) => {
+  const room = ROOM_DATA[roomName];
+  if (!room) return;
+
+  pendingRoomSelection = roomName;
+
+  const modal = document.getElementById('roomPersonalityModal');
+  const dialog = document.getElementById('roomPersonalityDialog');
+  const glow = document.getElementById('roomPersonalityGlow');
+  const badgeText = document.getElementById('popupRoomBadgeText');
+  const phraseEl = document.getElementById('popupRoomPhrase');
+  const capEl = document.getElementById('popupRoomCap');
+  const totalEl = document.getElementById('popupRoomTotal');
+  const signalEl = document.getElementById('popupRoomSignal');
+  const confirmBtnText = document.getElementById('btnConfirmRoomText');
+
+  if (badgeText) badgeText.textContent = `${room.name} • ${room.capacidade}`;
+  if (phraseEl) phraseEl.textContent = room.phrase;
+  if (capEl) capEl.textContent = room.capacidade;
+  if (totalEl) totalEl.textContent = room.precoTotal;
+  if (signalEl) signalEl.textContent = room.sinal;
+  if (confirmBtnText) confirmBtnText.textContent = `Sim, Quero a ${room.name}! Continuar →`;
+
+  // Estilização neon com a cor da sala
+  if (dialog) {
+    dialog.style.borderColor = room.themeColor;
+    dialog.style.boxShadow = `0 20px 60px rgba(0, 0, 0, 0.8), 0 0 35px ${room.glowColor}`;
+  }
+  if (glow) {
+    glow.style.background = `radial-gradient(ellipse at center, ${room.glowColor} 0%, transparent 70%)`;
+  }
+
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+};
+
+window.closeRoomPersonalityModal = () => {
+  const modal = document.getElementById('roomPersonalityModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+};
+
+window.confirmRoomFromPopup = () => {
+  if (pendingRoomSelection) {
+    selectedBookingRoom = pendingRoomSelection;
+    const room = ROOM_DATA[selectedBookingRoom];
+
+    // Atualiza resumo no Passo 3
+    const summaryRoom = document.getElementById('summaryRoomName');
+    const summaryCap = document.getElementById('summaryCapVal');
+    const summaryTotal = document.getElementById('summaryTotalVal');
+    const summarySignal = document.getElementById('summarySignalVal');
+    const pessoasInput = document.getElementById('bookingPessoas');
+
+    if (summaryRoom && room) {
+      summaryRoom.textContent = room.name;
+      summaryRoom.style.color = room.themeColor;
+    }
+    if (summaryCap && room) summaryCap.textContent = room.capacidade;
+    if (summaryTotal && room) summaryTotal.textContent = room.precoTotal;
+    if (summarySignal && room) summarySignal.textContent = `Sinal de 50%: ${room.sinal} • No dia: ${room.sinal}`;
+    if (pessoasInput && room) {
+      pessoasInput.max = room.capacidadeNum;
+      pessoasInput.placeholder = `Ex: ${Math.round(room.capacidadeNum * 0.7)} convidados (máx: ${room.capacidadeNum})`;
+    }
+  }
+
+  window.closeRoomPersonalityModal();
+  window.goToBookingStep(3);
+};
+
+// Submissão do Formulário de Agendamento (Salva e envia para WhatsApp com mensagem oficial)
 window.handleBookingSubmit = async (e) => {
   if (e && e.preventDefault) e.preventDefault();
 
@@ -596,68 +773,77 @@ window.handleBookingSubmit = async (e) => {
   const termosCheck = document.getElementById('bookingTermosCheck')?.checked;
 
   if (!selectedBookingDate) {
-    alert('Por favor, selecione uma data disponível no calendário acima!');
-    const calEl = document.getElementById('bookingCalendar');
-    if (calEl) calEl.scrollIntoView({ behavior: 'smooth' });
+    alert('Por favor, selecione uma data disponível no calendário!');
+    window.goToBookingStep(1);
     return;
   }
 
   if (!selectedBookingRoom) {
     alert('Por favor, escolha uma sala privada antes de prosseguir com os dados!');
-    const roomsEl = document.getElementById('roomsSelector');
-    if (roomsEl) roomsEl.scrollIntoView({ behavior: 'smooth' });
+    window.goToBookingStep(2);
     return;
   }
 
   if (!nome || !whatsapp || !pessoas) {
-    alert('Por favor, preencha todos os campos obrigatórios!');
+    alert('Por favor, preencha todos os campos obrigatórios (Nome, WhatsApp e Quantidade de convidados)!');
     return;
   }
 
   if (!termosCheck) {
-    alert('É necessário ler e concordar com os Termos de Responsabilidade para prosseguir com o agendamento.');
+    alert('É necessário ler e concordar com os Termos de Responsabilidade para prosseguir com a reserva.');
     return;
   }
+
+  const roomInfo = ROOM_DATA[selectedBookingRoom] || {
+    name: selectedBookingRoom,
+    capacidade: 'Conforme sala',
+    precoTotal: 'R$ 800,00',
+    sinal: 'R$ 400,00'
+  };
 
   if (feedback) {
     feedback.style.display = 'block';
     feedback.className = 'booking-status-alert info';
-    feedback.textContent = 'Registrando agendamento com segurança e abrindo o WhatsApp...';
+    feedback.textContent = 'Registrando sua reserva com segurança e abrindo o WhatsApp...';
   }
 
-  // 1. Salvar no Firebase Firestore (preparando para o futuro painel de administração)
+  // 1. Salvar no Firebase Firestore para gerenciamento no painel de administração
   try {
     await salvarAgendamento({
       nome,
       whatsapp,
       data: selectedBookingDate.formattedDisplay,
+      dataIso: selectedBookingDate.dateStr,
       sala: selectedBookingRoom,
       pessoas: parseInt(pessoas, 10),
+      valorTotal: roomInfo.precoTotal,
+      sinal: roomInfo.sinal,
       termosAceitos: true
     });
   } catch (err) {
-    console.warn('Erro silencioso ao salvar no Firestore:', err);
+    console.warn('Registro Firestore offline resiliente:', err);
   }
 
-  // 2. Montar mensagem formatada para o WhatsApp oficial com declaração explícita dos termos
+  // 2. Montar mensagem formatada para o WhatsApp oficial com a declaração exata solicitada
   const msg = [
-    `Olá! Gostaria de agendar uma sala no Backstage Karaokê:`,
+    `Olá! Gostaria de reservar minha sala no Backstage Karaokê:`,
     ``,
     `👤 *Nome:* ${nome}`,
     `📱 *WhatsApp:* ${whatsapp}`,
-    `📅 *Data:* ${selectedBookingDate.formattedDisplay}`,
-    `🎤 *Sala:* ${selectedBookingRoom}`,
+    `📅 *Data Escolhida:* ${selectedBookingDate.formattedDisplay}`,
+    `🎤 *Sala:* ${roomInfo.name} (${roomInfo.capacidade})`,
     `👥 *Convidados:* ${pessoas} pessoas`,
+    `💰 *Valor da Sala:* ${roomInfo.precoTotal} (Sinal de 50%: ${roomInfo.sinal})`,
     ``,
-    `📋 *Declaração de Responsabilidade:*`,
-    `Li e concordo com os termos de responsabilidade (estou ciente de que o valor de 50% pago para a reserva não é devolvido em caso de desistência).`
+    `📋 *Declaração de Ciência e Responsabilidade:*`,
+    `Eu li os termos de responsabilidade e concordo com a não devolução do valor de 50% pago na reserva em caso de desistência.`
   ].join('\n');
 
   const wppUrl = createWhatsAppUrl(msg);
 
   if (feedback) {
     feedback.className = 'booking-status-alert success';
-    feedback.textContent = '✓ Agendamento pronto! Abrindo o WhatsApp oficial...';
+    feedback.textContent = '✓ Reserva gerada com sucesso! Redirecionando para o WhatsApp oficial...';
   }
 
   setTimeout(() => {
@@ -671,7 +857,7 @@ window.openTermosModal = (e) => {
   const modal = document.getElementById('termosResponsabilidadeModal');
   if (modal) {
     modal.style.display = 'flex';
-    requestAnimationFrame(() => modal.classList.add('open'));
+    document.body.style.overflow = 'hidden';
   }
 };
 
@@ -679,8 +865,8 @@ window.closeTermosModal = (e) => {
   if (e && e.preventDefault) e.preventDefault();
   const modal = document.getElementById('termosResponsabilidadeModal');
   if (modal) {
-    modal.classList.remove('open');
-    setTimeout(() => { modal.style.display = 'none'; }, 280);
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
   }
 };
 
