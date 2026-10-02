@@ -24,22 +24,50 @@
 </head>
 <body class="cardapio-page-view">
   <script>
-    function voltarParaWelcome(e) {
+    function voltarInteligente(e) {
       if (e) e.preventDefault();
       try {
-        sessionStorage.removeItem('backstage_entered');
-        sessionStorage.setItem('backstage_show_welcome', 'true');
-      } catch(err) {}
-      window.location.href = '/#welcome';
+        var fromWelcome = sessionStorage.getItem('backstage_from_welcome') === 'true';
+        var lastSection = sessionStorage.getItem('backstage_last_section');
+
+        if (fromWelcome || !lastSection || lastSection === 'welcome') {
+          sessionStorage.removeItem('backstage_entered');
+          sessionStorage.setItem('backstage_show_welcome', 'true');
+          window.location.href = '/#welcome';
+        } else {
+          sessionStorage.setItem('backstage_entered', 'true');
+          window.location.href = '/#' + lastSection;
+        }
+      } catch(err) {
+        window.location.href = '/#welcome';
+      }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        var fromWelcome = sessionStorage.getItem('backstage_from_welcome') === 'true';
+        var lastSection = sessionStorage.getItem('backstage_last_section');
+        var btn = document.getElementById('voltarAoSiteBtn');
+        if (btn) {
+          var label = btn.querySelector('span');
+          if (label) {
+            if (!fromWelcome && lastSection && lastSection !== 'welcome') {
+              label.textContent = 'Voltar para o site';
+            } else {
+              label.textContent = 'Voltar ao início';
+            }
+          }
+        }
+      } catch(err) {}
+    });
   </script>
 
   <!-- Header Individual do Cardápio -->
   <header class="site-header" id="topHeader">
     <div class="container nav-container header-centered-layout">
-      <!-- Botão Voltar para o site (vai direto e apenas para a Welcome Screen) -->
+      <!-- Botão Voltar Inteligente -->
       <div class="header-nav-left">
-        <a href="/#welcome" class="btn btn-outline btn-sm" id="voltarAoSiteBtn" onclick="voltarParaWelcome(event)">
+        <a href="/#welcome" class="btn btn-outline btn-sm" id="voltarAoSiteBtn" onclick="voltarInteligente(event)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>

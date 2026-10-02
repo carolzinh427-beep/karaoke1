@@ -2,6 +2,8 @@
  * Backstage Karaokê - Interactive Application Script
  */
 
+import { salvarAgendamento } from './lib/firebase.js';
+
 function bootstrap() {
   initWelcomeScreen();
   initHeader();
@@ -10,6 +12,9 @@ function bootstrap() {
   initMenuTabs();
   initLightbox();
   initSmoothScroll();
+  initSectionTracking();
+  initBookingSystem();
+  handleInitialHashNavigation();
 }
 
 if (document.readyState === 'loading') {
@@ -52,7 +57,10 @@ function initWelcomeScreen() {
 
   window.addEventListener('hashchange', () => {
     if (window.location.hash === '#welcome') {
-      try { sessionStorage.removeItem('backstage_entered'); } catch(e) {}
+      try { 
+        sessionStorage.removeItem('backstage_entered'); 
+        sessionStorage.setItem('backstage_from_welcome', 'true');
+      } catch(e) {}
       welcomeScreen.style.display = 'flex';
       welcomeScreen.classList.remove('fade-out');
       window.scrollTo(0, 0);
@@ -62,6 +70,10 @@ function initWelcomeScreen() {
   function dismiss(targetId) {
     try {
       sessionStorage.setItem('backstage_entered', 'true');
+      sessionStorage.setItem('backstage_from_welcome', 'false');
+      if (targetId) {
+        sessionStorage.setItem('backstage_last_section', targetId);
+      }
     } catch(err) {}
 
     welcomeScreen.classList.add('fade-out');
@@ -86,7 +98,7 @@ function initWelcomeScreen() {
   if (enterBtn) {
     enterBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      dismiss('inicio');
+      dismiss('agendamento');
     });
   }
 
@@ -95,6 +107,8 @@ function initWelcomeScreen() {
     salasBtn.addEventListener('click', () => {
       try {
         sessionStorage.setItem('backstage_entered', 'true');
+        sessionStorage.setItem('backstage_from_welcome', 'true');
+        sessionStorage.setItem('backstage_last_section', 'welcome');
       } catch(err) {}
     });
   }
@@ -104,6 +118,8 @@ function initWelcomeScreen() {
     cardapioBtn.addEventListener('click', () => {
       try {
         sessionStorage.setItem('backstage_entered', 'true');
+        sessionStorage.setItem('backstage_from_welcome', 'true');
+        sessionStorage.setItem('backstage_last_section', 'welcome');
       } catch(err) {}
     });
   }
@@ -282,3 +298,323 @@ function initSmoothScroll() {
 
   sections.forEach(section => observer.observe(section));
 }
+
+// 7. Track current active section for smart back-navigation
+function initSectionTracking() {
+  const sections = document.querySelectorAll('section[id], main > section[id]');
+  if (!sections.length || !('IntersectionObserver' in window)) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.target.id) {
+        try {
+          // Do not overwrite if welcome screen is active
+          if (sessionStorage.getItem('backstage_entered') === 'true') {
+            sessionStorage.setItem('backstage_last_section', entry.target.id);
+          }
+        } catch(e) {}
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Listen to clicks on links navigating away to cardapio or salas from within the site
+  document.querySelectorAll('a[href="/cardapio.html"], a[href="/salas.html"]').forEach(link => {
+    link.addEventListener('click', () => {
+      if (sessionStorage.getItem('backstage_entered') === 'true' && !link.closest('#welcomeScreen')) {
+        try {
+          sessionStorage.setItem('backstage_from_welcome', 'false');
+          const sec = link.closest('section[id]');
+          if (sec && sec.id) {
+            sessionStorage.setItem('backstage_last_section', sec.id);
+          }
+        } catch(e) {}
+      }
+    });
+  });
+}
+
+// 8. Handle initial hash on page load (returns to exact section smoothly)
+function handleInitialHashNavigation() {
+  if (window.location.hash && window.location.hash !== '#welcome') {
+    try {
+      sessionStorage.setItem('backstage_entered', 'true');
+    } catch(e) {}
+    const ws = document.getElementById('welcomeScreen');
+    if (ws) {
+      ws.style.display = 'none';
+    }
+    setTimeout(() => {
+      const target = document.querySelector(window.location.hash);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 150);
+  }
+}
+
+// 9. Interactive Booking System (Calendário e Agendamento das Salas)
+let selectedBookingDate = null;
+let selectedBookingRoom = 'Sala Red';
+let currentCalYear = new Date().getFullYear();
+let currentCalMonth = new Date().getMonth();
+
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+const WEEKDAY_NAMES = [
+  'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
+  'Quinta-feira', 'Sexta-feira', 'Sábado'
+];
+
+function initBookingSystem() {
+  const calContainer = document.getElementById('bookingCalendar');
+  if (!calContainer) return;
+
+  const prevBtn = document.getElementById('calPrevMonth');
+  const nextBtn = document.getElementById('calNextMonth');
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      const today = new Date();
+      if (currentCalYear > today.getFullYear() || (currentCalYear === today.getFullYear() && currentCalMonth > today.getMonth())) {
+        currentCalMonth--;
+        if (currentCalMonth < 0) {
+          currentCalMonth = 11;
+          currentCalYear--;
+        }
+        renderCalendar();
+      }
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      currentCalMonth++;
+      if (currentCalMonth > 11) {
+        currentCalMonth = 0;
+        currentCalYear++;
+      }
+      renderCalendar();
+    });
+  }
+
+  // Format WhatsApp input
+  const phoneInput = document.getElementById('bookingWhatsapp');
+  if (phoneInput) {
+    phoneInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '');
+      if (v.length > 11) v = v.substring(0, 11);
+      if (v.length > 6) {
+        e.target.value = `(${v.substring(0, 2)}) ${v.substring(2, 7)}-${v.substring(7)}`;
+      } else if (v.length > 2) {
+        e.target.value = `(${v.substring(0, 2)}) ${v.substring(2)}`;
+      } else if (v.length > 0) {
+        e.target.value = `(${v}`;
+      }
+    });
+  }
+
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const monthLabel = document.getElementById('calMonthLabel');
+  const daysGrid = document.getElementById('calDaysGrid');
+  if (!monthLabel || !daysGrid) return;
+
+  monthLabel.textContent = `${MONTH_NAMES[currentCalMonth]} ${currentCalYear}`;
+  daysGrid.innerHTML = '';
+
+  const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
+  const totalDays = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Blank filler cells for alignment
+  for (let i = 0; i < firstDayIndex; i++) {
+    const blank = document.createElement('div');
+    blank.className = 'calendar-day-cell blank';
+    daysGrid.appendChild(blank);
+  }
+
+  // Day buttons
+  for (let d = 1; d <= totalDays; d++) {
+    const cellDate = new Date(currentCalYear, currentCalMonth, d);
+    cellDate.setHours(0, 0, 0, 0);
+    const dayOfWeek = cellDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const isPast = cellDate < today;
+    const isClosed = (dayOfWeek === 0 || dayOfWeek === 1); // Sunday and Monday
+    const isPromo = (dayOfWeek >= 2 && dayOfWeek <= 4); // Tuesday to Thursday: Promo R$ 200 consumação
+
+    const dayBtn = document.createElement('button');
+    dayBtn.type = 'button';
+    dayBtn.className = 'calendar-day-btn';
+    dayBtn.textContent = d;
+
+    const dateStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const formattedDisplay = `${WEEKDAY_NAMES[dayOfWeek]}, ${String(d).padStart(2, '0')}/${String(currentCalMonth + 1).padStart(2, '0')}/${currentCalYear}`;
+
+    if (isPast) {
+      dayBtn.classList.add('disabled', 'past');
+      dayBtn.disabled = true;
+    } else if (isClosed) {
+      dayBtn.classList.add('closed');
+      dayBtn.title = 'Fechado ao público (Disponível sob consulta no WhatsApp)';
+      dayBtn.addEventListener('click', () => {
+        alert('Domingos e segundas o Backstage é fechado ao público regular. Para eventos fechados exclusivos, consulte pelo WhatsApp!');
+      });
+    } else {
+      dayBtn.classList.add('open');
+      if (isPromo) {
+        dayBtn.classList.add('promo');
+        dayBtn.title = 'Promoção: Ganhe R$ 200 em consumação!';
+      }
+
+      if (selectedBookingDate && selectedBookingDate.dateStr === dateStr) {
+        dayBtn.classList.add('selected');
+      }
+
+      dayBtn.addEventListener('click', () => {
+        document.querySelectorAll('.calendar-day-btn.selected').forEach(b => b.classList.remove('selected'));
+        dayBtn.classList.add('selected');
+
+        selectedBookingDate = {
+          dateStr,
+          formattedDisplay,
+          day: d,
+          isPromo
+        };
+
+        const displayEl = document.getElementById('selectedDateDisplay');
+        if (displayEl) {
+          displayEl.textContent = `(${formattedDisplay})`;
+          displayEl.style.color = '#00F0FF';
+        }
+
+        const summaryDate = document.getElementById('summaryDateVal');
+        if (summaryDate) {
+          summaryDate.textContent = formattedDisplay;
+        }
+      });
+    }
+
+    daysGrid.appendChild(dayBtn);
+  }
+}
+
+// Global Room Selection Handler
+window.selectBookingRoom = (element) => {
+  document.querySelectorAll('.room-pick-card').forEach(c => c.classList.remove('active'));
+  element.classList.add('active');
+
+  const roomName = element.getAttribute('data-room');
+  selectedBookingRoom = roomName;
+
+  const summaryRoom = document.getElementById('summaryRoomName');
+  if (summaryRoom) {
+    summaryRoom.textContent = roomName;
+    if (roomName === 'Sala Red') {
+      summaryRoom.style.color = 'var(--room-red)';
+    } else if (roomName === 'Sala Green') {
+      summaryRoom.style.color = 'var(--room-green)';
+    } else if (roomName === 'Sala Blue') {
+      summaryRoom.style.color = 'var(--room-blue)';
+    }
+  }
+};
+
+// Global Form Submit Handler
+window.handleBookingSubmit = async (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const feedback = document.getElementById('bookingStatusAlert');
+  const nome = document.getElementById('bookingNome')?.value?.trim();
+  const whatsapp = document.getElementById('bookingWhatsapp')?.value?.trim();
+  const pessoas = document.getElementById('bookingPessoas')?.value?.trim();
+  const termosCheck = document.getElementById('bookingTermosCheck')?.checked;
+
+  if (!selectedBookingDate) {
+    alert('Por favor, selecione uma data disponível no calendário acima!');
+    const calEl = document.getElementById('bookingCalendar');
+    if (calEl) calEl.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  if (!nome || !whatsapp || !pessoas) {
+    alert('Por favor, preencha todos os campos obrigatórios!');
+    return;
+  }
+
+  if (!termosCheck) {
+    alert('É necessário ler e concordar com os Termos de Responsabilidade para prosseguir com o agendamento.');
+    return;
+  }
+
+  if (feedback) {
+    feedback.style.display = 'block';
+    feedback.className = 'booking-status-alert info';
+    feedback.textContent = 'Registrando agendamento com segurança e abrindo o WhatsApp...';
+  }
+
+  // 1. Salvar no Firebase Firestore (preparando para o futuro painel de administração)
+  try {
+    await salvarAgendamento({
+      nome,
+      whatsapp,
+      data: selectedBookingDate.formattedDisplay,
+      sala: selectedBookingRoom,
+      pessoas: parseInt(pessoas, 10),
+      termosAceitos: true
+    });
+  } catch (err) {
+    console.warn('Erro silencioso ao salvar no Firestore:', err);
+  }
+
+  // 2. Montar mensagem formatada para o WhatsApp oficial com declaração explícita dos termos
+  const msg = [
+    `Olá! Gostaria de agendar uma sala no Backstage Karaokê:`,
+    ``,
+    `👤 *Nome:* ${nome}`,
+    `📱 *WhatsApp:* ${whatsapp}`,
+    `📅 *Data:* ${selectedBookingDate.formattedDisplay}`,
+    `🎤 *Sala:* ${selectedBookingRoom}`,
+    `👥 *Convidados:* ${pessoas} pessoas`,
+    ``,
+    `📋 *Declaração de Responsabilidade:*`,
+    `Li e concordo com os termos de responsabilidade (estou ciente de que o valor de 50% pago para a reserva não é devolvido em caso de desistência).`
+  ].join('\n');
+
+  const wppUrl = createWhatsAppUrl(msg);
+
+  if (feedback) {
+    feedback.className = 'booking-status-alert success';
+    feedback.textContent = '✓ Agendamento pronto! Abrindo o WhatsApp oficial...';
+  }
+
+  setTimeout(() => {
+    window.open(wppUrl, '_blank');
+  }, 400);
+};
+
+// Global Termos Modal Trigger
+window.openTermosModal = (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  const modal = document.getElementById('termosResponsabilidadeModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => modal.classList.add('open'));
+  }
+};
+
+window.closeTermosModal = (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  const modal = document.getElementById('termosResponsabilidadeModal');
+  if (modal) {
+    modal.classList.remove('open');
+    setTimeout(() => { modal.style.display = 'none'; }, 280);
+  }
+};
