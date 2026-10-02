@@ -118,7 +118,8 @@
                   <circle cx="8.5" cy="8.5" r="1.5"/>
                   <polyline points="21 15 16 10 5 21"/>
                 </svg>
-                <span class="room-empty-hint">Cole aqui as imagens e vídeos da <strong>Sala 1 (Sala Red)</strong></span>
+                <span class="room-empty-hint">Nenhuma foto ou vídeo cadastrado ainda para a <strong>Sala 1 (Sala Red)</strong></span>
+                <span style="font-size: 0.82rem; color: var(--text-muted);">As fotos e vídeos oficiais aparecerão aqui após o upload no painel.</span>
               </div>
             </div>
           </article>
@@ -138,7 +139,8 @@
                   <circle cx="8.5" cy="8.5" r="1.5"/>
                   <polyline points="21 15 16 10 5 21"/>
                 </svg>
-                <span class="room-empty-hint">Cole aqui as imagens e vídeos da <strong>Sala 2 (Sala Green)</strong></span>
+                <span class="room-empty-hint">Nenhuma foto ou vídeo cadastrado ainda para a <strong>Sala 2 (Sala Green)</strong></span>
+                <span style="font-size: 0.82rem; color: var(--text-muted);">As fotos e vídeos oficiais aparecerão aqui após o upload no painel.</span>
               </div>
             </div>
           </article>
@@ -158,7 +160,8 @@
                   <circle cx="8.5" cy="8.5" r="1.5"/>
                   <polyline points="21 15 16 10 5 21"/>
                 </svg>
-                <span class="room-empty-hint">Cole aqui as imagens e vídeos da <strong>Sala 3 (Sala Blue)</strong></span>
+                <span class="room-empty-hint">Nenhuma foto ou vídeo cadastrado ainda para a <strong>Sala 3 (Sala Blue)</strong></span>
+                <span style="font-size: 0.82rem; color: var(--text-muted);">As fotos e vídeos oficiais aparecerão aqui após o upload no painel.</span>
               </div>
             </div>
           </article>
@@ -182,6 +185,16 @@
       </p>
     </div>
   </footer>
+
+  <!-- Modal de Zoom Lightbox para Fotos e Vídeos das Salas -->
+  <div id="roomLightboxModal" class="room-lightbox-overlay" onclick="window.closeRoomLightbox(event)" style="display: none;">
+    <div class="room-lightbox-box" onclick="event.stopPropagation()">
+      <button type="button" class="room-lightbox-close-btn" onclick="window.closeRoomLightbox(event)" aria-label="Fechar">&times;</button>
+      <img id="roomLightboxImage" src="" alt="Visualização da Sala" class="room-lightbox-img" style="display: none;">
+      <video id="roomLightboxVideo" src="" controls playsinline class="room-lightbox-video" style="display: none;"></video>
+      <div id="roomLightboxCaption" class="room-lightbox-caption"></div>
+    </div>
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>

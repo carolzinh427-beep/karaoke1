@@ -2,7 +2,8 @@
  * Backstage Karaokê - Interactive Application Script
  */
 
-import { salvarAgendamento } from './lib/firebase.js';
+import { salvarAgendamento, db } from './lib/firebase.js';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 function bootstrap() {
   try { initWelcomeScreen(); } catch(e) { console.warn('initWelcomeScreen error:', e); }
@@ -15,6 +16,7 @@ function bootstrap() {
   try { initSectionTracking(); } catch(e) { console.warn('initSectionTracking error:', e); }
   try { initBookingSystem(); } catch(e) { console.warn('initBookingSystem error:', e); }
   try { handleInitialHashNavigation(); } catch(e) { console.warn('handleInitialHashNavigation error:', e); }
+  try { initSalasGallery(); } catch(e) { console.warn('initSalasGallery error:', e); }
 }
 
 if (document.readyState === 'loading') {
@@ -672,5 +674,167 @@ window.closeTermosModal = (e) => {
   if (modal) {
     modal.classList.remove('open');
     setTimeout(() => { modal.style.display = 'none'; }, 280);
+  }
+};
+
+// ============================================================================
+// 10. GALERIA DINÂMICA DAS SALAS (IMAGENS E VÍDEOS POR UPLOAD)
+// ============================================================================
+export async function initSalasGallery() {
+  const container1 = document.getElementById('mediaSala1');
+  const container2 = document.getElementById('mediaSala2');
+  const container3 = document.getElementById('mediaSala3');
+  if (!container1 && !container2 && !container3) return;
+
+  try {
+    let items = [];
+    try {
+      const q = query(collection(db, 'galeria'), orderBy('criadoEm', 'desc'));
+      const snap = await getDocs(q);
+      items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (orderErr) {
+      // Fallback sem ordenação caso o índice ainda esteja sincronizando
+      try {
+        const snap = await getDocs(collection(db, 'galeria'));
+        items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (innerErr) {
+        console.warn('Fallback busca Firestore galeria:', innerErr);
+      }
+    }
+
+    renderMediaParaSala(container1, 'sala-red', items, 'Sala 1 (Sala Red)', 'var(--room-red)');
+    renderMediaParaSala(container2, 'sala-green', items, 'Sala 2 (Sala Green)', 'var(--room-green)');
+    renderMediaParaSala(container3, 'sala-blue', items, 'Sala 3 (Sala Blue)', 'var(--room-blue)');
+  } catch (err) {
+    console.warn('Erro ao carregar mídias da galeria das salas:', err);
+  }
+}
+
+function renderMediaParaSala(container, salaId, allItems, roomLabel, roomColor) {
+  if (!container) return;
+
+  const roomItems = allItems.filter(m => {
+    if (m.ativo === false) return false;
+    if (m.sala === salaId) return true;
+    const tag = (m.tag || '').toLowerCase();
+    const titulo = (m.titulo || '').toLowerCase();
+    if (salaId === 'sala-red' && (m.sala === 'sala-1' || tag.includes('red') || tag.includes('sala 1') || titulo.includes('sala 1') || titulo.includes('sala red'))) return true;
+    if (salaId === 'sala-green' && (m.sala === 'sala-2' || tag.includes('green') || tag.includes('sala 2') || titulo.includes('sala 2') || titulo.includes('sala green'))) return true;
+    if (salaId === 'sala-blue' && (m.sala === 'sala-3' || tag.includes('blue') || tag.includes('sala 3') || titulo.includes('sala 3') || titulo.includes('sala blue'))) return true;
+    return false;
+  });
+
+  if (roomItems.length === 0) {
+    container.innerHTML = `
+      <div class="media-placeholder-content">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: ${roomColor}; opacity: 0.85;">
+          <rect x="2" y="2" width="20" height="20" rx="4" ry="4"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span class="room-empty-hint">Nenhuma foto ou vídeo cadastrado ainda para a <strong>${roomLabel}</strong>.</span>
+        <span style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">As fotos e vídeos desta sala serão exibidos aqui após o upload no painel administrativo.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const videos = roomItems.filter(m => m.tipo === 'video');
+  const fotos = roomItems.filter(m => m.tipo !== 'video');
+
+  let html = '';
+
+  if (videos.length > 0) {
+    html += `
+      <div class="room-media-section-block">
+        <div class="room-media-section-badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          <span>Vídeos da Sala (${videos.length})</span>
+        </div>
+        <div class="room-videos-grid">
+          ${videos.map(v => `
+            <div class="room-video-card">
+              <video controls playsinline preload="metadata" src="${v.url}" class="room-video-element"></video>
+              ${v.titulo ? `<div class="room-media-caption">${v.titulo}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  if (fotos.length > 0) {
+    html += `
+      <div class="room-media-section-block" style="${videos.length > 0 ? 'margin-top: 24px;' : ''}">
+        <div class="room-media-section-badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Fotos da Sala (${fotos.length})</span>
+        </div>
+        <div class="room-photos-grid">
+          ${fotos.map(f => {
+            const escapedTitle = (f.titulo || '').replace(/'/g, "\\'");
+            return `
+              <div class="room-photo-card" onclick="window.openRoomLightbox('${f.url}', '${escapedTitle}', 'imagem')">
+                <img src="${f.url}" alt="${f.titulo || 'Foto da sala'}" loading="lazy" class="room-photo-element">
+                <div class="room-photo-overlay">
+                  <span class="room-photo-zoom-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                  </span>
+                  ${f.titulo ? `<span class="room-photo-caption-text">${f.titulo}</span>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+// Lightbox Global para Visualização Ampliada de Imagens e Vídeos
+window.openRoomLightbox = (url, caption = '', tipo = 'imagem') => {
+  const modal = document.getElementById('roomLightboxModal');
+  const imgEl = document.getElementById('roomLightboxImage');
+  const vidEl = document.getElementById('roomLightboxVideo');
+  const capEl = document.getElementById('roomLightboxCaption');
+  if (!modal) return;
+
+  if (tipo === 'video') {
+    if (imgEl) imgEl.style.display = 'none';
+    if (vidEl) {
+      vidEl.style.display = 'block';
+      vidEl.src = url;
+      vidEl.play().catch(() => {});
+    }
+  } else {
+    if (vidEl) {
+      vidEl.pause();
+      vidEl.style.display = 'none';
+      vidEl.src = '';
+    }
+    if (imgEl) {
+      imgEl.style.display = 'block';
+      imgEl.src = url;
+    }
+  }
+
+  if (capEl) capEl.textContent = caption || '';
+  modal.style.display = 'flex';
+  requestAnimationFrame(() => modal.classList.add('open'));
+};
+
+window.closeRoomLightbox = (e) => {
+  if (e && e.stopPropagation) e.stopPropagation();
+  const modal = document.getElementById('roomLightboxModal');
+  const vidEl = document.getElementById('roomLightboxVideo');
+  if (modal) {
+    modal.classList.remove('open');
+    if (vidEl) {
+      vidEl.pause();
+      vidEl.src = '';
+    }
+    setTimeout(() => { modal.style.display = 'none'; }, 250);
   }
 };

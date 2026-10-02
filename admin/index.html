@@ -52,6 +52,73 @@
     </div>
   </div>
 
+  <!-- Modal de Upload de Mídia (Fotos e Vídeos por Upload) -->
+  <div id="adminMediaUploadModal" class="admin-modal-overlay">
+    <div class="admin-modal-card" style="max-width: 520px;">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title" id="mediaUploadModalTitle">Upload de Mídia</h3>
+        <button type="button" class="admin-modal-close" onclick="window.closeMediaUploadModal()">&times;</button>
+      </div>
+      <form id="formUploadMedia" onsubmit="window.submitMediaUpload(event)">
+        <div class="admin-modal-body">
+          <!-- Sala / Destino -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" for="uploadMediaSala">Vincular à Sala</label>
+            <select id="uploadMediaSala" class="form-select" required>
+              <option value="sala-red">Sala 1 — Sala Red</option>
+              <option value="sala-green">Sala 2 — Sala Green</option>
+              <option value="sala-blue">Sala 3 — Sala Blue</option>
+              <option value="geral">Geral / Palco / Espaço</option>
+            </select>
+          </div>
+
+          <!-- Tipo de Mídia -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Tipo de Arquivo</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <label class="media-type-option" id="labelTypeFoto" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 8px; border: 1px solid var(--admin-cyan); cursor: pointer; background: rgba(0,240,255,0.08);">
+                <input type="radio" name="mediaTypeRadio" value="imagem" checked onchange="window.handleMediaTypeChange('imagem')" style="margin: 0;">
+                <span style="font-weight: 700; font-size: 0.9rem;">📷 Foto (Imagem)</span>
+              </label>
+              <label class="media-type-option" id="labelTypeVideo" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 8px; border: 1px solid var(--admin-border); cursor: pointer; background: rgba(255,255,255,0.03);">
+                <input type="radio" name="mediaTypeRadio" value="video" onchange="window.handleMediaTypeChange('video')" style="margin: 0;">
+                <span style="font-weight: 700; font-size: 0.9rem;">🎬 Vídeo (Upload)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Título / Descrição -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" for="uploadMediaTitulo">Título / Descrição</label>
+            <input type="text" id="uploadMediaTitulo" class="form-input" placeholder="Ex: Iluminação cênica da sala" required>
+          </div>
+
+          <!-- Seleção do Arquivo de Upload -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" id="uploadMediaFileLabel">Arquivo de Imagem (JPG, PNG, WebP)</label>
+            <input type="file" id="uploadMediaFileInput" class="form-input" accept="image/*" required onchange="window.handleMediaFileSelected(event)" style="padding: 10px;">
+            <div id="uploadMediaFileInfo" style="font-size: 0.8rem; color: var(--admin-cyan); margin-top: 6px; display: none;"></div>
+          </div>
+
+          <!-- Barra de Progresso de Upload -->
+          <div id="mediaUploadProgressWrap" style="display: none; margin-top: 14px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
+              <span id="mediaUploadProgressText" style="color: var(--admin-cyan); font-weight: 600;">Enviando ao Firebase Storage...</span>
+              <span id="mediaUploadProgressPercent" style="color: #FFFFFF; font-weight: 700;">0%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+              <div id="mediaUploadProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00F0FF, #FF0055); transition: width 0.2s ease;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.closeMediaUploadModal()">Cancelar</button>
+          <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSubmitMediaUpload">Fazer Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <style>
     @keyframes spin {
       to { transform: rotate(360deg); }

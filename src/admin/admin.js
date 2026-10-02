@@ -27,6 +27,7 @@ import {
 import {
   ref,
   uploadBytes,
+  uploadBytesResumable,
   getDownloadURL,
   deleteObject,
 } from 'firebase/storage';
@@ -43,6 +44,7 @@ const state = {
   cardapio: [],
   categorias: [],
   galeria: [],
+  activeFilterGaleria: 'todas',
   configuracoes: null,
   activeFilterReservas: 'todas',
   searchTermReservas: '',
@@ -1268,7 +1270,11 @@ function renderSalasView() {
     </div>
 
     <div class="admin-items-grid">
-      ${state.salas.map(s => `
+      ${state.salas.map(s => {
+        const midiasSala = state.galeria.filter(g => g.sala === s.id || (s.id === 'sala-red' && (g.sala === 'sala-1' || (g.tag||'').toLowerCase().includes('red'))) || (s.id === 'sala-green' && (g.sala === 'sala-2' || (g.tag||'').toLowerCase().includes('green'))) || (s.id === 'sala-blue' && (g.sala === 'sala-3' || (g.tag||'').toLowerCase().includes('blue'))));
+        const numFotos = midiasSala.filter(g => g.tipo !== 'video').length;
+        const numVideos = midiasSala.filter(g => g.tipo === 'video').length;
+        return `
         <div class="admin-item-card">
           <img src="${s.imagem || '/assets/brand/hero-bg.webp'}" alt="${s.nome}" class="admin-item-thumb">
           <div class="admin-item-body">
@@ -1280,8 +1286,15 @@ function renderSalasView() {
               Capacidade: Até ${s.capacidade} pessoas • R$ ${(s.precoTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p class="admin-item-desc">${s.descricao || ''}</p>
+            <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin: 6px 0 10px 0; display: flex; align-items: center; gap: 8px;">
+              <span>Mídias vinculadas:</span>
+              <strong style="color: #FFFFFF;">${numFotos} fotos</strong> • <strong style="color: #FFFFFF;">${numVideos} vídeos</strong>
+            </div>
 
             <div class="admin-item-footer">
+              <button type="button" class="btn-admin btn-admin-primary btn-admin-xs" onclick="window.openMediaUploadModal('${s.id}')">
+                + Upload Mídia
+              </button>
               <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.editarSala('${s.id}')">
                 Editar Sala
               </button>
@@ -1291,7 +1304,8 @@ function renderSalasView() {
             </div>
           </div>
         </div>
-      `).join('')}
+      `;
+      }).join('')}
     </div>
   `;
 }
@@ -1438,91 +1452,167 @@ function renderCardapioPdfView() {
   `;
 }
 
-// 7.8 Galeria de Imagens e Vídeos
+// Helper para renderizar badge de sala
+function getRoomBadge(sala) {
+  if (sala === 'sala-red' || sala === 'sala-1') {
+    return `<span class="badge-room red">Sala 1</span>`;
+  } else if (sala === 'sala-green' || sala === 'sala-2') {
+    return `<span class="badge-room green">Sala 2</span>`;
+  } else if (sala === 'sala-blue' || sala === 'sala-3') {
+    return `<span class="badge-room blue">Sala 3</span>`;
+  }
+  return `<span class="badge-room" style="background: rgba(0, 240, 255, 0.15); color: var(--admin-cyan);">Geral</span>`;
+}
+
+// 7.8 Galeria de Fotos e Vídeos (100% Upload Direto)
 function renderGaleriaView() {
-  const imagens = state.galeria.filter(g => g.tipo !== 'video');
-  const videos = state.galeria.filter(g => g.tipo === 'video');
+  const currentFilter = state.activeFilterGaleria || 'todas';
+  let filtered = state.galeria;
+  if (currentFilter !== 'todas') {
+    filtered = filtered.filter(g => {
+      if (g.sala === currentFilter) return true;
+      if (currentFilter === 'sala-red' && (g.sala === 'sala-1' || (g.tag || '').toLowerCase().includes('red'))) return true;
+      if (currentFilter === 'sala-green' && (g.sala === 'sala-2' || (g.tag || '').toLowerCase().includes('green'))) return true;
+      if (currentFilter === 'sala-blue' && (g.sala === 'sala-3' || (g.tag || '').toLowerCase().includes('blue'))) return true;
+      return false;
+    });
+  }
+
+  const imagens = filtered.filter(g => g.tipo !== 'video');
+  const videos = filtered.filter(g => g.tipo === 'video');
+
+  const countTotal = state.galeria.length;
+  const countRed = state.galeria.filter(g => g.sala === 'sala-red' || g.sala === 'sala-1').length;
+  const countGreen = state.galeria.filter(g => g.sala === 'sala-green' || g.sala === 'sala-2').length;
+  const countBlue = state.galeria.filter(g => g.sala === 'sala-blue' || g.sala === 'sala-3').length;
+  const countGeral = state.galeria.filter(g => !g.sala || g.sala === 'geral').length;
 
   return `
     <div class="view-header">
       <div class="view-headline">
         <h2>Galeria de Fotos e Vídeos</h2>
-        <p>Gerencie o conteúdo visual do palco, drinks e ambiente exibidos no Backstage</p>
+        <p>Gerencie o acervo visual das salas privadas e do espaço com upload direto de arquivos</p>
       </div>
       <div class="view-actions">
-        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.openModalGaleria('imagem')">
-          + Adicionar Imagem
+        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.openMediaUploadModal(null, 'imagem')">
+          + Upload de Foto
         </button>
-        <button type="button" class="btn-admin btn-admin-magenta btn-admin-sm" onclick="window.openModalGaleria('video')">
-          + Adicionar Vídeo
+        <button type="button" class="btn-admin btn-admin-magenta btn-admin-sm" onclick="window.openMediaUploadModal(null, 'video')">
+          + Upload de Vídeo
         </button>
       </div>
     </div>
 
-    <!-- Seção de Fotos -->
-    <div class="admin-card">
-      <div class="admin-card-header">
-        <h3 class="admin-card-title">Fotos da Galeria (${imagens.length})</h3>
+    <!-- Filtros de Salas da Galeria -->
+    <div class="admin-card" style="margin-bottom: 24px; padding: 14px 20px;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <span style="font-size: 0.85rem; color: var(--admin-text-muted); margin-right: 8px; font-weight: 600;">Filtrar por Sala:</span>
+        <button type="button" class="btn-admin btn-admin-xs ${currentFilter === 'todas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.setGaleriaFilter('todas')">
+          Todas (${countTotal})
+        </button>
+        <button type="button" class="btn-admin btn-admin-xs ${currentFilter === 'sala-red' ? 'btn-admin-danger' : 'btn-admin-outline'}" onclick="window.setGaleriaFilter('sala-red')">
+          Sala 1 - Red (${countRed})
+        </button>
+        <button type="button" class="btn-admin btn-admin-xs ${currentFilter === 'sala-green' ? 'btn-admin-success' : 'btn-admin-outline'}" onclick="window.setGaleriaFilter('sala-green')">
+          Sala 2 - Green (${countGreen})
+        </button>
+        <button type="button" class="btn-admin btn-admin-xs ${currentFilter === 'sala-blue' ? 'btn-admin-cyan' : 'btn-admin-outline'}" onclick="window.setGaleriaFilter('sala-blue')">
+          Sala 3 - Blue (${countBlue})
+        </button>
+        <button type="button" class="btn-admin btn-admin-xs ${currentFilter === 'geral' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.setGaleriaFilter('geral')">
+          Geral / Outros (${countGeral})
+        </button>
       </div>
-
-      ${imagens.length === 0 ? `
-        <div class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <div class="empty-state-title">Nenhuma foto adicionada</div>
-          <p class="empty-state-desc">Cadastre fotos do espaço, drinks e palco para enriquecer o site.</p>
-        </div>
-      ` : `
-        <div class="admin-items-grid">
-          ${imagens.map(img => `
-            <div class="admin-item-card">
-              <img src="${img.url}" alt="${img.titulo}" class="admin-item-thumb">
-              <div class="admin-item-body">
-                <h4 class="admin-item-title">${img.titulo || 'Foto sem título'}</h4>
-                <div style="font-size: 0.78rem; color: var(--admin-cyan); margin-bottom: 8px;">${img.tag || 'Geral'} • Ordem: ${img.ordem || 1}</div>
-                <div class="admin-item-footer">
-                  <span class="badge-status ${img.ativo ? 'confirmed' : 'cancelled'}">${img.ativo ? 'Ativa' : 'Inativa'}</span>
-                  <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemGaleria('${img.id}', '${img.url}')">
-                    Excluir
-                  </button>
-                </div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `}
     </div>
 
-    <!-- Seção de Vídeos -->
-    <div class="admin-card">
-      <div class="admin-card-header">
-        <h3 class="admin-card-title">Vídeos da Galeria (${videos.length})</h3>
+    <!-- Seção de Vídeos (Upload Direto de Arquivo) -->
+    <div class="admin-card" style="margin-bottom: 28px;">
+      <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="admin-card-title">Vídeos Enviados (${videos.length})</h3>
+        <button type="button" class="btn-admin btn-admin-magenta btn-admin-xs" onclick="window.openMediaUploadModal(null, 'video')">
+          + Enviar Novo Vídeo
+        </button>
       </div>
 
       ${videos.length === 0 ? `
         <div class="empty-state">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-          <div class="empty-state-title">Nenhum vídeo cadastrado</div>
-          <p class="empty-state-desc">Adicione vídeos via URL do YouTube, Instagram ou link direto.</p>
+          <div class="empty-state-title">Nenhum vídeo nesta sala</div>
+          <p class="empty-state-desc">Clique em <strong>+ Enviar Novo Vídeo</strong> para fazer o upload do arquivo MP4, WebM ou MOV.</p>
         </div>
       ` : `
         <div class="admin-items-grid">
-          ${videos.map(vid => `
-            <div class="admin-item-card">
-              <div style="height: 180px; background: #000; display: flex; align-items: center; justify-content: center; position: relative;">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="var(--admin-magenta)" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-              </div>
-              <div class="admin-item-body">
-                <h4 class="admin-item-title">${vid.titulo || 'Vídeo sem título'}</h4>
-                <div style="font-size: 0.78rem; color: var(--admin-text-muted); word-break: break-all; margin-bottom: 8px;">${vid.url}</div>
-                <div class="admin-item-footer">
-                  <span class="badge-status ${vid.ativo ? 'confirmed' : 'cancelled'}">${vid.ativo ? 'Ativo' : 'Inativo'}</span>
-                  <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemGaleria('${vid.id}', '${vid.url}')">
-                    Excluir
-                  </button>
+          ${videos.map(vid => {
+            const roomBadge = getRoomBadge(vid.sala);
+            return `
+              <div class="admin-item-card">
+                <div style="background: #000; border-radius: 8px 8px 0 0; overflow: hidden; position: relative;">
+                  <video controls playsinline preload="metadata" src="${vid.url}" style="width: 100%; height: 180px; object-fit: cover; display: block;"></video>
+                </div>
+                <div class="admin-item-body">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+                    <h4 class="admin-item-title" style="margin: 0; font-size: 0.95rem;">${vid.titulo || 'Vídeo sem título'}</h4>
+                    ${roomBadge}
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 10px;">
+                    ${vid.tamanhoBytes ? `Tamanho: ${(vid.tamanhoBytes / (1024 * 1024)).toFixed(1)} MB • ` : ''}
+                    ${vid.criadoEm?.toDate ? vid.criadoEm.toDate().toLocaleDateString('pt-BR') : 'Adicionado recentemente'}
+                  </div>
+                  <div class="admin-item-footer">
+                    <span class="badge-status ${vid.ativo ? 'confirmed' : 'cancelled'}">${vid.ativo ? 'Ativo' : 'Inativo'}</span>
+                    <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemGaleria('${vid.id}', '${vid.url}', '${vid.storagePath || ''}')">
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
+        </div>
+      `}
+    </div>
+
+    <!-- Seção de Fotos (Upload Direto de Arquivo) -->
+    <div class="admin-card">
+      <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="admin-card-title">Fotos Enviadas (${imagens.length})</h3>
+        <button type="button" class="btn-admin btn-admin-primary btn-admin-xs" onclick="window.openMediaUploadModal(null, 'imagem')">
+          + Enviar Nova Foto
+        </button>
+      </div>
+
+      ${imagens.length === 0 ? `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <div class="empty-state-title">Nenhuma foto nesta sala</div>
+          <p class="empty-state-desc">Clique em <strong>+ Enviar Nova Foto</strong> para fazer o upload de imagens da sala ou espaço.</p>
+        </div>
+      ` : `
+        <div class="admin-items-grid">
+          ${imagens.map(img => {
+            const roomBadge = getRoomBadge(img.sala);
+            return `
+              <div class="admin-item-card">
+                <img src="${img.url}" alt="${img.titulo}" class="admin-item-thumb" style="cursor: pointer;" onclick="window.open('${img.url}', '_blank')">
+                <div class="admin-item-body">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+                    <h4 class="admin-item-title" style="margin: 0; font-size: 0.95rem;">${img.titulo || 'Foto sem título'}</h4>
+                    ${roomBadge}
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 10px;">
+                    ${img.tamanhoBytes ? `Tamanho: ${(img.tamanhoBytes / 1024).toFixed(0)} KB • ` : ''}
+                    ${img.criadoEm?.toDate ? img.criadoEm.toDate().toLocaleDateString('pt-BR') : 'Adicionada recentemente'}
+                  </div>
+                  <div class="admin-item-footer">
+                    <span class="badge-status ${img.ativo ? 'confirmed' : 'cancelled'}">${img.ativo ? 'Ativa' : 'Inativa'}</span>
+                    <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemGaleria('${img.id}', '${img.url}', '${img.storagePath || ''}')">
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
       `}
     </div>
@@ -2050,80 +2140,215 @@ window.handleUploadPdf = async (e) => {
   }
 };
 
-// 8.7 Ações de Galeria
-window.openModalGaleria = async (tipo) => {
-  if (tipo === 'imagem') {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+// 8.7 Ações de Galeria (100% Upload de Fotos e Vídeos)
+window.openMediaUploadModal = (preselectedRoom = null, preselectedType = null) => {
+  const modal = document.getElementById('adminMediaUploadModal');
+  if (!modal) return;
 
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
+  const salaSelect = document.getElementById('uploadMediaSala');
+  if (salaSelect && preselectedRoom) {
+    salaSelect.value = preselectedRoom;
+  }
 
-      const titulo = prompt('Título da Foto (ex: Drink Assinatura, Salão Principal):') || 'Foto Backstage';
-      const tag = prompt('Tag/Categoria (ex: Drink, Salão, Palco):') || 'Ambiente';
-
-      try {
-        showToast('Enviando imagem ao Firebase Storage...', 'info');
-        const storageRef = ref(storage, `galeria/imagens/${Date.now()}-${file.name}`);
-        const snap = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(snap.ref);
-
-        const payload = {
-          tipo: 'imagem',
-          titulo,
-          tag,
-          url,
-          ativo: true,
-          ordem: state.galeria.length + 1,
-          criadoEm: serverTimestamp()
-        };
-
-        const docRef = await addDoc(collection(db, 'galeria'), payload);
-        state.galeria.push({ id: docRef.id, ...payload });
-
-        showToast('Imagem adicionada à galeria com sucesso.', 'success');
-        renderApp();
-      } catch (err) {
-        console.error('Erro upload imagem:', err);
-        showToast('Erro ao enviar imagem.', 'error');
-      }
-    };
-
-    input.click();
+  if (preselectedType) {
+    window.handleMediaTypeChange(preselectedType);
   } else {
-    const titulo = prompt('Título do Vídeo:');
-    if (!titulo) return;
-    const url = prompt('URL do Vídeo (YouTube, Instagram ou link direto):');
-    if (!url) return;
+    window.handleMediaTypeChange('imagem');
+  }
 
-    try {
-      const payload = {
-        tipo: 'video',
-        titulo,
-        url,
-        ativo: true,
-        ordem: state.galeria.length + 1,
-        criadoEm: serverTimestamp()
-      };
+  // Reset form
+  const form = document.getElementById('formUploadMedia');
+  if (form) form.reset();
+  if (salaSelect && preselectedRoom) salaSelect.value = preselectedRoom;
 
-      const docRef = await addDoc(collection(db, 'galeria'), payload);
-      state.galeria.push({ id: docRef.id, ...payload });
+  const progressWrap = document.getElementById('mediaUploadProgressWrap');
+  if (progressWrap) progressWrap.style.display = 'none';
 
-      showToast('Vídeo cadastrado na galeria com sucesso.', 'success');
-      renderApp();
-    } catch (err) {
-      console.error('Erro cadastrar video:', err);
-      showToast('Erro ao cadastrar vídeo.', 'error');
+  const fileInfo = document.getElementById('uploadMediaFileInfo');
+  if (fileInfo) fileInfo.style.display = 'none';
+
+  const submitBtn = document.getElementById('btnSubmitMediaUpload');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Fazer Upload';
+  }
+
+  modal.classList.add('open');
+};
+
+window.closeMediaUploadModal = () => {
+  const modal = document.getElementById('adminMediaUploadModal');
+  if (modal) modal.classList.remove('open');
+};
+
+window.openModalGaleria = (tipo) => {
+  window.openMediaUploadModal(null, tipo);
+};
+
+window.handleMediaTypeChange = (tipo) => {
+  const fileInput = document.getElementById('uploadMediaFileInput');
+  const fileLabel = document.getElementById('uploadMediaFileLabel');
+  const labelFoto = document.getElementById('labelTypeFoto');
+  const labelVideo = document.getElementById('labelTypeVideo');
+  const radioFoto = document.querySelector('input[name="mediaTypeRadio"][value="imagem"]');
+  const radioVideo = document.querySelector('input[name="mediaTypeRadio"][value="video"]');
+
+  if (tipo === 'video') {
+    if (radioVideo) radioVideo.checked = true;
+    if (fileInput) fileInput.accept = 'video/*,video/mp4,video/webm,video/quicktime';
+    if (fileLabel) fileLabel.textContent = 'Arquivo de Vídeo (MP4, WebM, MOV)';
+    if (labelVideo) {
+      labelVideo.style.borderColor = 'var(--admin-magenta)';
+      labelVideo.style.background = 'rgba(255, 0, 85, 0.12)';
+    }
+    if (labelFoto) {
+      labelFoto.style.borderColor = 'var(--admin-border)';
+      labelFoto.style.background = 'rgba(255, 255, 255, 0.03)';
+    }
+  } else {
+    if (radioFoto) radioFoto.checked = true;
+    if (fileInput) fileInput.accept = 'image/*,image/jpeg,image/png,image/webp';
+    if (fileLabel) fileLabel.textContent = 'Arquivo de Imagem (JPG, PNG, WebP)';
+    if (labelFoto) {
+      labelFoto.style.borderColor = 'var(--admin-cyan)';
+      labelFoto.style.background = 'rgba(0, 240, 255, 0.08)';
+    }
+    if (labelVideo) {
+      labelVideo.style.borderColor = 'var(--admin-border)';
+      labelVideo.style.background = 'rgba(255, 255, 255, 0.03)';
     }
   }
 };
 
-window.excluirItemGaleria = (id, fileUrl) => {
+window.handleMediaFileSelected = (e) => {
+  const file = e.target.files?.[0];
+  const infoEl = document.getElementById('uploadMediaFileInfo');
+  if (!infoEl) return;
+  if (file) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+    infoEl.style.display = 'block';
+    infoEl.textContent = `Arquivo selecionado: ${file.name} (${sizeMb} MB)`;
+  } else {
+    infoEl.style.display = 'none';
+  }
+};
+
+window.setGaleriaFilter = (filtro) => {
+  state.activeFilterGaleria = filtro;
+  renderApp();
+};
+
+window.submitMediaUpload = async (e) => {
+  e.preventDefault();
+  const sala = document.getElementById('uploadMediaSala')?.value || 'geral';
+  const tipoRadio = document.querySelector('input[name="mediaTypeRadio"]:checked')?.value || 'imagem';
+  const titulo = document.getElementById('uploadMediaTitulo')?.value?.trim() || 'Mídia Backstage';
+  const fileInput = document.getElementById('uploadMediaFileInput');
+  const file = fileInput?.files?.[0];
+
+  if (!file) {
+    alert('Por favor, selecione um arquivo para upload.');
+    return;
+  }
+
+  // Validação simples de tipo
+  if (tipoRadio === 'video' && !file.type.startsWith('video/')) {
+    alert('Por favor, selecione um arquivo de vídeo válido (MP4, WebM, MOV).');
+    return;
+  }
+  if (tipoRadio === 'imagem' && !file.type.startsWith('image/')) {
+    alert('Por favor, selecione uma imagem válida (JPG, PNG, WebP).');
+    return;
+  }
+
+  const progressWrap = document.getElementById('mediaUploadProgressWrap');
+  const progressBar = document.getElementById('mediaUploadProgressBar');
+  const progressPercent = document.getElementById('mediaUploadProgressPercent');
+  const progressText = document.getElementById('mediaUploadProgressText');
+  const submitBtn = document.getElementById('btnSubmitMediaUpload');
+
+  if (progressWrap) progressWrap.style.display = 'block';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+  }
+
+  try {
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const storagePath = `galeria/${sala}/${Date.now()}-${cleanFileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        if (snapshot.totalBytes > 0) {
+          const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          if (progressBar) progressBar.style.width = percent + '%';
+          if (progressPercent) progressPercent.textContent = percent + '%';
+          if (progressText) {
+            progressText.textContent = tipoRadio === 'video' 
+              ? `Fazendo upload do vídeo (${percent}%)...` 
+              : `Fazendo upload da imagem (${percent}%)...`;
+          }
+        }
+      },
+      (error) => {
+        console.error('Erro upload:', error);
+        showToast('Erro ao realizar upload no Firebase Storage: ' + error.message, 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Tentar Novamente';
+        }
+      },
+      async () => {
+        try {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+
+          const payload = {
+            tipo: tipoRadio,
+            sala,
+            titulo,
+            url: downloadUrl,
+            storagePath,
+            tamanhoBytes: file.size,
+            nomeArquivo: file.name,
+            ativo: true,
+            ordem: state.galeria.length + 1,
+            criadoEm: serverTimestamp()
+          };
+
+          const docRef = await addDoc(collection(db, 'galeria'), payload);
+          state.galeria.unshift({ id: docRef.id, ...payload });
+
+          showToast(tipoRadio === 'video' ? 'Vídeo enviado com sucesso!' : 'Foto enviada com sucesso!', 'success');
+          window.closeMediaUploadModal();
+          renderApp();
+        } catch (dbErr) {
+          console.error('Erro salvando Firestore:', dbErr);
+          showToast('Arquivo enviado, mas ocorreu erro ao salvar informações: ' + dbErr.message, 'error');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Fazer Upload';
+          }
+        }
+      }
+    );
+  } catch (err) {
+    console.error('Erro no processo de upload:', err);
+    showToast('Falha ao iniciar upload: ' + err.message, 'error');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Fazer Upload';
+    }
+  }
+};
+
+window.excluirItemGaleria = (id, fileUrl, storagePath) => {
   showConfirmModal({
     title: 'Excluir Item da Galeria',
-    message: 'Deseja realmente remover esta mídia da galeria?',
+    message: 'Deseja realmente remover esta mídia da galeria e do armazenamento?',
     confirmText: 'Excluir',
     confirmBtnClass: 'btn-admin-danger',
     onConfirm: async () => {
@@ -2132,17 +2357,23 @@ window.excluirItemGaleria = (id, fileUrl) => {
         state.galeria = state.galeria.filter(g => g.id !== id);
 
         // Tenta remover do Storage se for arquivo hospedado
-        if (fileUrl && fileUrl.includes('firebasestorage')) {
-          try {
+        try {
+          if (storagePath) {
+            const fileRef = ref(storage, storagePath);
+            await deleteObject(fileRef);
+          } else if (fileUrl && fileUrl.includes('firebasestorage')) {
             const fileRef = ref(storage, fileUrl);
             await deleteObject(fileRef);
-          } catch(e) {}
+          }
+        } catch(stErr) {
+          console.warn('Aviso exclusão Storage:', stErr);
         }
 
-        showToast('Imagem excluída.', 'info');
+        showToast('Mídia excluída com sucesso.', 'info');
         renderApp();
       } catch (err) {
         console.error('Erro excluir item galeria:', err);
+        showToast('Erro ao excluir item: ' + err.message, 'error');
       }
     }
   });
