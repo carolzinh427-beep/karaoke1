@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funções de verificação de autenticação
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated();
+    }
+
+    // 1. Coleção: reservas
+    // Clientes públicos podem criar reservas no status 'PENDING'
+    // Somente administradores autenticados podem ler histórico completo, alterar status ou excluir
+    match /reservas/{reservaId} {
+      allow create: if request.resource.data.status in ['PENDING', 'pendente']
+                    && request.resource.data.nome is string
+                    && request.resource.data.whatsapp is string;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 1.1 Coleção espelho/legada: agendamentos
+    match /agendamentos/{agendamentoId} {
+      allow create: if request.resource.data.status in ['PENDING', 'pendente'];
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 2. Coleção: salas
+    // Leitura pública (para exibir salas, preços e capacidades)
+    // Alterações exclusivas do administrador
+    match /salas/{salaId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 3. Coleção: cardapio (itens de comidas, petiscos e drinks)
+    // Leitura pública para exibição no cardápio
+    // Gerenciamento exclusivo do administrador
+    match /cardapio/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 4. Coleção: categorias_cardapio
+    match /categorias_cardapio/{catId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 5. Coleção: galeria (imagens e vídeos do Backstage)
+    match /galeria/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 6. Coleção: bloqueios (bloqueios manuais de datas, salas ou horários)
+    // Leitura pública para que o calendário do cliente reflita indisponibilidades
+    // Criação/remoção exclusiva do administrador
+    match /bloqueios/{bloqueioId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 7. Coleção: configuracoes (dados de contato, horários, WhatsApp, PDF oficial)
+    match /configuracoes/{configId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
