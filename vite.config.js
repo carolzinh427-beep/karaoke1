@@ -7,6 +7,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         cardapio: resolve(__dirname, 'cardapio.html'),
+        salas: resolve(__dirname, 'salas.html'),
       },
     },
   },

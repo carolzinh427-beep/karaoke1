@@ -92,9 +92,10 @@ function initWelcomeScreen() {
 
   const salasBtn = document.getElementById('welcomeSalasBtn');
   if (salasBtn) {
-    salasBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      dismiss('salas');
+    salasBtn.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem('backstage_entered', 'true');
+      } catch(err) {}
     });
   }
 
