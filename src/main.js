@@ -3,7 +3,14 @@
  */
 
 import { salvarAgendamento, db } from './lib/firebase.js';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+
+let activeBlockedDates = [];
+let WHATSAPP_PHONE = '556181426321';
+
+export function createWhatsAppUrl(message) {
+  return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+}
 
 function bootstrap() {
   try { initWelcomeScreen(); } catch(e) { console.warn('initWelcomeScreen error:', e); }
@@ -17,19 +24,13 @@ function bootstrap() {
   try { initBookingSystem(); } catch(e) { console.warn('initBookingSystem error:', e); }
   try { handleInitialHashNavigation(); } catch(e) { console.warn('handleInitialHashNavigation error:', e); }
   try { initSalasGallery(); } catch(e) { console.warn('initSalasGallery error:', e); }
+  try { loadPublicDataFromFirestore(); } catch(e) { console.warn('loadPublicDataFromFirestore error:', e); }
 }
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bootstrap);
 } else {
   bootstrap();
-}
-
-// WhatsApp Link Generator
-const WHATSAPP_PHONE = '556181426321';
-
-export function createWhatsAppUrl(message) {
-  return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
 }
 
 // 0. Welcome Screen / Splash Landing
@@ -500,9 +501,15 @@ function renderCalendar() {
     const dateStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const formattedDisplay = `${WEEKDAY_NAMES[dayOfWeek]}, ${String(d).padStart(2, '0')}/${String(currentCalMonth + 1).padStart(2, '0')}/${currentCalYear}`;
 
+    const isBlocked = activeBlockedDates.some(b => b.data === dateStr && (b.tipo === 'dia_inteiro' || b.sala === 'todas'));
+
     if (isPast) {
       dayBtn.classList.add('disabled', 'past');
       dayBtn.disabled = true;
+    } else if (isBlocked) {
+      dayBtn.classList.add('disabled', 'blocked');
+      dayBtn.disabled = true;
+      dayBtn.title = 'Data indisponível para agendamento (Bloqueada pelo Backstage)';
     } else if (isClosed) {
       dayBtn.classList.add('closed');
       dayBtn.title = 'Fechado ao público (Disponível sob consulta no WhatsApp)';
@@ -838,3 +845,141 @@ window.closeRoomLightbox = (e) => {
     setTimeout(() => { modal.style.display = 'none'; }, 250);
   }
 };
+
+/**
+ * Sincroniza dados oficiais do Firestore para o site público em tempo real
+ */
+async function loadPublicDataFromFirestore() {
+  if (!db) return;
+
+  try {
+    // 1. Configurações Gerais (WhatsApp Oficial e PDF do Cardápio)
+    try {
+      const confSnap = await getDoc(doc(db, 'configuracoes', 'geral'));
+      if (confSnap.exists()) {
+        const conf = confSnap.data();
+        if (conf.whatsapp) {
+          const cleanPhone = conf.whatsapp.replace(/\D/g, '');
+          if (cleanPhone) {
+            WHATSAPP_PHONE = cleanPhone;
+            document.querySelectorAll('a[href*="wa.me/"]').forEach(link => {
+              const oldUrl = link.href;
+              const textMatch = oldUrl.match(/text=([^&]+)/);
+              const textParam = textMatch ? textMatch[1] : '';
+              link.href = `https://wa.me/${cleanPhone}${textParam ? '?text=' + textParam : ''}`;
+            });
+          }
+        }
+        if (conf.pdfUrl) {
+          document.querySelectorAll('a[href*="cardapio-oficial.pdf"], #verCardapioPdfMainBtn').forEach(link => {
+            link.href = conf.pdfUrl;
+          });
+        }
+      }
+    } catch(e) {
+      console.warn('Sync configs público:', e);
+    }
+
+    // 2. Bloqueios de Calendário (Disponibilidade)
+    try {
+      const bSnap = await getDocs(collection(db, 'bloqueios'));
+      if (!bSnap.empty) {
+        activeBlockedDates = bSnap.docs.map(d => d.data());
+        renderCalendar();
+      }
+    } catch(e) {
+      console.warn('Sync bloqueios público:', e);
+    }
+
+    // 3. Salas (Valores, Capacidades e Descrições)
+    try {
+      const sSnap = await getDocs(collection(db, 'salas'));
+      if (!sSnap.empty) {
+        sSnap.docs.forEach(docSnap => {
+          const s = docSnap.data();
+          const card = document.querySelector(`.room-pick-card[data-room="${s.nome}"]`);
+          if (card) {
+            if (s.capacidade) {
+              card.setAttribute('data-capacity', s.capacidade);
+              const capBadge = card.querySelector('.room-cap-badge');
+              if (capBadge) capBadge.textContent = `Até ${s.capacidade} pessoas`;
+            }
+            if (s.precoTotal) {
+              card.setAttribute('data-price', s.precoTotal);
+              card.setAttribute('data-signal', s.precoTotal / 2);
+              const totalVal = card.querySelector('.total-val');
+              if (totalVal) totalVal.textContent = `R$ ${s.precoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+              const signalVal = card.querySelector('.signal-val');
+              if (signalVal) signalVal.textContent = `Sinal 50%: R$ ${(s.precoTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • No dia: R$ ${(s.precoTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            }
+            if (s.descricao) {
+              const descEl = card.querySelector('.room-pick-desc');
+              if (descEl) descEl.textContent = s.descricao;
+            }
+            if (s.ativo === false) {
+              card.style.opacity = '0.5';
+              card.style.pointerEvents = 'none';
+            }
+          }
+        });
+      }
+    } catch(e) {
+      console.warn('Sync salas público:', e);
+    }
+
+    // 4. Cardápio Oficial (Sincronização em cardapio.html)
+    if (document.querySelector('.cardapio-page-view') || document.getElementById('cardapio')) {
+      try {
+        const cSnap = await getDocs(collection(db, 'cardapio'));
+        if (!cSnap.empty) {
+          const items = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          items.forEach(it => {
+            const allItemRows = document.querySelectorAll('.menu-item-row');
+            let matchedRow = null;
+            allItemRows.forEach(row => {
+              const nameEl = row.querySelector('.item-name');
+              if (nameEl && nameEl.textContent.trim().toLowerCase() === (it.nome || '').trim().toLowerCase()) {
+                matchedRow = row;
+              }
+            });
+
+            if (matchedRow) {
+              if (it.ativo === false) {
+                matchedRow.style.display = 'none';
+              } else {
+                matchedRow.style.display = 'flex';
+                if (it.preco) {
+                  const priceEl = matchedRow.querySelector('.item-price');
+                  if (priceEl) priceEl.textContent = `R$ ${it.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                }
+                if (it.descricao) {
+                  const descEl = matchedRow.querySelector('.item-desc');
+                  if (descEl) descEl.textContent = it.descricao;
+                }
+              }
+            } else if (it.ativo !== false && it.nome) {
+              const targetPanel = document.getElementById(`cat-${it.categoriaId || 'petiscos'}`);
+              const grid = targetPanel ? targetPanel.querySelector('.menu-items-grid') : null;
+              if (grid) {
+                const newRow = document.createElement('div');
+                newRow.className = 'menu-item-row';
+                newRow.innerHTML = `
+                  <div class="item-left">
+                    <div class="item-name">${it.nome}</div>
+                    <div class="item-desc">${it.descricao || ''}</div>
+                  </div>
+                  <div class="item-price">R$ ${(it.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                `;
+                grid.appendChild(newRow);
+              }
+            }
+          });
+        }
+      } catch(e) {
+        console.warn('Sync cardapio público:', e);
+      }
+    }
+  } catch(err) {
+    console.warn('Sync público geral:', err);
+  }
+}

@@ -119,6 +119,102 @@
     </div>
   </div>
 
+  <!-- Modal de Item do Cardápio (Adicionar / Editar) -->
+  <div id="adminCardapioItemModal" class="admin-modal-overlay">
+    <div class="admin-modal-card" style="max-width: 540px;">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title" id="cardapioModalTitle">Adicionar Item ao Cardápio</h3>
+        <button type="button" class="admin-modal-close" onclick="window.closeCardapioItemModal()">&times;</button>
+      </div>
+      <form id="formCardapioItem" onsubmit="window.saveCardapioItem(event)">
+        <input type="hidden" id="modalItemId">
+        <div class="admin-modal-body">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="modalItemNome">Nome do Prato / Drink *</label>
+            <input type="text" id="modalItemNome" class="form-input" placeholder="Ex: Picanha na Chapa, Gin Tropical..." required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="modalItemPreco">Preço Oficial (R$) *</label>
+              <input type="number" step="0.01" min="0" id="modalItemPreco" class="form-input" placeholder="0.00" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modalItemCategoria">Categoria *</label>
+              <select id="modalItemCategoria" class="form-select" required>
+                <!-- Preenchido dinamicamente -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="modalItemDesc">Descrição / Ingredientes</label>
+            <textarea id="modalItemDesc" class="form-input" rows="3" placeholder="Detalhes dos ingredientes, acompanhamentos ou dosagem..." style="resize: vertical;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #FFFFFF; font-weight: 600; font-size: 0.9rem;">
+              <input type="checkbox" id="modalItemAtivo" checked style="width: 18px; height: 18px; accent-color: var(--admin-cyan);">
+              <span>Disponível e ativo no site oficial</span>
+            </label>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.closeCardapioItemModal()">Cancelar</button>
+          <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarItemCardapio">Salvar no Banco de Dados</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Sala Privada (Adicionar / Editar) -->
+  <div id="adminSalaModal" class="admin-modal-overlay">
+    <div class="admin-modal-card" style="max-width: 520px;">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title" id="salaModalTitle">Editar Sala Privada</h3>
+        <button type="button" class="admin-modal-close" onclick="window.closeSalaModal()">&times;</button>
+      </div>
+      <form id="formSalaModal" onsubmit="window.saveSala(event)">
+        <input type="hidden" id="modalSalaId">
+        <div class="admin-modal-body">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="modalSalaNome">Nome da Sala *</label>
+            <input type="text" id="modalSalaNome" class="form-input" placeholder="Ex: Sala Red, Sala VIP Gold..." required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="modalSalaCapacidade">Capacidade Máxima (Pessoas) *</label>
+              <input type="number" min="1" max="200" id="modalSalaCapacidade" class="form-input" placeholder="30" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modalSalaPrecoTotal">Preço Total de Locação (R$) *</label>
+              <input type="number" step="1" min="0" id="modalSalaPrecoTotal" class="form-input" placeholder="800" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="modalSalaDesc">Descrição Promocional da Sala</label>
+            <textarea id="modalSalaDesc" class="form-input" rows="2" placeholder="Destaques, iluminação, conforto ou recomendação..." style="resize: vertical;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #FFFFFF; font-weight: 600; font-size: 0.9rem;">
+              <input type="checkbox" id="modalSalaAtiva" checked style="width: 18px; height: 18px; accent-color: var(--admin-cyan);">
+              <span>Sala disponível para reservas no site</span>
+            </label>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.closeSalaModal()">Cancelar</button>
+          <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarSala">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <style>
     @keyframes spin {
       to { transform: rotate(360deg); }

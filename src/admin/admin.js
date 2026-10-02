@@ -5,6 +5,13 @@
 
 import { auth, db, storage } from '../lib/firebase.js';
 import {
+  DEFAULT_SALAS,
+  DEFAULT_CATEGORIAS,
+  DEFAULT_CARDAPIO,
+  DEFAULT_CONFIGURACOES,
+  seedDatabaseIfNeeded,
+} from '../lib/catalogData.js';
+import {
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
@@ -40,12 +47,14 @@ const state = {
   currentRoute: '/admin',
   reservas: [],
   bloqueios: [],
-  salas: [],
-  cardapio: [],
-  categorias: [],
+  salas: [...DEFAULT_SALAS],
+  cardapio: [...DEFAULT_CARDAPIO],
+  categorias: [...DEFAULT_CATEGORIAS],
+  activeFilterCardapio: 'todas',
+  searchTermCardapio: '',
   galeria: [],
   activeFilterGaleria: 'todas',
-  configuracoes: null,
+  configuracoes: { ...DEFAULT_CONFIGURACOES },
   activeFilterReservas: 'todas',
   searchTermReservas: '',
   calCurrentMonth: new Date(),
@@ -171,6 +180,13 @@ window.addEventListener('popstate', (e) => {
 onAuthStateChanged(auth, async (user) => {
   state.user = user;
   if (user) {
+    // Garante que o banco de dados esteja povoado com catálogo completo
+    try {
+      await seedDatabaseIfNeeded(db);
+    } catch(seedErr) {
+      console.warn('Seed inicial resiliente:', seedErr);
+    }
+
     // Carrega dados iniciais das coleções do Firestore
     await Promise.allSettled([
       fetchReservas(),
@@ -325,61 +341,21 @@ async function fetchSalas() {
   try {
     const snap = await getDocs(collection(db, 'salas'));
     if (snap.empty) {
-      // Inicialização das salas padrão caso a coleção esteja vazia
-      const defaultSalas = [
-        {
-          id: 'sala-red',
-          nome: 'Sala Red',
-          slug: 'sala-red',
-          capacidade: 30,
-          precoTotal: 800,
-          sinal: 400,
-          restante: 400,
-          descricao: 'Ambiente intimista e vibrante com iluminação vermelha cênica.',
-          imagem: '/assets/drinks/balde-heineken.webp',
-          ativo: true,
-          ordem: 1,
-        },
-        {
-          id: 'sala-green',
-          nome: 'Sala Green',
-          slug: 'sala-green',
-          capacidade: 40,
-          precoTotal: 900,
-          sinal: 450,
-          restante: 450,
-          descricao: 'Recomendado entre 30 e 35 pessoas para maior conforto.',
-          imagem: '/assets/drinks/aperol-spritz.webp',
-          ativo: true,
-          ordem: 2,
-        },
-        {
-          id: 'sala-blue',
-          nome: 'Sala Blue',
-          slug: 'sala-blue',
-          capacidade: 50,
-          precoTotal: 1000,
-          sinal: 500,
-          restante: 500,
-          descricao: 'Nossa maior sala vip com capacidade estendida e sistema premium.',
-          imagem: '/assets/brand/microfone-profissional.jpg',
-          ativo: true,
-          ordem: 3,
-        }
-      ];
-
-      // Salva no Firestore
-      for (const s of defaultSalas) {
-        await setDoc(doc(db, 'salas', s.id), s);
+      await seedDatabaseIfNeeded(db);
+      const reSnap = await getDocs(collection(db, 'salas'));
+      if (!reSnap.empty) {
+        state.salas = reSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return state.salas;
       }
-      state.salas = defaultSalas;
-    } else {
-      state.salas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      state.salas = [...DEFAULT_SALAS];
+      return state.salas;
     }
+    state.salas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     return state.salas;
   } catch (err) {
     console.warn('Erro ao carregar salas:', err);
-    return [];
+    state.salas = [...DEFAULT_SALAS];
+    return state.salas;
   }
 }
 
@@ -388,36 +364,43 @@ async function fetchCategorias() {
   try {
     const snap = await getDocs(collection(db, 'categorias_cardapio'));
     if (snap.empty) {
-      const defaultCats = [
-        { id: 'petiscos', nome: 'Petiscos de Boteco', ordem: 1, ativo: true },
-        { id: 'chapas', nome: 'Chapas Especiais', ordem: 2, ativo: true },
-        { id: 'drinks', nome: 'Drinks Autorais', ordem: 3, ativo: true },
-        { id: 'cervejas', nome: 'Cervejas e Chopps', ordem: 4, ativo: true },
-        { id: 'combos', nome: 'Whiskies e Combos', ordem: 5, ativo: true },
-        { id: 'nao-alcoolicos', nome: 'Não Alcoólicos', ordem: 6, ativo: true },
-      ];
-      for (const c of defaultCats) {
-        await setDoc(doc(db, 'categorias_cardapio', c.id), c);
+      await seedDatabaseIfNeeded(db);
+      const reSnap = await getDocs(collection(db, 'categorias_cardapio'));
+      if (!reSnap.empty) {
+        state.categorias = reSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return state.categorias;
       }
-      state.categorias = defaultCats;
-    } else {
-      state.categorias = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      state.categorias = [...DEFAULT_CATEGORIAS];
+      return state.categorias;
     }
+    state.categorias = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     return state.categorias;
   } catch (err) {
     console.warn('Erro ao carregar categorias:', err);
-    return [];
+    state.categorias = [...DEFAULT_CATEGORIAS];
+    return state.categorias;
   }
 }
 
 async function fetchCardapio() {
   try {
     const snap = await getDocs(collection(db, 'cardapio'));
+    if (snap.empty || snap.docs.length < 5) {
+      await seedDatabaseIfNeeded(db);
+      const reSnap = await getDocs(collection(db, 'cardapio'));
+      if (!reSnap.empty) {
+        state.cardapio = reSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return state.cardapio;
+      }
+      state.cardapio = [...DEFAULT_CARDAPIO];
+      return state.cardapio;
+    }
     state.cardapio = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     return state.cardapio;
   } catch (err) {
     console.warn('Erro ao carregar cardápio:', err);
-    return [];
+    state.cardapio = [...DEFAULT_CARDAPIO];
+    return state.cardapio;
   }
 }
 
@@ -441,30 +424,14 @@ async function fetchConfiguracoes() {
     if (docSnap.exists()) {
       state.configuracoes = docSnap.data();
     } else {
-      const defaultConf = {
-        whatsapp: '556181426321',
-        instagram: '@backstagekaraoke',
-        mapsUrl: 'https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6',
-        endereco: 'CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF',
-        horarios: {
-          terca: '19:00 → 02:30 (madrugada de quarta)',
-          quarta: '19:00 → 03:30 (madrugada de quinta)',
-          quinta: '19:00 → 03:30 (madrugada de sexta)',
-          sexta: '19:00 → 03:30 (madrugada de sábado)',
-          sabado: '19:00 → 03:30 (madrugada de domingo)',
-          domingo: 'FECHADO',
-          segunda: 'FECHADO'
-        },
-        contatoEmail: 'MPLACERDA921@GMAIL.COM',
-        pdfUrl: '/cardapio-oficial.pdf'
-      };
-      await setDoc(docRef, defaultConf);
-      state.configuracoes = defaultConf;
+      await seedDatabaseIfNeeded(db);
+      state.configuracoes = { ...DEFAULT_CONFIGURACOES };
     }
     return state.configuracoes;
   } catch (err) {
     console.warn('Erro ao carregar configurações:', err);
-    return null;
+    state.configuracoes = { ...DEFAULT_CONFIGURACOES };
+    return state.configuracoes;
   }
 }
 
@@ -1312,11 +1279,22 @@ function renderSalasView() {
 
 // 7.6 Cardápio
 function renderCardapioView() {
+  const currentCat = state.activeFilterCardapio || 'todas';
+  const searchTerm = (state.searchTermCardapio || '').toLowerCase().trim();
+
+  let items = state.cardapio;
+  if (currentCat !== 'todas') {
+    items = items.filter(it => it.categoriaId === currentCat || (it.categoria || '').toLowerCase().includes(currentCat));
+  }
+  if (searchTerm) {
+    items = items.filter(it => (it.nome || '').toLowerCase().includes(searchTerm) || (it.descricao || '').toLowerCase().includes(searchTerm));
+  }
+
   return `
     <div class="view-header">
       <div class="view-headline">
         <h2>Gerenciamento do Cardápio</h2>
-        <p>Edite pratos, porções, drinks, coquetéis e organize as categorias do bar</p>
+        <p>Edite pratos, porções, drinks, combos e organize as categorias do bar</p>
       </div>
       <div class="view-actions">
         <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.openModalCategoria()">
@@ -1328,64 +1306,109 @@ function renderCardapioView() {
       </div>
     </div>
 
-    <!-- Lista de Categorias -->
-    <div class="admin-card">
-      <div class="admin-card-header">
-        <h3 class="admin-card-title">Categorias Cadastradas (${state.categorias.length})</h3>
+    <!-- Barra de Filtros e Busca Rápida -->
+    <div class="admin-card" style="margin-bottom: 20px; padding: 16px 20px;">
+      <div style="display: flex; gap: 14px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+        <!-- Campo de Busca -->
+        <div style="flex: 1; min-width: 260px; max-width: 440px;">
+          <input type="text" 
+                 class="form-input" 
+                 placeholder="Buscar por nome ou ingrediente (ex: Picanha, Chopp, Gin)..." 
+                 value="${state.searchTermCardapio || ''}" 
+                 oninput="window.handleSearchCardapio(event)">
+        </div>
+
+        <!-- Totalizadores -->
+        <div style="font-size: 0.85rem; color: var(--admin-text-muted);">
+          Exibindo <strong style="color: var(--admin-cyan);">${items.length}</strong> de <strong style="color: #FFF;">${state.cardapio.length}</strong> itens cadastrados
+        </div>
       </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        ${state.categorias.map(c => `
-          <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--admin-border); border-radius: 8px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px;">
-            <span style="font-weight: 700; font-size: 0.85rem;">${c.nome}</span>
-            <button type="button" style="background: none; border: none; color: #EF4444; cursor: pointer; font-size: 1rem; line-height: 1;" onclick="window.excluirCategoria('${c.id}')" title="Excluir Categoria">&times;</button>
-          </div>
-        `).join('')}
+
+      <!-- Abas de Categorias -->
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--admin-border);">
+        <button type="button" 
+                class="btn-admin btn-admin-xs ${currentCat === 'todas' ? 'btn-admin-primary' : 'btn-admin-outline'}" 
+                onclick="window.setCardapioFilter('todas')">
+          Todas (${state.cardapio.length})
+        </button>
+        ${state.categorias.map(c => {
+          const count = state.cardapio.filter(it => it.categoriaId === c.id || (it.categoria || '').toLowerCase().includes(c.id)).length;
+          return `
+            <button type="button" 
+                    class="btn-admin btn-admin-xs ${currentCat === c.id ? 'btn-admin-primary' : 'btn-admin-outline'}" 
+                    onclick="window.setCardapioFilter('${c.id}')">
+              ${c.nome} (${count})
+            </button>
+          `;
+        }).join('')}
       </div>
     </div>
 
-    <!-- Itens do Cardápio -->
+    <!-- Tabela de Itens do Cardápio -->
     <div class="admin-card">
-      <div class="admin-card-header">
-        <h3 class="admin-card-title">Itens do Cardápio (${state.cardapio.length})</h3>
+      <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="admin-card-title">Itens do Cardápio (${items.length})</h3>
+        <button type="button" class="btn-admin btn-admin-primary btn-admin-xs" onclick="window.openModalItemCardapio()">
+          + Adicionar Item
+        </button>
       </div>
 
-      ${state.cardapio.length === 0 ? `
+      ${items.length === 0 ? `
         <div class="empty-state">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
-          <div class="empty-state-title">Nenhum item cadastrado no cardápio</div>
-          <p class="empty-state-desc">Clique no botão "+ Novo Item" acima para cadastrar petiscos, porções ou coquetéis autorais.</p>
+          <div class="empty-state-title">Nenhum item encontrado</div>
+          <p class="empty-state-desc">Nenhum item corresponde ao filtro ou busca selecionada.</p>
         </div>
       ` : `
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Item</th>
+                <th>Item / Descrição</th>
                 <th>Categoria</th>
-                <th>Preço</th>
-                <th>Status</th>
+                <th>Preço Oficial</th>
+                <th>Disponibilidade</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
-              ${state.cardapio.map(it => `
+              ${items.map(it => `
                 <tr>
                   <td>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                      ${it.imagem ? `<img src="${it.imagem}" alt="${it.nome}" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover;">` : ''}
+                      ${it.imagem ? `<img src="${it.imagem}" alt="${it.nome}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">` : ''}
                       <div>
-                        <strong>${it.nome}</strong>
-                        <div style="font-size: 0.8rem; color: var(--admin-text-muted);">${it.descricao || ''}</div>
+                        <strong style="color: #FFFFFF; font-size: 0.92rem;">${it.nome}</strong>
+                        <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin-top: 2px;">${it.descricao || ''}</div>
                       </div>
                     </div>
                   </td>
-                  <td>${it.categoria || '-'}</td>
-                  <td><strong style="color: var(--admin-cyan);">R$ ${(it.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
-                  <td><span class="badge-status ${it.ativo ? 'confirmed' : 'cancelled'}">${it.ativo ? 'Ativo' : 'Inativo'}</span></td>
                   <td>
-                    <div style="display: flex; gap: 6px;">
-                      <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.editarItemCardapio('${it.id}')">Editar</button>
-                      <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemCardapio('${it.id}')">Excluir</button>
+                    <span style="font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px; color: var(--admin-cyan);">
+                      ${it.categoria || it.categoriaId || '-'}
+                    </span>
+                  </td>
+                  <td>
+                    <strong style="color: var(--admin-cyan); font-size: 0.95rem;">
+                      R$ ${(it.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </strong>
+                  </td>
+                  <td>
+                    <span class="badge-status ${it.ativo !== false ? 'confirmed' : 'cancelled'}">
+                      ${it.ativo !== false ? 'Ativo no Site' : 'Pausado'}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.editarItemCardapio('${it.id}')">
+                        Editar
+                      </button>
+                      <button type="button" class="btn-admin btn-admin-xs ${it.ativo !== false ? 'btn-admin-danger' : 'btn-admin-success'}" onclick="window.toggleAtivoItemCardapio('${it.id}', ${it.ativo === false})">
+                        ${it.ativo !== false ? 'Pausar' : 'Ativar'}
+                      </button>
+                      <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemCardapio('${it.id}')" title="Excluir item">
+                        &times;
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1922,66 +1945,87 @@ window.toggleAtivoSala = async (id, novoAtivo) => {
   }
 };
 
+// 8.4 Ações de Salas com Modal Profissional
 window.openModalNovaSala = () => {
-  const nome = prompt('Nome da Sala (ex: Sala Silver, Sala Gold):');
-  if (!nome) return;
-  const capacidade = parseInt(prompt('Capacidade máxima de pessoas:', '25'), 10) || 25;
-  const precoTotal = parseFloat(prompt('Preço total de locação (R$):', '750')) || 750;
-  const descricao = prompt('Descrição curta da sala:', 'Ambiente acústico de alta performance.') || '';
-
-  const id = 'sala-' + nome.toLowerCase().replace(/\s+/g, '-');
-  const payload = {
-    id,
-    nome,
-    slug: id,
-    capacidade,
-    precoTotal,
-    sinal: precoTotal / 2,
-    restante: precoTotal / 2,
-    descricao,
-    imagem: '/assets/brand/hero-bg.webp',
-    ativo: true,
-    ordem: state.salas.length + 1
-  };
-
-  setDoc(doc(db, 'salas', id), payload).then(() => {
-    state.salas.push(payload);
-    showToast('Nova sala cadastrada com sucesso.', 'success');
-    renderApp();
-  }).catch(err => {
-    console.error('Erro ao criar sala:', err);
-    showToast('Erro ao cadastrar sala.', 'error');
-  });
+  const modal = document.getElementById('adminSalaModal');
+  if (!modal) return;
+  document.getElementById('salaModalTitle').textContent = 'Cadastrar Nova Sala';
+  document.getElementById('modalSalaId').value = '';
+  document.getElementById('modalSalaNome').value = '';
+  document.getElementById('modalSalaCapacidade').value = '30';
+  document.getElementById('modalSalaPrecoTotal').value = '800';
+  document.getElementById('modalSalaDesc').value = '';
+  document.getElementById('modalSalaAtiva').checked = true;
+  modal.classList.add('open');
 };
 
 window.editarSala = (id) => {
   const s = state.salas.find(item => item.id === id);
   if (!s) return;
+  const modal = document.getElementById('adminSalaModal');
+  if (!modal) return;
+  document.getElementById('salaModalTitle').textContent = `Editar ${s.nome}`;
+  document.getElementById('modalSalaId').value = s.id;
+  document.getElementById('modalSalaNome').value = s.nome;
+  document.getElementById('modalSalaCapacidade').value = s.capacidade || 30;
+  document.getElementById('modalSalaPrecoTotal').value = s.precoTotal || 800;
+  document.getElementById('modalSalaDesc').value = s.descricao || '';
+  document.getElementById('modalSalaAtiva').checked = s.ativo !== false;
+  modal.classList.add('open');
+};
 
-  const novoNome = prompt('Editar Nome da Sala:', s.nome);
-  if (!novoNome) return;
-  const novaCapacidade = parseInt(prompt('Editar Capacidade:', s.capacidade), 10) || s.capacidade;
-  const novoPreco = parseFloat(prompt('Editar Preço Total (R$):', s.precoTotal)) || s.precoTotal;
-  const novaDesc = prompt('Editar Descrição:', s.descricao) || s.descricao;
+window.closeSalaModal = () => {
+  const modal = document.getElementById('adminSalaModal');
+  if (modal) modal.classList.remove('open');
+};
 
-  updateDoc(doc(db, 'salas', id), {
-    nome: novoNome,
-    capacidade: novaCapacidade,
-    precoTotal: novoPreco,
-    sinal: novoPreco / 2,
-    restante: novoPreco / 2,
-    descricao: novaDesc
-  }).then(() => {
-    s.nome = novoNome;
-    s.capacidade = novaCapacidade;
-    s.precoTotal = novoPreco;
-    s.descricao = novaDesc;
-    showToast('Sala atualizada com sucesso.', 'success');
+window.saveSala = async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('modalSalaId').value.trim();
+  const nome = document.getElementById('modalSalaNome').value.trim();
+  const capacidade = parseInt(document.getElementById('modalSalaCapacidade').value, 10) || 30;
+  const precoTotal = parseFloat(document.getElementById('modalSalaPrecoTotal').value) || 0;
+  const descricao = document.getElementById('modalSalaDesc').value.trim();
+  const ativo = document.getElementById('modalSalaAtiva').checked;
+
+  const btn = document.getElementById('btnSalvarSala');
+  if (btn) btn.disabled = true;
+
+  try {
+    const salaId = id || ('sala-' + nome.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+    const payload = {
+      id: salaId,
+      nome,
+      slug: salaId,
+      capacidade,
+      precoTotal,
+      sinal: precoTotal / 2,
+      restante: precoTotal / 2,
+      descricao,
+      ativo,
+      atualizadoEm: serverTimestamp()
+    };
+
+    await setDoc(doc(db, 'salas', salaId), payload, { merge: true });
+
+    const existingIdx = state.salas.findIndex(s => s.id === salaId);
+    if (existingIdx >= 0) {
+      state.salas[existingIdx] = { ...state.salas[existingIdx], ...payload };
+    } else {
+      payload.imagem = '/assets/brand/hero-bg.webp';
+      payload.ordem = state.salas.length + 1;
+      state.salas.push(payload);
+    }
+
+    showToast('Sala salva com sucesso no banco de dados.', 'success');
+    window.closeSalaModal();
     renderApp();
-  }).catch(err => {
-    console.error('Erro ao editar sala:', err);
-    showToast('Erro ao salvar alterações da sala.', 'error');
-  });
+  } catch (err) {
+    console.error('Erro ao salvar sala:', err);
+    showToast('Erro ao salvar sala: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 };
 
 // 8.5 Ações do Cardápio
@@ -2027,70 +2071,165 @@ window.excluirCategoria = (id) => {
 };
 
 window.openModalItemCardapio = () => {
-  const nome = prompt('Nome do Item (ex: Picanha na Chapa, Caipirinha de Morango):');
-  if (!nome) return;
-  const desc = prompt('Descrição detalhada dos ingredientes:') || '';
-  const preco = parseFloat(prompt('Preço (R$):', '35.00')) || 0;
-  const categoria = prompt(`Categoria (${state.categorias.map(c => c.nome).join(', ')}):`, state.categorias[0]?.nome || 'Petiscos') || 'Geral';
+  const modal = document.getElementById('adminCardapioItemModal');
+  if (!modal) return;
 
-  const payload = {
-    nome,
-    descricao: desc,
-    preco,
-    categoria,
-    ativo: true,
-    ordem: state.cardapio.length + 1,
-    imagem: '',
-    criadoEm: serverTimestamp()
-  };
+  document.getElementById('cardapioModalTitle').textContent = 'Adicionar Item ao Cardápio';
+  document.getElementById('modalItemId').value = '';
+  document.getElementById('modalItemNome').value = '';
+  document.getElementById('modalItemPreco').value = '';
+  document.getElementById('modalItemDesc').value = '';
+  document.getElementById('modalItemAtivo').checked = true;
 
-  addDoc(collection(db, 'cardapio'), payload).then(docRef => {
-    state.cardapio.push({ id: docRef.id, ...payload });
-    showToast('Cardápio atualizado.', 'success');
-    renderApp();
-  }).catch(err => {
-    console.error('Erro item cardapio:', err);
-    showToast('Erro ao adicionar item.', 'error');
-  });
+  const selectCat = document.getElementById('modalItemCategoria');
+  if (selectCat) {
+    selectCat.innerHTML = state.categorias.map(c => `
+      <option value="${c.id}">${c.nome}</option>
+    `).join('');
+    if (state.activeFilterCardapio && state.activeFilterCardapio !== 'todas') {
+      selectCat.value = state.activeFilterCardapio;
+    }
+  }
+
+  modal.classList.add('open');
 };
 
 window.editarItemCardapio = (id) => {
   const it = state.cardapio.find(item => item.id === id);
   if (!it) return;
 
-  const novoNome = prompt('Editar Nome:', it.nome) || it.nome;
-  const novaDesc = prompt('Editar Descrição:', it.descricao) || it.descricao;
-  const novoPreco = parseFloat(prompt('Editar Preço (R$):', it.preco)) || it.preco;
+  const modal = document.getElementById('adminCardapioItemModal');
+  if (!modal) return;
 
-  updateDoc(doc(db, 'cardapio', id), {
-    nome: novoNome,
-    descricao: novaDesc,
-    preco: novoPreco
-  }).then(() => {
-    it.nome = novoNome;
-    it.descricao = novaDesc;
-    it.preco = novoPreco;
-    showToast('Cardápio atualizado.', 'success');
+  document.getElementById('cardapioModalTitle').textContent = `Editar ${it.nome}`;
+  document.getElementById('modalItemId').value = it.id;
+  document.getElementById('modalItemNome').value = it.nome;
+  document.getElementById('modalItemPreco').value = it.preco || '';
+  document.getElementById('modalItemDesc').value = it.descricao || '';
+  document.getElementById('modalItemAtivo').checked = it.ativo !== false;
+
+  const selectCat = document.getElementById('modalItemCategoria');
+  if (selectCat) {
+    selectCat.innerHTML = state.categorias.map(c => `
+      <option value="${c.id}" ${c.id === it.categoriaId || it.categoria === c.nome ? 'selected' : ''}>${c.nome}</option>
+    `).join('');
+  }
+
+  modal.classList.add('open');
+};
+
+window.closeCardapioItemModal = () => {
+  const modal = document.getElementById('adminCardapioItemModal');
+  if (modal) modal.classList.remove('open');
+};
+
+window.saveCardapioItem = async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('modalItemId').value.trim();
+  const nome = document.getElementById('modalItemNome').value.trim();
+  const preco = parseFloat(document.getElementById('modalItemPreco').value) || 0;
+  const categoriaId = document.getElementById('modalItemCategoria').value;
+  const catObj = state.categorias.find(c => c.id === categoriaId);
+  const categoriaNome = catObj ? catObj.nome : categoriaId;
+  const descricao = document.getElementById('modalItemDesc').value.trim();
+  const ativo = document.getElementById('modalItemAtivo').checked;
+
+  const btn = document.getElementById('btnSalvarItemCardapio');
+  if (btn) btn.disabled = true;
+
+  try {
+    if (id) {
+      // Edição de item existente no Firestore
+      const payload = {
+        nome,
+        preco,
+        categoriaId,
+        categoria: categoriaNome,
+        descricao,
+        ativo,
+        atualizadoEm: serverTimestamp()
+      };
+      await updateDoc(doc(db, 'cardapio', id), payload);
+
+      const item = state.cardapio.find(it => it.id === id);
+      if (item) Object.assign(item, payload);
+
+      showToast(`Item "${nome}" atualizado no cardápio.`, 'success');
+    } else {
+      // Novo item criado no Firestore
+      const payload = {
+        nome,
+        preco,
+        categoriaId,
+        categoria: categoriaNome,
+        descricao,
+        ativo,
+        ordem: state.cardapio.length + 1,
+        imagem: '',
+        criadoEm: serverTimestamp()
+      };
+      const docRef = await addDoc(collection(db, 'cardapio'), payload);
+      state.cardapio.push({ id: docRef.id, ...payload });
+
+      showToast(`Item "${nome}" adicionado com sucesso.`, 'success');
+    }
+
+    window.closeCardapioItemModal();
     renderApp();
-  }).catch(err => {
-    console.error('Erro editar item cardapio:', err);
-  });
+  } catch (err) {
+    console.error('Erro ao salvar item do cardápio:', err);
+    showToast('Erro ao salvar no Firestore: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+window.setCardapioFilter = (catId) => {
+  state.activeFilterCardapio = catId;
+  renderApp();
+};
+
+window.handleSearchCardapio = (e) => {
+  state.searchTermCardapio = e.target.value;
+  renderApp();
+  // Mantém foco e posição do cursor no input
+  setTimeout(() => {
+    const input = document.querySelector('input[placeholder*="Buscar por nome"]');
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  }, 10);
+};
+
+window.toggleAtivoItemCardapio = async (id, novoAtivo) => {
+  try {
+    await updateDoc(doc(db, 'cardapio', id), { ativo: novoAtivo });
+    const item = state.cardapio.find(it => it.id === id);
+    if (item) item.ativo = novoAtivo;
+    showToast(novoAtivo ? 'Item reativado no cardápio.' : 'Item pausado no cardápio.', 'info');
+    renderApp();
+  } catch (err) {
+    console.error('Erro ao alterar status do item:', err);
+    showToast('Erro ao atualizar item no Firestore: ' + err.message, 'error');
+  }
 };
 
 window.excluirItemCardapio = (id) => {
   showConfirmModal({
     title: 'Excluir Item do Cardápio',
-    message: 'Deseja realmente remover este item do cardápio?',
+    message: 'Deseja realmente remover este item do cardápio permanentemente?',
     confirmText: 'Excluir',
     confirmBtnClass: 'btn-admin-danger',
     onConfirm: async () => {
       try {
         await deleteDoc(doc(db, 'cardapio', id));
         state.cardapio = state.cardapio.filter(it => it.id !== id);
-        showToast('Cardápio atualizado.', 'info');
+        showToast('Item excluído com sucesso.', 'info');
         renderApp();
       } catch (err) {
         console.error('Erro excluir item:', err);
+        showToast('Erro ao excluir item: ' + err.message, 'error');
       }
     }
   });

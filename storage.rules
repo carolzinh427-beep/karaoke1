@@ -1,46 +1,10 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    function isAdmin() {
-      return request.auth != null;
-    }
-    
-    // Leitura pública de todas as mídias hospedadas
+    // Leitura pública de arquivos de mídia da galeria e cardápio, upload restrito ao Admin
     match /{allPaths=**} {
       allow read: if true;
-    }
-    
-    // 1. Arquivos do Cardápio (PDF oficial e imagens de pratos/drinks)
-    match /cardapio/{fileName} {
-      allow write: if isAdmin() 
-        && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf')
-        && request.resource.size < 30 * 1024 * 1024; // máx 30MB
-      allow delete: if isAdmin();
-    }
-    
-    // 2. Imagens da Galeria
-    match /galeria/imagens/{fileName} {
-      allow write: if isAdmin() 
-        && request.resource.contentType.matches('image/.*')
-        && request.resource.size < 15 * 1024 * 1024; // máx 15MB
-      allow delete: if isAdmin();
-    }
-    
-    // 3. Vídeos da Galeria
-    match /galeria/videos/{fileName} {
-      allow write: if isAdmin() 
-        && request.resource.contentType.matches('video/.*')
-        && request.resource.size < 100 * 1024 * 1024; // máx 100MB
-      allow delete: if isAdmin();
-    }
-    
-    // 4. Fotos das Salas Privadas
-    match /salas/{fileName} {
-      allow write: if isAdmin() 
-        && request.resource.contentType.matches('image/.*')
-        && request.resource.size < 15 * 1024 * 1024; // máx 15MB
-      allow delete: if isAdmin();
+      allow write: if request.auth != null;
     }
   }
 }
