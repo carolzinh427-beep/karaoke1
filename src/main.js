@@ -356,7 +356,7 @@ function handleInitialHashNavigation() {
 
 // 9. Interactive Booking System (Calendário e Agendamento das Salas)
 let selectedBookingDate = null;
-let selectedBookingRoom = 'Sala Red';
+let selectedBookingRoom = null;
 let currentCalYear = new Date().getFullYear();
 let currentCalMonth = new Date().getMonth();
 
@@ -506,7 +506,7 @@ function renderCalendar() {
   }
 }
 
-// Global Room Selection Handler
+// Global Room Selection Handler - Revela os dados apenas após escolher a sala
 window.selectBookingRoom = (element) => {
   document.querySelectorAll('.room-pick-card').forEach(c => c.classList.remove('active'));
   element.classList.add('active');
@@ -525,6 +525,15 @@ window.selectBookingRoom = (element) => {
       summaryRoom.style.color = 'var(--room-blue)';
     }
   }
+
+  // Revela o Passo 3 (Dados do Agendamento) com transição suave
+  const dataStep = document.getElementById('bookingDataStep');
+  if (dataStep) {
+    dataStep.style.display = 'block';
+    setTimeout(() => {
+      dataStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 120);
+  }
 };
 
 // Global Form Submit Handler
@@ -541,6 +550,13 @@ window.handleBookingSubmit = async (e) => {
     alert('Por favor, selecione uma data disponível no calendário acima!');
     const calEl = document.getElementById('bookingCalendar');
     if (calEl) calEl.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  if (!selectedBookingRoom) {
+    alert('Por favor, escolha uma sala privada antes de prosseguir com os dados!');
+    const roomsEl = document.getElementById('roomsSelector');
+    if (roomsEl) roomsEl.scrollIntoView({ behavior: 'smooth' });
     return;
   }
 
