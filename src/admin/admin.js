@@ -1816,7 +1816,7 @@ function renderGaleriaView() {
                   </div>
                   <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px;">
                     <div>${vid.tamanhoBytes ? `Tamanho: ${(vid.tamanhoBytes / (1024 * 1024)).toFixed(1)} MB` : ''} • ${vid.criadoEm?.toDate ? vid.criadoEm.toDate().toLocaleDateString('pt-BR') : 'Recente'}</div>
-                    ${vid.publicId ? `<div style="color: var(--admin-cyan); font-family: monospace; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${vid.publicId}">Cloudinary: ${vid.publicId}</div>` : ''}
+                    ${vid.publicId ? `<div style="color: var(--admin-cyan); font-family: monospace; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${vid.publicId}">${vid.publicId.includes('galeria/') ? 'Supabase: ' : 'Arquivo: '}${vid.publicId}</div>` : ''}
                   </div>
 
                   <!-- Controles de Reordenação e Visibilidade -->
@@ -1876,7 +1876,7 @@ function renderGaleriaView() {
                   </div>
                   <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px;">
                     <div>${img.tamanhoBytes ? `Tamanho: ${(img.tamanhoBytes / 1024).toFixed(0)} KB` : ''} • ${img.criadoEm?.toDate ? img.criadoEm.toDate().toLocaleDateString('pt-BR') : 'Recente'}</div>
-                    ${img.publicId ? `<div style="color: var(--admin-cyan); font-family: monospace; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${img.publicId}">Cloudinary: ${img.publicId}</div>` : ''}
+                    ${img.publicId ? `<div style="color: var(--admin-cyan); font-family: monospace; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${img.publicId}">${img.publicId.includes('galeria/') ? 'Supabase: ' : 'Arquivo: '}${img.publicId}</div>` : ''}
                   </div>
 
                   <!-- Controles de Reordenação e Visibilidade -->
