@@ -424,3 +424,163 @@ export async function saveConfiguracoesSupabase(config) {
   if (error) throw error;
   return data;
 }
+
+// ==============================================================================
+// 8. SUPABASE STORAGE (UPLOADS DE FOTOS, VÍDEOS E DOCUMENTOS)
+// ==============================================================================
+export const SUPABASE_STORAGE_BUCKET = 'backstage-media';
+
+/**
+ * Extrai dimensões de uma imagem antes do envio (largura e altura)
+ */
+function getImageDimensions(file) {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !file.type.startsWith('image/')) {
+      return resolve({ width: null, height: null });
+    }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      resolve({ width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      resolve({ width: null, height: null });
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+}
+
+/**
+ * Extrai metadados de vídeo antes do envio (duração em segundos, largura e altura)
+ */
+function getVideoMetadata(file) {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !file.type.startsWith('video/')) {
+      return resolve({ width: null, height: null, duration: null });
+    }
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    const url = URL.createObjectURL(file);
+    video.onloadedmetadata = () => {
+      resolve({
+        width: video.videoWidth || null,
+        height: video.videoHeight || null,
+        duration: video.duration ? Math.round(video.duration) : null
+      });
+      URL.revokeObjectURL(url);
+    };
+    video.onerror = () => {
+      resolve({ width: null, height: null, duration: null });
+      URL.revokeObjectURL(url);
+    };
+    video.src = url;
+  });
+}
+
+/**
+ * Faz upload de imagem, vídeo ou PDF diretamente no Supabase Storage.
+ * Retorna URL pública e metadados completos para salvar nas tabelas do Supabase.
+ */
+export async function uploadFileSupabaseStorage({ file, folder = 'galeria', tipo = null, onProgress = null }) {
+  if (!supabase) throw new Error('Supabase não está configurado.');
+  if (!file) throw new Error('Nenhum arquivo fornecido para upload.');
+
+  // Determina tipo e formato
+  const fileExt = (file.name.split('.').pop() || 'bin').toLowerCase();
+  const isVideo = tipo === 'video' || file.type.startsWith('video/');
+  const isPdf = tipo === 'pdf' || file.type === 'application/pdf';
+  const finalTipo = isVideo ? 'video' : (isPdf ? 'pdf' : 'imagem');
+
+  // Coleta dimensões ou duração em paralelo
+  let metadata = { width: null, height: null, duration: null };
+  try {
+    if (isVideo) {
+      metadata = await getVideoMetadata(file);
+    } else if (!isPdf) {
+      metadata = await getImageDimensions(file);
+    }
+  } catch (e) {
+    console.warn('Erro ao extrair metadados locais:', e);
+  }
+
+  // Nome único e limpo para o arquivo
+  const cleanBaseName = (file.name || 'arquivo')
+    .replace(/\.[^/.]+$/, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .substring(0, 50);
+
+  const filePath = `${folder}/${Date.now()}_${cleanBaseName}.${fileExt}`;
+
+  if (onProgress) onProgress(25);
+
+  // Upload no bucket do Supabase Storage
+  const { data, error } = await supabase.storage
+    .from(SUPABASE_STORAGE_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true
+    });
+
+  if (error) {
+    if (error.message && (error.message.includes('Bucket not found') || error.message.includes('does not exist'))) {
+      throw new Error(`Bucket "${SUPABASE_STORAGE_BUCKET}" não foi encontrado no Supabase Storage. Execute o script schema.sql no SQL Editor do Supabase ou crie o bucket público "${SUPABASE_STORAGE_BUCKET}".`);
+    }
+    throw error;
+  }
+
+  if (onProgress) onProgress(85);
+
+  // Obtém a URL pública do arquivo
+  const { data: publicUrlData } = supabase.storage
+    .from(SUPABASE_STORAGE_BUCKET)
+    .getPublicUrl(filePath);
+
+  if (onProgress) onProgress(100);
+
+  return {
+    url: publicUrlData.publicUrl,
+    path: filePath,
+    publicId: filePath,
+    nomeArquivo: file.name,
+    tamanhoBytes: file.size,
+    formato: fileExt,
+    tipo: finalTipo,
+    largura: metadata.width,
+    altura: metadata.height,
+    duracao: metadata.duration,
+  };
+}
+
+/**
+ * Remove um arquivo do Supabase Storage
+ */
+export async function deleteFileSupabaseStorage(filePathOrUrl) {
+  if (!supabase || !filePathOrUrl) return false;
+  try {
+    let filePath = filePathOrUrl;
+    if (filePath.startsWith('http')) {
+      const match = filePath.match(new RegExp(`${SUPABASE_STORAGE_BUCKET}\/(.+)`));
+      if (match && match[1]) {
+        filePath = match[1];
+      }
+    }
+
+    const { error } = await supabase.storage
+      .from(SUPABASE_STORAGE_BUCKET)
+      .remove([filePath]);
+
+    if (error) {
+      console.warn('Aviso ao remover do Supabase Storage:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Erro ao deletar arquivo do Supabase Storage:', err);
+    return false;
+  }
+}
+

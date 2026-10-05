@@ -29,7 +29,10 @@ import {
   saveBloqueioSupabase,
   deleteBloqueioSupabase,
   getConfiguracoesSupabase,
-  saveConfiguracoesSupabase
+  saveConfiguracoesSupabase,
+  SUPABASE_STORAGE_BUCKET,
+  uploadFileSupabaseStorage,
+  deleteFileSupabaseStorage
 } from '../lib/supabase.js';
 import {
   signInWithEmailAndPassword,
@@ -2354,7 +2357,7 @@ window.saveSala = async (e) => {
       atualizadoEm: serverTimestamp()
     };
 
-    // Upload rápido e funcional da foto no Cloudinary se selecionada
+    // Upload rápido e funcional da foto no Supabase Storage (com fallback para Cloudinary)
     if (fotoFile) {
       const val = validateMediaFile(fotoFile, 'imagem');
       if (!val.ok) {
@@ -2362,18 +2365,37 @@ window.saveSala = async (e) => {
         if (btn) btn.disabled = false;
         return;
       }
-      if (btn) btn.textContent = 'Enviando foto ao Cloudinary...';
-      try {
-        const idToken = await auth.currentUser?.getIdToken();
-        const compressed = await compressImageIfNeeded(fotoFile, 1920, 0.82);
-        const cRes = await uploadToCloudinary({ file: compressed, folder: 'backstage/salas', idToken });
-        payload.imagem = cRes.url;
-        payload.publicId = cRes.publicId;
-      } catch (fotoErr) {
-        console.warn('Aviso upload foto sala:', fotoErr);
-        showToast('Falha no upload da sala para o Cloudinary: ' + fotoErr.message, 'error');
-        if (btn) btn.disabled = false;
-        return;
+
+      const compressed = await compressImageIfNeeded(fotoFile, 1920, 0.82);
+
+      if (isSupabaseConfigured) {
+        if (btn) btn.textContent = 'Enviando foto ao Supabase Storage...';
+        try {
+          const sRes = await uploadFileSupabaseStorage({
+            file: compressed,
+            folder: 'salas'
+          });
+          payload.imagem = sRes.url;
+          payload.publicId = sRes.publicId;
+        } catch (supaUploadErr) {
+          console.error('Erro upload foto sala Supabase:', supaUploadErr);
+          showToast('Falha no upload para o Supabase Storage: ' + supaUploadErr.message, 'error');
+          if (btn) btn.disabled = false;
+          return;
+        }
+      } else {
+        if (btn) btn.textContent = 'Enviando foto ao Cloudinary...';
+        try {
+          const idToken = await auth.currentUser?.getIdToken();
+          const cRes = await uploadToCloudinary({ file: compressed, folder: 'backstage/salas', idToken });
+          payload.imagem = cRes.url;
+          payload.publicId = cRes.publicId;
+        } catch (fotoErr) {
+          console.warn('Aviso upload foto sala:', fotoErr);
+          showToast('Falha no upload da sala para o Cloudinary: ' + fotoErr.message, 'error');
+          if (btn) btn.disabled = false;
+          return;
+        }
       }
     }
 
@@ -2552,25 +2574,46 @@ window.saveCardapioItem = async (e) => {
         return;
       }
 
-      if (btn) btn.textContent = 'Enviando foto ao Cloudinary...';
-      try {
-        const idToken = await auth.currentUser?.getIdToken();
-        const compressed = await compressImageIfNeeded(fotoFile, 1280, 0.82);
-        const cRes = await uploadToCloudinary({
-          file: compressed,
-          folder: 'backstage/cardapio',
-          idToken
-        });
-        fotoUrl = cRes.url;
-        fotoPublicId = cRes.publicId;
-      } catch (fotoErr) {
-        console.error('Erro upload foto cardápio:', fotoErr);
-        showToast('Erro no upload da foto para Cloudinary: ' + fotoErr.message, 'error');
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = 'Salvar no Banco de Dados';
+      const compressed = await compressImageIfNeeded(fotoFile, 1280, 0.82);
+
+      if (isSupabaseConfigured) {
+        if (btn) btn.textContent = 'Enviando foto ao Supabase Storage...';
+        try {
+          const sRes = await uploadFileSupabaseStorage({
+            file: compressed,
+            folder: 'cardapio'
+          });
+          fotoUrl = sRes.url;
+          fotoPublicId = sRes.publicId;
+        } catch (fotoErr) {
+          console.error('Erro upload foto cardápio Supabase:', fotoErr);
+          showToast('Erro no upload da foto para Supabase Storage: ' + fotoErr.message, 'error');
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Salvar no Banco de Dados';
+          }
+          return;
         }
-        return;
+      } else {
+        if (btn) btn.textContent = 'Enviando foto ao Cloudinary...';
+        try {
+          const idToken = await auth.currentUser?.getIdToken();
+          const cRes = await uploadToCloudinary({
+            file: compressed,
+            folder: 'backstage/cardapio',
+            idToken
+          });
+          fotoUrl = cRes.url;
+          fotoPublicId = cRes.publicId;
+        } catch (fotoErr) {
+          console.error('Erro upload foto cardápio:', fotoErr);
+          showToast('Erro no upload da foto para Cloudinary: ' + fotoErr.message, 'error');
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Salvar no Banco de Dados';
+          }
+          return;
+        }
       }
     }
 
@@ -2795,26 +2838,52 @@ window.handleUploadPdf = async (e) => {
       submitBtn.textContent = 'Enviando PDF...';
     }
 
-    const idToken = await auth.currentUser?.getIdToken();
-    const cRes = await uploadToCloudinary({
-      file,
-      folder: 'backstage/documentos',
-      idToken,
-      onProgress: (percent) => {
-        if (progressEl) {
-          const textEl = progressEl.querySelector('div:first-child');
-          if (textEl) textEl.textContent = `Enviando PDF ao Cloudinary (${percent}%)...`;
-        }
+    let pdfUrl = null;
+    let pdfPublicId = null;
+
+    if (isSupabaseConfigured) {
+      if (progressEl) {
+        progressEl.style.display = 'block';
+        const textEl = progressEl.querySelector('div:first-child');
+        if (textEl) textEl.textContent = 'Enviando PDF ao Supabase Storage...';
       }
-    });
+      const sRes = await uploadFileSupabaseStorage({
+        file,
+        folder: 'documentos',
+        tipo: 'pdf',
+        onProgress: (percent) => {
+          if (progressEl) {
+            const textEl = progressEl.querySelector('div:first-child');
+            if (textEl) textEl.textContent = `Enviando PDF ao Supabase Storage (${percent}%)...`;
+          }
+        }
+      });
+      pdfUrl = sRes.url;
+      pdfPublicId = sRes.publicId;
+    } else {
+      const idToken = await auth.currentUser?.getIdToken();
+      const cRes = await uploadToCloudinary({
+        file,
+        folder: 'backstage/documentos',
+        idToken,
+        onProgress: (percent) => {
+          if (progressEl) {
+            const textEl = progressEl.querySelector('div:first-child');
+            if (textEl) textEl.textContent = `Enviando PDF ao Cloudinary (${percent}%)...`;
+          }
+        }
+      });
+      pdfUrl = cRes.url;
+      pdfPublicId = cRes.publicId;
+    }
 
     // Salva URL e metadados no Supabase e Firestore
     if (isSupabaseConfigured) {
       try {
         await saveConfiguracoesSupabase({
           ...state.configuracoes,
-          pdfUrl: cRes.url,
-          pdfPublicId: cRes.publicId
+          pdfUrl,
+          pdfPublicId
         });
       } catch (supaErr) {
         console.warn('Aviso Supabase salvar PDF em configuracoes:', supaErr);
@@ -2824,19 +2893,19 @@ window.handleUploadPdf = async (e) => {
     if (db) {
       try {
         await updateDoc(doc(db, 'configuracoes', 'geral'), {
-          pdfUrl: cRes.url,
-          pdfPublicId: cRes.publicId,
+          pdfUrl,
+          pdfPublicId,
           pdfAtualizadoEm: serverTimestamp()
         });
       } catch(e) {}
     }
 
     if (state.configuracoes) {
-      state.configuracoes.pdfUrl = cRes.url;
-      state.configuracoes.pdfPublicId = cRes.publicId;
+      state.configuracoes.pdfUrl = pdfUrl;
+      state.configuracoes.pdfPublicId = pdfPublicId;
     }
 
-    showToast('PDF do cardápio atualizado com sucesso no Cloudinary.', 'success');
+    showToast('PDF do cardápio atualizado com sucesso!', 'success');
     renderApp();
   } catch (err) {
     console.error('Erro upload PDF:', err);
@@ -2891,7 +2960,7 @@ window.openMediaUploadModal = (preselectedRoom = null, preselectedType = null) =
   if (curUrlInput) curUrlInput.value = '';
 
   const titleEl = document.getElementById('mediaUploadModalTitle');
-  if (titleEl) titleEl.textContent = 'Upload de Mídia (Cloudinary)';
+  if (titleEl) titleEl.textContent = isSupabaseConfigured ? 'Upload de Mídia (Supabase Storage)' : 'Upload de Mídia (Cloudinary)';
 
   const salaSelect = document.getElementById('uploadMediaSala');
   if (salaSelect) salaSelect.value = preselectedRoom || 'sala-red';
@@ -3248,47 +3317,91 @@ window.submitMediaUpload = async (e) => {
         }
       }
 
-      if (progressText) progressText.textContent = 'Enviando com segurança para a CDN do Cloudinary...';
+      if (isSupabaseConfigured) {
+        if (progressText) {
+          progressText.textContent = tipoRadio === 'video'
+            ? 'Enviando vídeo ao Supabase Storage...'
+            : 'Enviando foto ao Supabase Storage...';
+        }
 
-      const idToken = await auth.currentUser?.getIdToken();
-      const cRes = await uploadToCloudinary({
-        file: fileToUpload,
-        folder: 'backstage/galeria',
-        idToken,
-        onProgress: (percent) => {
-          if (progressBar) progressBar.style.width = percent + '%';
-          if (progressPercent) progressPercent.textContent = percent + '%';
-          if (progressText) {
-            progressText.textContent = tipoRadio === 'video'
-              ? `Enviando vídeo ao Cloudinary (${percent}%)...`
-              : `Enviando foto ao Cloudinary (${percent}%)...`;
+        const sRes = await uploadFileSupabaseStorage({
+          file: fileToUpload,
+          folder: 'galeria',
+          tipo: tipoRadio,
+          onProgress: (percent) => {
+            if (progressBar) progressBar.style.width = percent + '%';
+            if (progressPercent) progressPercent.textContent = percent + '%';
+            if (progressText) {
+              progressText.textContent = tipoRadio === 'video'
+                ? `Enviando vídeo ao Supabase Storage (${percent}%)...`
+                : `Enviando foto ao Supabase Storage (${percent}%)...`;
+            }
+          }
+        });
+
+        finalUrl = sRes.url;
+        finalPublicId = sRes.publicId;
+        finalTamanho = sRes.tamanhoBytes;
+        finalNomeArquivo = sRes.nomeArquivo;
+        finalTipo = sRes.tipo;
+        finalFormato = sRes.formato;
+        finalLargura = sRes.largura;
+        finalAltura = sRes.altura;
+        finalDuracao = sRes.duracao;
+
+        // Se estiver substituindo um arquivo antigo no Supabase Storage
+        if (editId && currentPublicId && currentPublicId !== finalPublicId) {
+          try {
+            await deleteFileSupabaseStorage(currentPublicId);
+          } catch (delOldErr) {
+            console.warn('Aviso ao excluir mídia anterior no Supabase Storage:', delOldErr);
           }
         }
-      });
+      } else {
+        if (progressText) progressText.textContent = 'Enviando com segurança para a CDN do Cloudinary...';
 
-      finalUrl = cRes.url;
-      finalPublicId = cRes.publicId;
-      finalTamanho = cRes.bytes;
-      finalNomeArquivo = file.name;
-      finalTipo = cRes.resourceType === 'video' ? 'video' : 'imagem';
-      finalFormato = cRes.format;
-      finalLargura = cRes.width;
-      finalAltura = cRes.height;
-      finalDuracao = cRes.duration;
+        const idToken = await auth.currentUser?.getIdToken();
+        const cRes = await uploadToCloudinary({
+          file: fileToUpload,
+          folder: 'backstage/galeria',
+          idToken,
+          onProgress: (percent) => {
+            if (progressBar) progressBar.style.width = percent + '%';
+            if (progressPercent) progressPercent.textContent = percent + '%';
+            if (progressText) {
+              progressText.textContent = tipoRadio === 'video'
+                ? `Enviando vídeo ao Cloudinary (${percent}%)...`
+                : `Enviando foto ao Cloudinary (${percent}%)...`;
+            }
+          }
+        });
 
-      // Se estiver substituindo um arquivo antigo com publicId no Cloudinary, exclui a mídia antiga do Cloudinary
-      if (editId && currentPublicId && currentPublicId !== finalPublicId) {
-        try {
-          await deleteFromCloudinary({
-            publicId: currentPublicId,
-            resourceType: tipoRadio === 'video' ? 'video' : 'image',
-            idToken
-          });
-        } catch (delOldErr) {
-          console.warn('Aviso ao excluir mídia anterior no Cloudinary:', delOldErr);
+        finalUrl = cRes.url;
+        finalPublicId = cRes.publicId;
+        finalTamanho = cRes.bytes;
+        finalNomeArquivo = file.name;
+        finalTipo = cRes.resourceType === 'video' ? 'video' : 'imagem';
+        finalFormato = cRes.format;
+        finalLargura = cRes.width;
+        finalAltura = cRes.height;
+        finalDuracao = cRes.duration;
+
+        // Se estiver substituindo um arquivo antigo com publicId no Cloudinary, exclui a mídia antiga do Cloudinary
+        if (editId && currentPublicId && currentPublicId !== finalPublicId) {
+          try {
+            await deleteFromCloudinary({
+              publicId: currentPublicId,
+              resourceType: tipoRadio === 'video' ? 'video' : 'image',
+              idToken
+            });
+          } catch (delOldErr) {
+            console.warn('Aviso ao excluir mídia anterior no Cloudinary:', delOldErr);
+          }
         }
       }
     }
+
+    const storageDestName = isSupabaseConfigured ? 'Supabase Storage' : 'Cloudinary';
 
     if (editId) {
       // Atualiza item existente
@@ -3328,7 +3441,7 @@ window.submitMediaUpload = async (e) => {
       const item = state.galeria.find(g => g.id === editId);
       if (item) Object.assign(item, payload);
 
-      showToast('Mídia atualizada com sucesso no banco de dados e Cloudinary!', 'success');
+      showToast(`Mídia atualizada com sucesso no banco de dados e ${storageDestName}!`, 'success');
     } else {
       // Cria novo item
       const payload = {
@@ -3368,7 +3481,7 @@ window.submitMediaUpload = async (e) => {
 
       state.galeria.unshift({ id: newMediaId || ('media-' + Date.now()), ...payload });
 
-      showToast(finalTipo === 'video' ? 'Vídeo enviado com sucesso ao Cloudinary!' : 'Foto enviada com sucesso ao Cloudinary!', 'success');
+      showToast(finalTipo === 'video' ? `Vídeo enviado com sucesso ao ${storageDestName}!` : `Foto enviada com sucesso ao ${storageDestName}!`, 'success');
     }
 
     window.closeMediaUploadModal();
@@ -3409,21 +3522,29 @@ window.excluirItemGaleria = (id, fileUrl, publicId, resourceType = 'image') => {
 
         state.galeria = state.galeria.filter(g => g.id !== id);
 
-        // 3. Remove do Cloudinary se possuir publicId
-        if (publicId) {
-          try {
-            const idToken = await auth.currentUser?.getIdToken();
-            await deleteFromCloudinary({
-              publicId,
-              resourceType: resourceType === 'video' ? 'video' : 'image',
-              idToken
-            });
-          } catch (cloudErr) {
-            console.warn('Aviso exclusão Cloudinary:', cloudErr);
+        // 3. Remove arquivo do armazenamento (Supabase Storage ou Cloudinary)
+        if (publicId || fileUrl) {
+          if (isSupabaseConfigured && (publicId?.startsWith('galeria/') || fileUrl?.includes('supabase.co/storage'))) {
+            try {
+              await deleteFileSupabaseStorage(publicId || fileUrl);
+            } catch (supaDelErr) {
+              console.warn('Aviso exclusão Supabase Storage:', supaDelErr);
+            }
+          } else if (publicId) {
+            try {
+              const idToken = await auth.currentUser?.getIdToken();
+              await deleteFromCloudinary({
+                publicId,
+                resourceType: resourceType === 'video' ? 'video' : 'image',
+                idToken
+              });
+            } catch (cloudErr) {
+              console.warn('Aviso exclusão Cloudinary:', cloudErr);
+            }
           }
         }
 
-        showToast('Mídia excluída com sucesso da galeria e do Cloudinary.', 'info');
+        showToast('Mídia excluída com sucesso da galeria pública.', 'info');
         renderApp();
       } catch (err) {
         console.error('Erro ao excluir mídia:', err);

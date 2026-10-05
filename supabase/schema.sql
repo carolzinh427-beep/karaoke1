@@ -456,5 +456,56 @@ ON CONFLICT (id) DO UPDATE SET
     endereco = EXCLUDED.endereco;
 
 -- ==============================================================================
+-- 8. SUPABASE STORAGE (BUCKET PÚBLICO PARA FOTOS, VÍDEOS E DOCUMENTOS)
+-- ==============================================================================
+-- Cria o bucket 'backstage-media' público para guardar imagens das salas, do cardápio, vídeos e PDF
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'backstage-media',
+    'backstage-media',
+    true,
+    157286400, -- Limite de 150MB para vídeos de alta qualidade
+    ARRAY[
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+        'image/svg+xml',
+        'video/mp4',
+        'video/webm',
+        'video/quicktime',
+        'video/x-msvideo',
+        'video/mpeg',
+        'application/pdf'
+    ]
+)
+ON CONFLICT (id) DO UPDATE SET
+    public = true,
+    file_size_limit = 157286400;
+
+-- Políticas de acesso público para o bucket 'backstage-media'
+DROP POLICY IF EXISTS "Public Read backstage-media" ON storage.objects;
+CREATE POLICY "Public Read backstage-media"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'backstage-media');
+
+DROP POLICY IF EXISTS "Public Upload backstage-media" ON storage.objects;
+CREATE POLICY "Public Upload backstage-media"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'backstage-media');
+
+DROP POLICY IF EXISTS "Public Update backstage-media" ON storage.objects;
+CREATE POLICY "Public Update backstage-media"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'backstage-media');
+
+DROP POLICY IF EXISTS "Public Delete backstage-media" ON storage.objects;
+CREATE POLICY "Public Delete backstage-media"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'backstage-media');
+
+-- ==============================================================================
 -- FIM DO SCRIPT DE MIGRAÇÃO SUPABASE
 -- ==============================================================================
+
