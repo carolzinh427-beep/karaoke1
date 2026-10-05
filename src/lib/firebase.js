@@ -28,10 +28,12 @@ try {
   console.warn('Firebase inicialização resiliente:', e);
 }
 
+import { isSupabaseConfigured, saveReservaSupabase } from './supabase.js';
+
 export { app, db, auth, storage };
 
 /**
- * Salva agendamento nas coleções 'reservas' e 'agendamentos' do Firestore
+ * Salva agendamento no Supabase (se configurado) e no Firestore
  * para garantir compatibilidade total com o painel administrativo.
  * @param {Object} dados
  * @param {string} dados.nome
@@ -42,30 +44,52 @@ export { app, db, auth, storage };
  * @param {boolean} dados.termosAceitos
  */
 export async function salvarAgendamento(dados) {
-  try {
-    const payload = {
-      ...dados,
-      status: 'PENDING',
-      origem: 'site_cliente',
-      criadoEm: serverTimestamp(),
-      dataCriacao: new Date().toISOString()
-    };
-    
-    // Salva na coleção principal 'reservas'
-    const docRef = await addDoc(collection(db, 'reservas'), payload);
-    
-    // Também sincroniza com 'agendamentos' para integridade legada
+  let supabaseId = null;
+
+  // 1. Prioriza salvar no Supabase se as variáveis estiverem configuradas
+  if (isSupabaseConfigured) {
     try {
-      await addDoc(collection(db, 'agendamentos'), { ...payload, idReserva: docRef.id });
-    } catch(syncErr) {
-      console.warn('Sync legada agendamentos:', syncErr);
+      const res = await saveReservaSupabase(dados);
+      if (res && res.id) {
+        supabaseId = res.id;
+        console.log('Reserva registrada no Supabase com ID:', supabaseId);
+      }
+    } catch (supaErr) {
+      console.warn('Aviso ao registrar reserva no Supabase, prosseguindo com Firestore:', supaErr);
     }
-    
-    console.log('Reserva registrada no Firestore com ID:', docRef.id);
-    return { success: true, id: docRef.id };
-  } catch (error) {
-    console.warn('Aviso: Firestore offline ou regras pendentes. Prosseguindo com envio via WhatsApp:', error);
-    return { success: false, error };
   }
+
+  // 2. Registra também no Firestore se db estiver inicializado
+  try {
+    if (db) {
+      const payload = {
+        ...dados,
+        status: 'PENDING',
+        origem: 'site_cliente',
+        criadoEm: serverTimestamp(),
+        dataCriacao: new Date().toISOString()
+      };
+      if (supabaseId) payload.supabaseId = supabaseId;
+      
+      const docRef = await addDoc(collection(db, 'reservas'), payload);
+      
+      try {
+        await addDoc(collection(db, 'agendamentos'), { ...payload, idReserva: docRef.id });
+      } catch(syncErr) {
+        console.warn('Sync legada agendamentos:', syncErr);
+      }
+      
+      console.log('Reserva registrada no Firestore com ID:', docRef.id);
+      return { success: true, id: supabaseId || docRef.id };
+    }
+  } catch (error) {
+    console.warn('Aviso: Firestore offline ou regras pendentes:', error);
+  }
+
+  if (supabaseId) {
+    return { success: true, id: supabaseId };
+  }
+
+  return { success: true };
 }
 

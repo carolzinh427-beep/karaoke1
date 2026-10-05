@@ -12,6 +12,26 @@ import {
   seedDatabaseIfNeeded,
 } from '../lib/catalogData.js';
 import {
+  isSupabaseConfigured,
+  getSalasSupabase,
+  saveSalaSupabase,
+  getCategoriasSupabase,
+  getCardapioSupabase,
+  saveCardapioItemSupabase,
+  deleteCardapioItemSupabase,
+  getGaleriaSupabase,
+  saveGaleriaItemSupabase,
+  deleteGaleriaItemSupabase,
+  getReservasSupabase,
+  updateReservaStatusSupabase,
+  deleteReservaSupabase,
+  getBloqueiosSupabase,
+  saveBloqueioSupabase,
+  deleteBloqueioSupabase,
+  getConfiguracoesSupabase,
+  saveConfiguracoesSupabase
+} from '../lib/supabase.js';
+import {
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
@@ -298,8 +318,20 @@ async function handleLogout() {
 // 5. FETCHERS E SERVIÇOS FIRESTORE
 // ============================================================================
 
-// 5.1 Reservas (lê de 'reservas' e unifica com 'agendamentos')
+// 5.1 Reservas (lê do Supabase e sincroniza com Firestore)
 async function fetchReservas() {
+  if (isSupabaseConfigured) {
+    try {
+      const data = await getReservasSupabase();
+      if (data) {
+        state.reservas = data;
+        return state.reservas;
+      }
+    } catch (supaErr) {
+      console.warn('Aviso Supabase reservas, tentando Firestore:', supaErr);
+    }
+  }
+
   try {
     const q1 = query(collection(db, 'reservas'), orderBy('criadoEm', 'desc'));
     const snap1 = await getDocs(q1);
@@ -327,6 +359,18 @@ async function fetchReservas() {
 
 // 5.2 Bloqueios Manuais
 async function fetchBloqueios() {
+  if (isSupabaseConfigured) {
+    try {
+      const data = await getBloqueiosSupabase();
+      if (data) {
+        state.bloqueios = data;
+        return state.bloqueios;
+      }
+    } catch (supaErr) {
+      console.warn('Aviso Supabase bloqueios, tentando Firestore:', supaErr);
+    }
+  }
+
   try {
     const snap = await getDocs(collection(db, 'bloqueios'));
     state.bloqueios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -339,6 +383,18 @@ async function fetchBloqueios() {
 
 // 5.3 Salas
 async function fetchSalas() {
+  if (isSupabaseConfigured) {
+    try {
+      const data = await getSalasSupabase();
+      if (data && data.length > 0) {
+        state.salas = data;
+        return state.salas;
+      }
+    } catch (supaErr) {
+      console.warn('Aviso Supabase salas, tentando Firestore:', supaErr);
+    }
+  }
+
   try {
     const snap = await getDocs(collection(db, 'salas'));
     if (snap.empty) {
@@ -362,6 +418,18 @@ async function fetchSalas() {
 
 // 5.4 Cardápio e Categorias
 async function fetchCategorias() {
+  if (isSupabaseConfigured) {
+    try {
+      const data = await getCategoriasSupabase();
+      if (data && data.length > 0) {
+        state.categorias = data;
+        return state.categorias;
+      }
+    } catch (supaErr) {
+      console.warn('Aviso Supabase categorias, tentando Firestore:', supaErr);
+    }
+  }
+
   try {
     const snap = await getDocs(collection(db, 'categorias_cardapio'));
     if (snap.empty) {
@@ -384,6 +452,18 @@ async function fetchCategorias() {
 }
 
 async function fetchCardapio() {
+  if (isSupabaseConfigured) {
+    try {
+      const data = await getCardapioSupabase();
+      if (data && data.length > 0) {
+        state.cardapio = data;
+        return state.cardapio;
+      }
+    } catch (supaErr) {
+      console.warn('Aviso Supabase cardápio, tentando Firestore:', supaErr);
+    }
+  }
+
   try {
     const snap = await getDocs(collection(db, 'cardapio'));
     if (snap.empty || snap.docs.length < 5) {
@@ -407,6 +487,18 @@ async function fetchCardapio() {
 
 // 5.5 Galeria
 async function fetchGaleria() {
+  if (isSupabaseConfigured) {
+    try {
+      const data = await getGaleriaSupabase();
+      if (data) {
+        state.galeria = data;
+        return state.galeria;
+      }
+    } catch (supaErr) {
+      console.warn('Aviso Supabase galeria, tentando Firestore:', supaErr);
+    }
+  }
+
   try {
     const snap = await getDocs(collection(db, 'galeria'));
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -421,6 +513,18 @@ async function fetchGaleria() {
 
 // 5.6 Configurações
 async function fetchConfiguracoes() {
+  if (isSupabaseConfigured) {
+    try {
+      const data = await getConfiguracoesSupabase();
+      if (data) {
+        state.configuracoes = data;
+        return state.configuracoes;
+      }
+    } catch (supaErr) {
+      console.warn('Aviso Supabase configurações, tentando Firestore:', supaErr);
+    }
+  }
+
   try {
     const docRef = doc(db, 'configuracoes', 'geral');
     const docSnap = await getDoc(docRef);
@@ -1925,11 +2029,23 @@ window.confirmarReserva = async (id) => {
   }
 
   try {
-    const docRef = doc(db, 'reservas', id);
-    await updateDoc(docRef, {
-      status: 'CONFIRMED',
-      confirmadoEm: serverTimestamp()
-    });
+    if (isSupabaseConfigured) {
+      try {
+        await updateReservaStatusSupabase(id, 'CONFIRMED');
+      } catch (supaErr) {
+        console.warn('Aviso Supabase confirmar reserva:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        const docRef = doc(db, 'reservas', id);
+        await updateDoc(docRef, {
+          status: 'CONFIRMED',
+          confirmadoEm: serverTimestamp()
+        });
+      } catch(e) {}
+    }
 
     // Atualiza estado local
     res.status = 'CONFIRMED';
@@ -1949,11 +2065,23 @@ window.cancelarReserva = (id) => {
     confirmBtnClass: 'btn-admin-danger',
     onConfirm: async () => {
       try {
-        const docRef = doc(db, 'reservas', id);
-        await updateDoc(docRef, {
-          status: 'CANCELLED',
-          canceladoEm: serverTimestamp()
-        });
+        if (isSupabaseConfigured) {
+          try {
+            await updateReservaStatusSupabase(id, 'CANCELLED');
+          } catch (supaErr) {
+            console.warn('Aviso Supabase cancelar reserva:', supaErr);
+          }
+        }
+
+        if (db) {
+          try {
+            const docRef = doc(db, 'reservas', id);
+            await updateDoc(docRef, {
+              status: 'CANCELLED',
+              canceladoEm: serverTimestamp()
+            });
+          } catch(e) {}
+        }
 
         const r = state.reservas.find(item => item.id === id);
         if (r) r.status = 'CANCELLED';
@@ -2060,8 +2188,24 @@ window.handleSalvarBloqueio = async (e) => {
       criadoEm: serverTimestamp()
     };
 
-    const docRef = await addDoc(collection(db, 'bloqueios'), payload);
-    state.bloqueios.push({ id: docRef.id, ...payload });
+    let blockId = null;
+    if (isSupabaseConfigured) {
+      try {
+        const res = await saveBloqueioSupabase(payload);
+        if (res?.id) blockId = res.id;
+      } catch (supaErr) {
+        console.warn('Aviso Supabase salvar bloqueio:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        const docRef = await addDoc(collection(db, 'bloqueios'), payload);
+        if (!blockId) blockId = docRef.id;
+      } catch(e) {}
+    }
+
+    state.bloqueios.push({ id: blockId || String(Date.now()), ...payload });
 
     showToast('Data bloqueada.', 'success');
     renderApp();
@@ -2079,7 +2223,20 @@ window.removerBloqueio = (id) => {
     confirmBtnClass: 'btn-admin-danger',
     onConfirm: async () => {
       try {
-        await deleteDoc(doc(db, 'bloqueios', id));
+        if (isSupabaseConfigured) {
+          try {
+            await deleteBloqueioSupabase(id);
+          } catch(supaErr) {
+            console.warn('Aviso Supabase remover bloqueio:', supaErr);
+          }
+        }
+
+        if (db) {
+          try {
+            await deleteDoc(doc(db, 'bloqueios', id));
+          } catch(e) {}
+        }
+
         state.bloqueios = state.bloqueios.filter(b => b.id !== id);
         showToast('Bloqueio removido com sucesso.', 'info');
         renderApp();
@@ -2094,8 +2251,21 @@ window.removerBloqueio = (id) => {
 // 8.4 Ações de Salas
 window.toggleAtivoSala = async (id, novoAtivo) => {
   try {
-    await updateDoc(doc(db, 'salas', id), { ativo: novoAtivo });
     const s = state.salas.find(item => item.id === id);
+    if (isSupabaseConfigured && s) {
+      try {
+        await saveSalaSupabase({ ...s, ativo: novoAtivo });
+      } catch (supaErr) {
+        console.warn('Aviso Supabase toggle sala:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        await updateDoc(doc(db, 'salas', id), { ativo: novoAtivo });
+      } catch (e) {}
+    }
+
     if (s) s.ativo = novoAtivo;
     showToast(`Sala ${novoAtivo ? 'ativada' : 'desativada'} com sucesso.`, 'info');
     renderApp();
@@ -2207,7 +2377,19 @@ window.saveSala = async (e) => {
       }
     }
 
-    await setDoc(doc(db, 'salas', salaId), payload, { merge: true });
+    if (isSupabaseConfigured) {
+      try {
+        await saveSalaSupabase(payload);
+      } catch (supaErr) {
+        console.warn('Aviso Supabase salvar sala:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        await setDoc(doc(db, 'salas', salaId), payload, { merge: true });
+      } catch(e) {}
+    }
 
     const existingIdx = state.salas.findIndex(s => s.id === salaId);
     if (existingIdx >= 0) {
@@ -2393,7 +2575,7 @@ window.saveCardapioItem = async (e) => {
     }
 
     if (id) {
-      // Edição de item existente no Firestore
+      // Edição de item existente
       const payload = {
         nome,
         preco,
@@ -2408,14 +2590,26 @@ window.saveCardapioItem = async (e) => {
         payload.imagemPublicId = fotoPublicId;
       }
 
-      await updateDoc(doc(db, 'cardapio', id), payload);
+      if (isSupabaseConfigured) {
+        try {
+          await saveCardapioItemSupabase({ id, ...payload });
+        } catch (supaErr) {
+          console.warn('Aviso Supabase atualizar item cardápio:', supaErr);
+        }
+      }
+
+      if (db) {
+        try {
+          await updateDoc(doc(db, 'cardapio', id), payload);
+        } catch(e) {}
+      }
 
       const item = state.cardapio.find(it => it.id === id);
       if (item) Object.assign(item, payload);
 
       showToast(`Item "${nome}" atualizado no cardápio.`, 'success');
     } else {
-      // Novo item criado no Firestore
+      // Novo item criado
       const payload = {
         nome,
         preco,
@@ -2428,8 +2622,25 @@ window.saveCardapioItem = async (e) => {
         imagemPublicId: fotoPublicId || '',
         criadoEm: serverTimestamp()
       };
-      const docRef = await addDoc(collection(db, 'cardapio'), payload);
-      state.cardapio.push({ id: docRef.id, ...payload });
+
+      let newItemId = null;
+      if (isSupabaseConfigured) {
+        try {
+          const res = await saveCardapioItemSupabase(payload);
+          if (res?.id) newItemId = res.id;
+        } catch (supaErr) {
+          console.warn('Aviso Supabase criar item cardápio:', supaErr);
+        }
+      }
+
+      if (db) {
+        try {
+          const docRef = await addDoc(collection(db, 'cardapio'), payload);
+          if (!newItemId) newItemId = docRef.id;
+        } catch(e) {}
+      }
+
+      state.cardapio.push({ id: newItemId || ('item-' + Date.now()), ...payload });
 
       showToast(`Item "${nome}" adicionado com sucesso.`, 'success');
     }
@@ -2442,7 +2653,7 @@ window.saveCardapioItem = async (e) => {
     }
   } catch (err) {
     console.error('Erro ao salvar item do cardápio:', err);
-    showToast('Erro ao salvar no Firestore: ' + err.message, 'error');
+    showToast('Erro ao salvar item: ' + err.message, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -2496,14 +2707,27 @@ window.changeCardapioPage = (page) => {
 
 window.toggleAtivoItemCardapio = async (id, novoAtivo) => {
   try {
-    await updateDoc(doc(db, 'cardapio', id), { ativo: novoAtivo });
     const item = state.cardapio.find(it => it.id === id);
+    if (isSupabaseConfigured && item) {
+      try {
+        await saveCardapioItemSupabase({ ...item, ativo: novoAtivo });
+      } catch (supaErr) {
+        console.warn('Aviso Supabase toggle item cardápio:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        await updateDoc(doc(db, 'cardapio', id), { ativo: novoAtivo });
+      } catch(e) {}
+    }
+
     if (item) item.ativo = novoAtivo;
     showToast(novoAtivo ? 'Item reativado no cardápio.' : 'Item pausado no cardápio.', 'info');
     updateCardapioItemsOnly();
   } catch (err) {
     console.error('Erro ao alterar status do item:', err);
-    showToast('Erro ao atualizar item no Firestore: ' + err.message, 'error');
+    showToast('Erro ao atualizar item: ' + err.message, 'error');
   }
 };
 
@@ -2515,7 +2739,20 @@ window.excluirItemCardapio = (id) => {
     confirmBtnClass: 'btn-admin-danger',
     onConfirm: async () => {
       try {
-        await deleteDoc(doc(db, 'cardapio', id));
+        if (isSupabaseConfigured) {
+          try {
+            await deleteCardapioItemSupabase(id);
+          } catch (supaErr) {
+            console.warn('Aviso Supabase excluir item cardápio:', supaErr);
+          }
+        }
+
+        if (db) {
+          try {
+            await deleteDoc(doc(db, 'cardapio', id));
+          } catch(e) {}
+        }
+
         state.cardapio = state.cardapio.filter(it => it.id !== id);
         showToast('Item excluído com sucesso.', 'info');
         updateCardapioItemsOnly();
@@ -2571,12 +2808,28 @@ window.handleUploadPdf = async (e) => {
       }
     });
 
-    // Salva URL e metadados no Firestore
-    await updateDoc(doc(db, 'configuracoes', 'geral'), {
-      pdfUrl: cRes.url,
-      pdfPublicId: cRes.publicId,
-      pdfAtualizadoEm: serverTimestamp()
-    });
+    // Salva URL e metadados no Supabase e Firestore
+    if (isSupabaseConfigured) {
+      try {
+        await saveConfiguracoesSupabase({
+          ...state.configuracoes,
+          pdfUrl: cRes.url,
+          pdfPublicId: cRes.publicId
+        });
+      } catch (supaErr) {
+        console.warn('Aviso Supabase salvar PDF em configuracoes:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        await updateDoc(doc(db, 'configuracoes', 'geral'), {
+          pdfUrl: cRes.url,
+          pdfPublicId: cRes.publicId,
+          pdfAtualizadoEm: serverTimestamp()
+        });
+      } catch(e) {}
+    }
 
     if (state.configuracoes) {
       state.configuracoes.pdfUrl = cRes.url;
@@ -2848,11 +3101,24 @@ window.handleMediaFileSelected = (e) => {
 
 window.toggleAtivoItemGaleria = async (id, novoAtivo) => {
   try {
-    await updateDoc(doc(db, 'galeria', id), {
-      ativo: novoAtivo,
-      atualizadoEm: serverTimestamp()
-    });
     const item = state.galeria.find(g => g.id === id);
+    if (isSupabaseConfigured && item) {
+      try {
+        await saveGaleriaItemSupabase({ ...item, ativo: novoAtivo });
+      } catch (supaErr) {
+        console.warn('Aviso Supabase toggle galeria:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        await updateDoc(doc(db, 'galeria', id), {
+          ativo: novoAtivo,
+          atualizadoEm: serverTimestamp()
+        });
+      } catch(e) {}
+    }
+
     if (item) item.ativo = novoAtivo;
     showToast(novoAtivo ? 'Mídia ativada na galeria pública.' : 'Mídia oculta na galeria pública.', 'info');
     renderApp();
@@ -2886,10 +3152,26 @@ window.reordenarItemGaleria = async (id, direcao) => {
   renderApp();
 
   try {
-    await Promise.all([
-      updateDoc(doc(db, 'galeria', currentItem.id), { ordem: currentItem.ordem, atualizadoEm: serverTimestamp() }),
-      updateDoc(doc(db, 'galeria', targetItem.id), { ordem: targetItem.ordem, atualizadoEm: serverTimestamp() })
-    ]);
+    if (isSupabaseConfigured) {
+      try {
+        await Promise.all([
+          saveGaleriaItemSupabase(currentItem),
+          saveGaleriaItemSupabase(targetItem)
+        ]);
+      } catch (supaErr) {
+        console.warn('Aviso Supabase reordenar galeria:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        await Promise.all([
+          updateDoc(doc(db, 'galeria', currentItem.id), { ordem: currentItem.ordem, atualizadoEm: serverTimestamp() }),
+          updateDoc(doc(db, 'galeria', targetItem.id), { ordem: targetItem.ordem, atualizadoEm: serverTimestamp() })
+        ]);
+      } catch(e) {}
+    }
+
     showToast('Ordem da galeria atualizada.', 'info');
   } catch (err) {
     console.error('Erro ao reordenar mídia:', err);
@@ -3009,7 +3291,7 @@ window.submitMediaUpload = async (e) => {
     }
 
     if (editId) {
-      // Atualiza item existente no Firestore
+      // Atualiza item existente
       const payload = {
         sala,
         tipo: finalTipo,
@@ -3029,14 +3311,26 @@ window.submitMediaUpload = async (e) => {
         if (finalDuracao) payload.duracao = finalDuracao;
       }
 
-      await updateDoc(doc(db, 'galeria', editId), payload);
+      if (isSupabaseConfigured) {
+        try {
+          await saveGaleriaItemSupabase({ id: editId, ...payload });
+        } catch (supaErr) {
+          console.warn('Aviso Supabase atualizar galeria:', supaErr);
+        }
+      }
+
+      if (db) {
+        try {
+          await updateDoc(doc(db, 'galeria', editId), payload);
+        } catch(e) {}
+      }
 
       const item = state.galeria.find(g => g.id === editId);
       if (item) Object.assign(item, payload);
 
       showToast('Mídia atualizada com sucesso no banco de dados e Cloudinary!', 'success');
     } else {
-      // Cria novo item no Firestore
+      // Cria novo item
       const payload = {
         tipo: finalTipo,
         sala,
@@ -3055,8 +3349,24 @@ window.submitMediaUpload = async (e) => {
         atualizadoEm: serverTimestamp()
       };
 
-      const docRef = await addDoc(collection(db, 'galeria'), payload);
-      state.galeria.unshift({ id: docRef.id, ...payload });
+      let newMediaId = null;
+      if (isSupabaseConfigured) {
+        try {
+          const res = await saveGaleriaItemSupabase(payload);
+          if (res?.id) newMediaId = res.id;
+        } catch (supaErr) {
+          console.warn('Aviso Supabase criar item galeria:', supaErr);
+        }
+      }
+
+      if (db) {
+        try {
+          const docRef = await addDoc(collection(db, 'galeria'), payload);
+          if (!newMediaId) newMediaId = docRef.id;
+        } catch(e) {}
+      }
+
+      state.galeria.unshift({ id: newMediaId || ('media-' + Date.now()), ...payload });
 
       showToast(finalTipo === 'video' ? 'Vídeo enviado com sucesso ao Cloudinary!' : 'Foto enviada com sucesso ao Cloudinary!', 'success');
     }
@@ -3064,7 +3374,7 @@ window.submitMediaUpload = async (e) => {
     window.closeMediaUploadModal();
     renderApp();
   } catch (err) {
-    console.error('Erro no upload Cloudinary / Firestore:', err);
+    console.error('Erro no upload Cloudinary / Banco de Dados:', err);
     showToast('Falha no upload: ' + err.message, 'error');
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -3076,16 +3386,30 @@ window.submitMediaUpload = async (e) => {
 window.excluirItemGaleria = (id, fileUrl, publicId, resourceType = 'image') => {
   showConfirmModal({
     title: 'Excluir Mídia Permanentemente',
-    message: 'Deseja realmente remover esta mídia da galeria pública, do Firestore e do Cloudinary?',
+    message: 'Deseja realmente remover esta mídia da galeria pública, do banco de dados e do Cloudinary?',
     confirmText: 'Excluir',
     confirmBtnClass: 'btn-admin-danger',
     onConfirm: async () => {
       try {
-        // 1. Remove do Firestore
-        await deleteDoc(doc(db, 'galeria', id));
+        // 1. Remove do Supabase se configurado
+        if (isSupabaseConfigured) {
+          try {
+            await deleteGaleriaItemSupabase(id);
+          } catch (supaErr) {
+            console.warn('Aviso Supabase excluir mídia:', supaErr);
+          }
+        }
+
+        // 2. Remove do Firestore
+        if (db) {
+          try {
+            await deleteDoc(doc(db, 'galeria', id));
+          } catch(e) {}
+        }
+
         state.galeria = state.galeria.filter(g => g.id !== id);
 
-        // 2. Remove do Cloudinary se possuir publicId
+        // 3. Remove do Cloudinary se possuir publicId
         if (publicId) {
           try {
             const idToken = await auth.currentUser?.getIdToken();
@@ -3146,14 +3470,29 @@ window.handleSalvarConfiguracoes = async (e) => {
       atualizadoEm: serverTimestamp()
     };
 
-    await setDoc(doc(db, 'configuracoes', 'geral'), payload, { merge: true });
+    if (isSupabaseConfigured) {
+      try {
+        await saveConfiguracoesSupabase(payload);
+      } catch (supaErr) {
+        console.warn('Aviso Supabase salvar configurações:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        await setDoc(doc(db, 'configuracoes', 'geral'), payload, { merge: true });
+      } catch(e) {}
+    }
+
     state.configuracoes = { ...state.configuracoes, ...payload };
 
     showToast('Configurações salvas com sucesso.', 'success');
     renderApp();
   } catch (err) {
     console.error('Erro ao salvar configs:', err);
-    showToast('Erro ao salvar configurações no Firestore.', 'error');
+    showToast('Erro ao salvar configurações no banco de dados.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
   }
 };
 

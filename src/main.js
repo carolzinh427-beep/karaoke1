@@ -3,7 +3,15 @@
  */
 
 import { salvarAgendamento, db } from './lib/firebase.js';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy } from 'firebase/firestore';
+import { 
+  isSupabaseConfigured,
+  getConfiguracoesSupabase,
+  getBloqueiosSupabase,
+  getSalasSupabase,
+  getCardapioSupabase,
+  getGaleriaSupabase
+} from './lib/supabase.js';
 
 let activeBlockedDates = [];
 let WHATSAPP_PHONE = '556181426321';
@@ -1067,23 +1075,33 @@ export async function initSalasGallery() {
 
   try {
     let items = [];
-    try {
-      const q = query(collection(db, 'galeria'), orderBy('criadoEm', 'desc'));
-      const snap = await getDocs(q);
-      items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (orderErr) {
-      // Fallback sem ordenação caso o índice ainda esteja sincronizando
+    if (isSupabaseConfigured) {
       try {
-        const snap = await getDocs(collection(db, 'galeria'));
-        items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      } catch (innerErr) {
-        console.warn('Fallback busca Firestore galeria:', innerErr);
+        items = await getGaleriaSupabase();
+      } catch (sbErr) {
+        console.warn('Fallback Supabase galeria:', sbErr);
       }
     }
 
-    renderMediaParaSala(container1, 'sala-red', items, 'Sala 1 (Sala Red)', 'var(--room-red)');
-    renderMediaParaSala(container2, 'sala-green', items, 'Sala 2 (Sala Green)', 'var(--room-green)');
-    renderMediaParaSala(container3, 'sala-blue', items, 'Sala 3 (Sala Blue)', 'var(--room-blue)');
+    if ((!items || items.length === 0) && db) {
+      try {
+        const q = query(collection(db, 'galeria'), orderBy('criadoEm', 'desc'));
+        const snap = await getDocs(q);
+        items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (orderErr) {
+        // Fallback sem ordenação caso o índice ainda esteja sincronizando
+        try {
+          const snap = await getDocs(collection(db, 'galeria'));
+          items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch (innerErr) {
+          console.warn('Fallback busca Firestore galeria:', innerErr);
+        }
+      }
+    }
+
+    renderMediaParaSala(container1, 'sala-red', items || [], 'Sala 1 (Sala Red)', 'var(--room-red)');
+    renderMediaParaSala(container2, 'sala-green', items || [], 'Sala 2 (Sala Green)', 'var(--room-green)');
+    renderMediaParaSala(container3, 'sala-blue', items || [], 'Sala 3 (Sala Blue)', 'var(--room-blue)');
   } catch (err) {
     console.warn('Erro ao carregar mídias da galeria das salas:', err);
   }
@@ -1222,17 +1240,30 @@ window.closeRoomLightbox = (e) => {
 };
 
 /**
- * Sincroniza dados oficiais do Firestore para o site público em tempo real
+ * Sincroniza dados oficiais (Supabase com fallback para Firestore) para o site público em tempo real
  */
 async function loadPublicDataFromFirestore() {
-  if (!db) return;
+  if (!db && !isSupabaseConfigured) return;
 
   try {
     // 1. Configurações Gerais (WhatsApp Oficial e PDF do Cardápio)
     try {
-      const confSnap = await getDoc(doc(db, 'configuracoes', 'geral'));
-      if (confSnap.exists()) {
-        const conf = confSnap.data();
+      let conf = null;
+      if (isSupabaseConfigured) {
+        try {
+          conf = await getConfiguracoesSupabase();
+        } catch (e) {
+          console.warn('Sync configs Supabase:', e);
+        }
+      }
+      if (!conf && db) {
+        const confSnap = await getDoc(doc(db, 'configuracoes', 'geral'));
+        if (confSnap.exists()) {
+          conf = confSnap.data();
+        }
+      }
+
+      if (conf) {
         if (conf.whatsapp) {
           const cleanPhone = conf.whatsapp.replace(/\D/g, '');
           if (cleanPhone) {
@@ -1257,9 +1288,22 @@ async function loadPublicDataFromFirestore() {
 
     // 2. Bloqueios de Calendário (Disponibilidade)
     try {
-      const bSnap = await getDocs(collection(db, 'bloqueios'));
-      if (!bSnap.empty) {
-        activeBlockedDates = bSnap.docs.map(d => d.data());
+      let bloqueios = [];
+      if (isSupabaseConfigured) {
+        try {
+          bloqueios = await getBloqueiosSupabase();
+        } catch (e) {
+          console.warn('Sync bloqueios Supabase:', e);
+        }
+      }
+      if ((!bloqueios || bloqueios.length === 0) && db) {
+        const bSnap = await getDocs(collection(db, 'bloqueios'));
+        if (!bSnap.empty) {
+          bloqueios = bSnap.docs.map(d => d.data());
+        }
+      }
+      if (bloqueios && bloqueios.length > 0) {
+        activeBlockedDates = bloqueios;
         renderCalendar();
       }
     } catch(e) {
@@ -1268,10 +1312,22 @@ async function loadPublicDataFromFirestore() {
 
     // 3. Salas (Valores, Capacidades e Descrições)
     try {
-      const sSnap = await getDocs(collection(db, 'salas'));
-      if (!sSnap.empty) {
-        sSnap.docs.forEach(docSnap => {
-          const s = docSnap.data();
+      let salas = [];
+      if (isSupabaseConfigured) {
+        try {
+          salas = await getSalasSupabase();
+        } catch (e) {
+          console.warn('Sync salas Supabase:', e);
+        }
+      }
+      if ((!salas || salas.length === 0) && db) {
+        const sSnap = await getDocs(collection(db, 'salas'));
+        if (!sSnap.empty) {
+          salas = sSnap.docs.map(d => d.data());
+        }
+      }
+      if (salas && salas.length > 0) {
+        salas.forEach(s => {
           const card = document.querySelector(`.room-pick-card[data-room="${s.nome}"]`);
           if (card) {
             if (s.capacidade) {
@@ -1280,12 +1336,13 @@ async function loadPublicDataFromFirestore() {
               if (capBadge) capBadge.textContent = `Até ${s.capacidade} pessoas`;
             }
             if (s.precoTotal) {
-              card.setAttribute('data-price', s.precoTotal);
-              card.setAttribute('data-signal', s.precoTotal / 2);
+              const preco = Number(s.precoTotal);
+              card.setAttribute('data-price', preco);
+              card.setAttribute('data-signal', preco / 2);
               const totalVal = card.querySelector('.total-val');
-              if (totalVal) totalVal.textContent = `R$ ${s.precoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+              if (totalVal) totalVal.textContent = `R$ ${preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
               const signalVal = card.querySelector('.signal-val');
-              if (signalVal) signalVal.textContent = `Sinal 50%: R$ ${(s.precoTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • No dia: R$ ${(s.precoTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+              if (signalVal) signalVal.textContent = `Sinal 50%: R$ ${(preco / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • No dia: R$ ${(preco / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
             }
             if (s.descricao) {
               const descEl = card.querySelector('.room-pick-desc');
@@ -1305,9 +1362,22 @@ async function loadPublicDataFromFirestore() {
     // 4. Cardápio Oficial (Sincronização em cardapio.html)
     if (document.querySelector('.cardapio-page-view') || document.getElementById('cardapio')) {
       try {
-        const cSnap = await getDocs(collection(db, 'cardapio'));
-        if (!cSnap.empty) {
-          const items = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        let items = [];
+        if (isSupabaseConfigured) {
+          try {
+            items = await getCardapioSupabase();
+          } catch(e) {
+            console.warn('Sync cardapio Supabase:', e);
+          }
+        }
+        if ((!items || items.length === 0) && db) {
+          const cSnap = await getDocs(collection(db, 'cardapio'));
+          if (!cSnap.empty) {
+            items = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          }
+        }
+
+        if (items && items.length > 0) {
           items.forEach(it => {
             const allItemRows = document.querySelectorAll('.menu-item-row');
             let matchedRow = null;
@@ -1325,7 +1395,7 @@ async function loadPublicDataFromFirestore() {
                 matchedRow.style.display = 'flex';
                 if (it.preco) {
                   const priceEl = matchedRow.querySelector('.item-price');
-                  if (priceEl) priceEl.textContent = `R$ ${it.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                  if (priceEl) priceEl.textContent = `R$ ${Number(it.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
                 }
                 if (it.descricao) {
                   const descEl = matchedRow.querySelector('.item-desc');
@@ -1343,7 +1413,7 @@ async function loadPublicDataFromFirestore() {
                     <div class="item-name">${it.nome}</div>
                     <div class="item-desc">${it.descricao || ''}</div>
                   </div>
-                  <div class="item-price">R$ ${(it.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                  <div class="item-price">R$ ${(Number(it.preco) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                 `;
                 grid.appendChild(newRow);
               }

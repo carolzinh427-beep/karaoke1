@@ -1,0 +1,460 @@
+-- ==============================================================================
+-- BACKSTAGE KARAOKÊ — ESQUEMA COMPLETO DO BANCO DE DADOS (SUPABASE POSTGRESQL)
+-- ==============================================================================
+-- Execute este script completo no SQL Editor do seu projeto Supabase.
+-- Ele cria todas as tabelas, índices, políticas de segurança (RLS) e popula
+-- os dados oficiais (salas, categorias, cardápio com 77 itens e configurações).
+-- ==============================================================================
+
+-- 1. EXTENSÕES
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- Função utilitária para atualizar updated_at automaticamente
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ------------------------------------------------------------------------------
+-- 2. TABELA: SALAS
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.salas (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    capacidade INTEGER NOT NULL DEFAULT 30,
+    preco_total NUMERIC(10,2) NOT NULL DEFAULT 800.00,
+    sinal NUMERIC(10,2) NOT NULL DEFAULT 400.00,
+    restante NUMERIC(10,2) NOT NULL DEFAULT 400.00,
+    descricao TEXT DEFAULT '',
+    imagem TEXT DEFAULT '/assets/brand/hero-bg.webp',
+    public_id TEXT DEFAULT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    ordem INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS trigger_salas_updated_at ON public.salas;
+CREATE TRIGGER trigger_salas_updated_at
+    BEFORE UPDATE ON public.salas
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ------------------------------------------------------------------------------
+-- 3. TABELA: CATEGORIAS DO CARDÁPIO
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.categorias_cardapio (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    ordem INTEGER NOT NULL DEFAULT 1,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS trigger_categorias_updated_at ON public.categorias_cardapio;
+CREATE TRIGGER trigger_categorias_updated_at
+    BEFORE UPDATE ON public.categorias_cardapio
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ------------------------------------------------------------------------------
+-- 4. TABELA: ITENS DO CARDÁPIO
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.cardapio (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    preco NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    categoria_id TEXT REFERENCES public.categorias_cardapio(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    categoria TEXT NOT NULL,
+    descricao TEXT DEFAULT '',
+    imagem TEXT DEFAULT '',
+    imagem_public_id TEXT DEFAULT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    ordem INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cardapio_categoria ON public.cardapio(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_cardapio_ordem ON public.cardapio(ordem);
+
+DROP TRIGGER IF EXISTS trigger_cardapio_updated_at ON public.cardapio;
+CREATE TRIGGER trigger_cardapio_updated_at
+    BEFORE UPDATE ON public.cardapio
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ------------------------------------------------------------------------------
+-- 5. TABELA: GALERIA DE MÍDIA (FOTOS E VÍDEOS)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.galeria (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tipo TEXT NOT NULL DEFAULT 'imagem', -- 'imagem' ou 'video'
+    sala TEXT NOT NULL DEFAULT 'geral',   -- 'sala-red', 'sala-green', 'sala-blue' ou 'geral'
+    titulo TEXT DEFAULT '',
+    url TEXT NOT NULL,
+    public_id TEXT DEFAULT NULL,
+    formato TEXT DEFAULT NULL,
+    largura INTEGER DEFAULT NULL,
+    altura INTEGER DEFAULT NULL,
+    duracao NUMERIC(10,2) DEFAULT NULL,
+    tamanho_bytes BIGINT DEFAULT NULL,
+    nome_arquivo TEXT DEFAULT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    ordem INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_galeria_sala ON public.galeria(sala);
+CREATE INDEX IF NOT EXISTS idx_galeria_ordem ON public.galeria(ordem);
+
+DROP TRIGGER IF EXISTS trigger_galeria_updated_at ON public.galeria;
+CREATE TRIGGER trigger_galeria_updated_at
+    BEFORE UPDATE ON public.galeria
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ------------------------------------------------------------------------------
+-- 6. TABELA: RESERVAS E AGENDAMENTOS
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.reservas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome TEXT NOT NULL,
+    whatsapp TEXT NOT NULL,
+    email TEXT DEFAULT NULL,
+    data TEXT NOT NULL,               -- Formato YYYY-MM-DD
+    sala TEXT NOT NULL,               -- Identificador ou nome da sala
+    pessoas INTEGER NOT NULL DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'CONFIRMED', 'CANCELLED'
+    valor_total NUMERIC(10,2) DEFAULT NULL,
+    valor_sinal NUMERIC(10,2) DEFAULT NULL,
+    termos_aceitos BOOLEAN NOT NULL DEFAULT TRUE,
+    observacoes TEXT DEFAULT '',
+    origem TEXT NOT NULL DEFAULT 'site_cliente',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_reservas_data ON public.reservas(data);
+CREATE INDEX IF NOT EXISTS idx_reservas_status ON public.reservas(status);
+
+DROP TRIGGER IF EXISTS trigger_reservas_updated_at ON public.reservas;
+CREATE TRIGGER trigger_reservas_updated_at
+    BEFORE UPDATE ON public.reservas
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ------------------------------------------------------------------------------
+-- 7. TABELA: BLOQUEIOS DE DATAS E SALAS
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.bloqueios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    data TEXT NOT NULL,
+    tipo TEXT NOT NULL DEFAULT 'dia_inteiro',
+    sala TEXT NOT NULL DEFAULT 'todas',
+    horario TEXT DEFAULT 'Dia Inteiro',
+    motivo TEXT DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS trigger_bloqueios_updated_at ON public.bloqueios;
+CREATE TRIGGER trigger_bloqueios_updated_at
+    BEFORE UPDATE ON public.bloqueios
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ------------------------------------------------------------------------------
+-- 8. TABELA: CONFIGURAÇÕES GERAIS
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.configuracoes (
+    id TEXT PRIMARY KEY DEFAULT 'geral',
+    whatsapp TEXT DEFAULT '556181426321',
+    instagram TEXT DEFAULT '@backstagekaraoke',
+    maps_url TEXT DEFAULT 'https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6',
+    endereco TEXT DEFAULT 'CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF',
+    contato_email TEXT DEFAULT '',
+    pdf_url TEXT DEFAULT '/cardapio-oficial.pdf',
+    pdf_public_id TEXT DEFAULT NULL,
+    horarios JSONB NOT NULL DEFAULT '{
+        "terca": "19:00 → 02:30 (madrugada de quarta)",
+        "quarta": "19:00 → 03:30 (madrugada de quinta)",
+        "quinta": "19:00 → 03:30 (madrugada de sexta)",
+        "sexta": "18:30 → 04:00 (madrugada de sábado)",
+        "sabado": "18:30 → 04:00 (madrugada de domingo)",
+        "domingo": "Fechado ao público (Disponível sob consulta no WhatsApp)",
+        "segunda": "Fechado ao público (Disponível sob consulta no WhatsApp)"
+    }'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS trigger_configuracoes_updated_at ON public.configuracoes;
+CREATE TRIGGER trigger_configuracoes_updated_at
+    BEFORE UPDATE ON public.configuracoes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ------------------------------------------------------------------------------
+-- 9. ROW LEVEL SECURITY (RLS) & POLÍTICAS DE ACESSO
+-- ------------------------------------------------------------------------------
+-- Habilita RLS em todas as tabelas
+ALTER TABLE public.salas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categorias_cardapio ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cardapio ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.galeria ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reservas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bloqueios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.configuracoes ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para Salas (Leitura pública irrestrita; Escrita pelo painel)
+DROP POLICY IF EXISTS "Salas leitura pública" ON public.salas;
+CREATE POLICY "Salas leitura pública" ON public.salas FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Salas escrita painel" ON public.salas;
+CREATE POLICY "Salas escrita painel" ON public.salas FOR ALL USING (true) WITH CHECK (true);
+
+-- Políticas para Categorias
+DROP POLICY IF EXISTS "Categorias leitura pública" ON public.categorias_cardapio;
+CREATE POLICY "Categorias leitura pública" ON public.categorias_cardapio FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Categorias escrita painel" ON public.categorias_cardapio;
+CREATE POLICY "Categorias escrita painel" ON public.categorias_cardapio FOR ALL USING (true) WITH CHECK (true);
+
+-- Políticas para Cardápio
+DROP POLICY IF EXISTS "Cardápio leitura pública" ON public.cardapio;
+CREATE POLICY "Cardápio leitura pública" ON public.cardapio FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Cardápio escrita painel" ON public.cardapio;
+CREATE POLICY "Cardápio escrita painel" ON public.cardapio FOR ALL USING (true) WITH CHECK (true);
+
+-- Políticas para Galeria
+DROP POLICY IF EXISTS "Galeria leitura pública" ON public.galeria;
+CREATE POLICY "Galeria leitura pública" ON public.galeria FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Galeria escrita painel" ON public.galeria;
+CREATE POLICY "Galeria escrita painel" ON public.galeria FOR ALL USING (true) WITH CHECK (true);
+
+-- Políticas para Reservas (Criação pelo site + Gestão pelo painel)
+DROP POLICY IF EXISTS "Reservas inserção pública" ON public.reservas;
+CREATE POLICY "Reservas inserção pública" ON public.reservas FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Reservas leitura painel" ON public.reservas;
+CREATE POLICY "Reservas leitura painel" ON public.reservas FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Reservas atualização painel" ON public.reservas;
+CREATE POLICY "Reservas atualização painel" ON public.reservas FOR UPDATE USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Reservas exclusão painel" ON public.reservas;
+CREATE POLICY "Reservas exclusão painel" ON public.reservas FOR DELETE USING (true);
+
+-- Políticas para Bloqueios
+DROP POLICY IF EXISTS "Bloqueios leitura pública" ON public.bloqueios;
+CREATE POLICY "Bloqueios leitura pública" ON public.bloqueios FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Bloqueios escrita painel" ON public.bloqueios FOR ALL USING (true) WITH CHECK (true);
+
+-- Políticas para Configurações
+DROP POLICY IF EXISTS "Configurações leitura pública" ON public.configuracoes;
+CREATE POLICY "Configurações leitura pública" ON public.configuracoes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Configurações escrita painel" ON public.configuracoes;
+CREATE POLICY "Configurações escrita painel" ON public.configuracoes FOR ALL USING (true) WITH CHECK (true);
+
+
+-- ------------------------------------------------------------------------------
+-- 10. POVOAMENTO INICIAL (SEED OFICIAL)
+-- ------------------------------------------------------------------------------
+
+-- Inserção das 3 Salas Oficiais
+INSERT INTO public.salas (id, nome, slug, capacidade, preco_total, sinal, restante, descricao, imagem, ativo, ordem)
+VALUES
+    ('sala-red', 'Sala Red', 'sala-red', 30, 800.00, 400.00, 400.00, 'Ambiente intimista e vibrante com iluminação vermelha cênica.', '/assets/brand/hero-bg.webp', true, 1),
+    ('sala-green', 'Sala Green', 'sala-green', 40, 900.00, 450.00, 450.00, 'Recomendado entre 30 e 35 pessoas para maior conforto.', '/assets/drinks/aperol-spritz.webp', true, 2),
+    ('sala-blue', 'Sala Blue', 'sala-blue', 50, 1000.00, 500.00, 500.00, 'Nossa maior sala vip com capacidade estendida e sistema premium.', '/assets/brand/microfone-profissional.jpg', true, 3)
+ON CONFLICT (id) DO UPDATE SET
+    nome = EXCLUDED.nome,
+    capacidade = EXCLUDED.capacidade,
+    preco_total = EXCLUDED.preco_total,
+    sinal = EXCLUDED.sinal,
+    restante = EXCLUDED.restante,
+    descricao = EXCLUDED.descricao;
+
+-- Inserção das Categorias do Cardápio
+INSERT INTO public.categorias_cardapio (id, nome, ordem, ativo)
+VALUES
+    ('petiscos', 'Porções & Petiscos', 1, true),
+    ('coqueteis-alcool', 'Coquetéis com Álcool', 2, true),
+    ('cervejas', 'Cervejas & Chopp', 3, true),
+    ('drinks-especiais', 'Drinks Especiais', 4, true),
+    ('caipiras', 'Caipiras & Autorais', 5, true),
+    ('sem-alcool', 'Sem Álcool', 6, true),
+    ('whisky', 'Whisky & Combos', 7, true),
+    ('destilados', 'Destilados & Licores', 8, true),
+    ('bebidas', 'Bebidas Gerais', 9, true)
+ON CONFLICT (id) DO UPDATE SET
+    nome = EXCLUDED.nome,
+    ordem = EXCLUDED.ordem;
+
+-- Inserção dos 77 Itens Oficiais do Cardápio
+INSERT INTO public.cardapio (id, nome, preco, categoria_id, categoria, descricao, ativo, ordem)
+VALUES
+    -- 1. Porções & Petiscos
+    ('bolinho-bacalhau', 'Bolinho de Bacalhau', 36.99, 'petiscos', 'Porções & Petiscos', 'Clássico porção crocante e bem temperada', true, 1),
+    ('batata-frita', 'Batata Frita', 24.99, 'petiscos', 'Porções & Petiscos', 'Porção generosa e sequinha', true, 2),
+    ('batata-cheddar-bacon', 'Batata com Cheddar e Bacon', 49.99, 'petiscos', 'Porções & Petiscos', 'Batatas crocantes cobertas com cheddar cremoso e cubos de bacon', true, 3),
+    ('mandioca-frita', 'Mandioca Frita', 19.99, 'petiscos', 'Porções & Petiscos', 'Mandioca macia por dentro e dourada por fora', true, 4),
+    ('calabresa-acebolada', 'Calabresa Acebolada', 39.99, 'petiscos', 'Porções & Petiscos', 'Fatias de calabresa refogadas com cebolas douradas', true, 5),
+    ('bolinho-queijo', 'Bolinho de Queijo (20 unidades)', 29.99, 'petiscos', 'Porções & Petiscos', 'Salgadinhos crocantes com recheio de queijo derretido', true, 6),
+    ('pastel-carne-queijo', 'Pastel de Carne ou Queijo (20 unidades)', 29.99, 'petiscos', 'Porções & Petiscos', 'Mini pastéis fritos na hora', true, 7),
+    ('coxinha-frango', 'Coxinha de Frango (20 unidades)', 29.99, 'petiscos', 'Porções & Petiscos', 'Massa saborosa com recheio desfiado cremoso', true, 8),
+    ('kibe', 'Kibe (20 unidades)', 29.99, 'petiscos', 'Porções & Petiscos', 'Tradicional kibe frito temperado', true, 9),
+    ('file-tilapia', 'Filé de Tilápia', 69.99, 'petiscos', 'Porções & Petiscos', 'Iscas empanadas crocantes (acompanhamentos inclusos)', true, 10),
+    ('frango-passarinho', 'Frango a Passarinho', 44.99, 'petiscos', 'Porções & Petiscos', 'Crocante com alho frito e acompanhamentos', true, 11),
+    ('costelinha-barbecue', 'Costelinha Suína com Barbecue', 44.99, 'petiscos', 'Porções & Petiscos', 'Costela macia caramelizada com molho barbecue', true, 12),
+    ('carne-sol', 'Carne de Sol (c/ mandioca ou batata)', 69.99, 'petiscos', 'Porções & Petiscos', 'Carne de sol no ponto ideal com acompanhamento', true, 13),
+    ('picanha-500g', 'Picanha 500g (c/ mandioca ou batata)', 89.99, 'petiscos', 'Porções & Petiscos', 'Corte nobre grelhado acompanhado de mandioca ou batata', true, 14),
+    ('caldos-quentinhos', 'Caldos Quentinhos', 24.99, 'petiscos', 'Porções & Petiscos', 'Sabores: Carne, Feijão, Verde e Frango', true, 15),
+    ('combo-misto-bom', 'Combo Misto Bom', 29.99, 'petiscos', 'Porções & Petiscos', '10 salgadinhos (misto) + Batata Frita + Molho Especial', true, 16),
+    ('combo-escolha-perfeita', 'Combo Escolha Perfeita', 29.99, 'petiscos', 'Porções & Petiscos', '16 salgadinhos (misto) + 1 Molho (Rosé, Barbecue ou Tártaro)', true, 17),
+
+    -- 2. Coquetéis com Álcool
+    ('aperol-spritz', 'Aperol Spritz', 29.99, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Aperol, espumante brut e água com gás', true, 18),
+    ('mojito', 'Mojito', 28.99, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Rum, açúcar, suco de limão, água com gás e hortelã', true, 19),
+    ('margarita', 'Margarita', 34.99, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Tequila prata, Cointreau e suco de limão', true, 20),
+    ('negroni', 'Negroni', 39.99, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Vermute tinto, Campari e gin', true, 21),
+    ('tequila-sunrise', 'Tequila Sunrise', 32.99, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Tequila, suco de laranja e xarope de groselha', true, 22),
+    ('cosmopolitan', 'Cosmopolitan', 32.99, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Vodka, cranberry, licor de laranja e limão', true, 23),
+    ('pina-colada', 'Piña Colada Refrescante', 32.99, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Rum branco, leite de coco, leite condensado e abacaxi', true, 24),
+    ('cozumel', 'Cozumel', 19.99, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Cerveja clara, borda de sal e limão', true, 25),
+    ('preparo-cozumel', 'Preparo do Cozumel', 8.00, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Preparo avulso', true, 26),
+    ('shot-limao', 'Shot de Limão', 2.00, 'coqueteis-alcool', 'Coquetéis com Álcool', 'Dose rápida', true, 27),
+
+    -- 3. Cervejas & Chopp
+    ('heineken-long-neck', 'Heineken Long Neck', 14.99, 'cervejas', 'Cervejas & Chopp', 'Cerveja Premium 330ml gelada', true, 28),
+    ('corona-long-neck', 'Corona Long Neck', 14.99, 'cervejas', 'Cervejas & Chopp', 'Cerveja clara suave com rodela de limão', true, 29),
+    ('stella-pure-gold', 'Stella Pure Gold Long Neck', 14.99, 'cervejas', 'Cervejas & Chopp', 'Sem glúten com todo o sabor', true, 30),
+    ('stella-artois', 'Stella Artois Long Neck', 11.99, 'cervejas', 'Cervejas & Chopp', 'Clássica lager belga', true, 31),
+    ('spaten-long-neck', 'Spaten Long Neck', 11.99, 'cervejas', 'Cervejas & Chopp', 'Puro malte alemã tradicional', true, 32),
+    ('budweiser-long-neck', 'Budweiser Long Neck', 10.99, 'cervejas', 'Cervejas & Chopp', 'King of Beers gelada', true, 33),
+    ('chopp-stone-house', 'Chopp Stone House', 9.99, 'cervejas', 'Cervejas & Chopp', 'Gelado na caneca congelada', true, 34),
+
+    -- 4. Drinks Especiais
+    ('moscow-mule', 'Moscow Mule', 32.99, 'drinks-especiais', 'Drinks Especiais', 'Vodka, limão, xarope de açúcar e espuma artesanal de gengibre', true, 35),
+    ('tesourinha-bsb', 'Tesourinha BSB', 24.99, 'drinks-especiais', 'Drinks Especiais', 'Homenagem à capital: Vodka, gengibre, limão, guaraná e canela', true, 36),
+    ('back-milk-alcool', 'Back & Milk - Estrela da Casa (Com Álcool)', 39.99, 'drinks-especiais', 'Drinks Especiais', 'Drink assinatura autoral do Backstage', true, 37),
+    ('back-milk-sem-alcool', 'Back & Milk - Estrela da Casa (Sem Álcool)', 29.99, 'drinks-especiais', 'Drinks Especiais', 'Versão suave sem teor alcoólico', true, 38),
+    ('bombeirinho', 'Bombeirinho', 9.99, 'drinks-especiais', 'Drinks Especiais', 'Cachaça, limão tahiti e groselha', true, 39),
+    ('cuba-libre', 'Cuba Libre', 24.99, 'drinks-especiais', 'Drinks Especiais', 'Rum, Coca-Cola e limão', true, 40),
+    ('mix-frutas-gin', 'Mix de Frutas com Gin', 24.99, 'drinks-especiais', 'Drinks Especiais', 'Frutas, xarope de frutas vermelhas, Sprite e gin', true, 41),
+    ('sex-on-the-beach', 'Sex on the Beach', 34.99, 'drinks-especiais', 'Drinks Especiais', 'Vodka, laranja, licor de pêssego e groselha', true, 42),
+    ('so-o-ouro', 'Só o Ouro - Shot', 14.99, 'drinks-especiais', 'Drinks Especiais', 'Cachaça de banana, limão e espuma de baunilha', true, 43),
+    ('espumante-casa-valduga', 'Espumante Casa Valduga', 159.99, 'drinks-especiais', 'Drinks Especiais', 'Garrafa premium para brindar', true, 44),
+    ('espumante-salton', 'Espumante Salton', 89.99, 'drinks-especiais', 'Drinks Especiais', 'Garrafa selecionada para comemorações', true, 45),
+    ('espumante-aurora', 'Espumante Aurora', 79.99, 'drinks-especiais', 'Drinks Especiais', 'Garrafa gelada refrescante', true, 46),
+
+    -- 5. Caipiras & Autorais
+    ('sakerinha', 'Sakerinha', 41.99, 'caipiras', 'Caipiras & Autorais', 'Saquê e frutas frescas da estação', true, 47),
+    ('caipirinha-tradicional', 'Caipirinha Tradicional', 15.99, 'caipiras', 'Caipiras & Autorais', 'Cachaça 51, limão e açúcar', true, 48),
+    ('caipirosca-1', 'Caipirosca I', 24.99, 'caipiras', 'Caipiras & Autorais', 'Vodka, morango e abacaxi', true, 49),
+    ('caipirosca-2', 'Caipirosca II', 29.99, 'caipiras', 'Caipiras & Autorais', 'Vodka, caju e laranja', true, 50),
+    ('camara', 'Camará', 19.99, 'caipiras', 'Caipiras & Autorais', 'Caipirinha especial de limão com rapadura', true, 51),
+    ('catetinha', 'Catetinha', 19.99, 'caipiras', 'Caipiras & Autorais', 'Caipirinha de maracujá com canela', true, 52),
+    ('caipice-lemon', 'Caipicé Lemon', 24.99, 'caipiras', 'Caipiras & Autorais', 'Vodka, limão siciliano e hortelã', true, 53),
+
+    -- 6. Sem Álcool
+    ('coquetel-frutas-sem', 'Coquetel de Frutas', 31.99, 'sem-alcool', 'Sem Álcool', 'Frutas vermelhas, leite condensado e soda', true, 54),
+    ('soda-italiana', 'Soda Italiana', 19.99, 'sem-alcool', 'Sem Álcool', 'Água com gás e xarope premium à escolha', true, 55),
+    ('moda-da-casa', 'Moda da Casa', 24.99, 'sem-alcool', 'Sem Álcool', 'Frutas vermelhas, morango, gengibre e água tônica', true, 56),
+    ('mix-frutas-sem', 'Mix de Frutas', 19.99, 'sem-alcool', 'Sem Álcool', 'Frutas, xarope de frutas vermelhas e Sprite', true, 57),
+
+    -- 7. Whisky & Combos
+    ('chivas-dose', 'Chivas Regal (Dose)', 27.99, 'whisky', 'Whisky & Combos', 'Dose pura ou com gelo', true, 58),
+    ('old-parr-dose', 'Old Parr (Dose)', 24.99, 'whisky', 'Whisky & Combos', 'Dose pura ou com gelo', true, 59),
+    ('red-label-dose', 'Red Label (Dose)', 19.99, 'whisky', 'Whisky & Combos', 'Dose pura ou com gelo', true, 60),
+    ('black-label-dose', 'Black Label (Dose)', 39.99, 'whisky', 'Whisky & Combos', 'Dose 12 anos', true, 61),
+    ('jack-daniels-dose', 'Jack Daniel''s (Dose)', 24.99, 'whisky', 'Whisky & Combos', 'Tennessee Whiskey', true, 62),
+    ('buchanans-dose', 'Buchanan''s (Dose)', 24.99, 'whisky', 'Whisky & Combos', 'Dose 12 anos', true, 63),
+    ('combo-chivas', 'Combo Chivas Regal', 389.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 64),
+    ('combo-old-parr', 'Combo Old Parr', 399.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 65),
+    ('combo-red-label', 'Combo Red Label', 280.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 66),
+    ('combo-black-label', 'Combo Black Label', 451.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 67),
+    ('combo-jack-daniels', 'Combo Jack Daniel''s', 389.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 68),
+    ('combo-buchanans', 'Combo Buchanan''s', 589.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 69),
+    ('combo-smirnoff', 'Combo Smirnoff', 219.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 70),
+    ('combo-absolut', 'Combo Absolut', 314.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 71),
+    ('combo-tanqueray', 'Combo Tanqueray', 381.99, 'whisky', 'Whisky & Combos', 'Garrafa + 4 Red Bulls + 1 Água de Coco', true, 72),
+    ('balde-budweiser', 'Balde Budweiser (6 unidades)', 59.99, 'whisky', 'Whisky & Combos', '6 long necks super geladas no balde com gelo', true, 73),
+
+    -- 8. Destilados & Licores
+    ('tanqueray-dose', 'Tanqueray (Dose)', 24.99, 'destilados', 'Destilados & Licores', 'London Dry Gin', true, 74),
+    ('absolut-dose', 'Absolut (Dose)', 22.99, 'destilados', 'Destilados & Licores', 'Vodka sueca pura', true, 75),
+    ('jose-cuervo-dose', 'José Cuervo (Dose)', 27.99, 'destilados', 'Destilados & Licores', 'Tequila mexicana com sal e limão', true, 76),
+    ('licor-43-dose', 'Licor 43 (Dose)', 24.99, 'destilados', 'Destilados & Licores', 'Licor espanhol aromático', true, 77),
+    ('amarula-dose', 'Amarula (Dose)', 19.99, 'destilados', 'Destilados & Licores', 'Licor cremoso de marula', true, 78),
+    ('smirnoff-dose', 'Smirnoff (Dose)', 14.99, 'destilados', 'Destilados & Licores', 'Vodka destilada', true, 79),
+    ('campari-dose', 'Campari (Dose)', 13.99, 'destilados', 'Destilados & Licores', 'Bitter italiano com laranja', true, 80),
+    ('cortezano-dose', 'Cortezano (Dose)', 14.99, 'destilados', 'Destilados & Licores', 'Conhaque nacional', true, 81),
+    ('sagatiba-dose', 'Sagatiba (Dose)', 11.99, 'destilados', 'Destilados & Licores', 'Cachaça pura', true, 82),
+    ('salinas-dose', 'Salinas (Dose)', 11.99, 'destilados', 'Destilados & Licores', 'Cachaça artesanal de alambique', true, 83),
+    ('bananinha-dose', 'Bananinha (Dose)', 11.99, 'destilados', 'Destilados & Licores', 'Aroma adocicado de banana', true, 84),
+    ('sao-francisco-dose', 'São Francisco (Dose)', 10.99, 'destilados', 'Destilados & Licores', 'Cachaça tradicional', true, 85),
+    ('domecq-dose', 'Domecq (Dose)', 11.99, 'destilados', 'Destilados & Licores', 'Conhaque clássico', true, 86),
+    ('montilla-dose', 'Montilla (Dose)', 11.99, 'destilados', 'Destilados & Licores', 'Rum carta branca', true, 87),
+    ('cachaca-canastra-dose', 'Cachaça Canastra (Dose)', 9.99, 'destilados', 'Destilados & Licores', 'Cachaça mineira nobre', true, 88),
+
+    -- 9. Bebidas Gerais
+    ('agua-sem-gas', 'Água sem gás', 5.99, 'bebidas', 'Bebidas Gerais', 'Garrafa 500ml', true, 89),
+    ('agua-com-gas', 'Água com gás', 6.99, 'bebidas', 'Bebidas Gerais', 'Garrafa 500ml com limão', true, 90),
+    ('coca-cola', 'Coca-Cola', 7.99, 'bebidas', 'Bebidas Gerais', 'Lata 350ml', true, 91),
+    ('coca-cola-zero', 'Coca-Cola Zero', 7.99, 'bebidas', 'Bebidas Gerais', 'Lata 350ml zero açúcar', true, 92),
+    ('guarana', 'Guaraná Antarctica', 7.99, 'bebidas', 'Bebidas Gerais', 'Lata 350ml', true, 93),
+    ('pepsi-zero', 'Pepsi Black Zero', 6.99, 'bebidas', 'Bebidas Gerais', 'Lata 350ml', true, 94),
+    ('schweppes', 'Schweppes Citrus', 7.99, 'bebidas', 'Bebidas Gerais', 'Lata 350ml', true, 95),
+    ('agua-tonica', 'Água Tônica Antarctica', 7.99, 'bebidas', 'Bebidas Gerais', 'Lata 350ml', true, 96),
+    ('agua-coco-pequena', 'Água de Coco (Pequena)', 9.99, 'bebidas', 'Bebidas Gerais', '200ml gelada', true, 97),
+    ('agua-coco-grande', 'Água de Coco (Grande)', 19.99, 'bebidas', 'Bebidas Gerais', '1 Litro gelada', true, 98),
+    ('red-bull', 'Red Bull Energy Drink', 17.99, 'bebidas', 'Bebidas Gerais', 'Lata 250ml', true, 99),
+    ('beats', 'Beats (Sabores)', 13.99, 'bebidas', 'Bebidas Gerais', 'Long neck ou lata sabores sortidos', true, 100),
+    ('ice-smirnoff', 'Ice Smirnoff', 12.99, 'bebidas', 'Bebidas Gerais', 'Long neck gelada', true, 101)
+ON CONFLICT (id) DO UPDATE SET
+    nome = EXCLUDED.nome,
+    preco = EXCLUDED.preco,
+    categoria_id = EXCLUDED.categoria_id,
+    categoria = EXCLUDED.categoria,
+    descricao = EXCLUDED.descricao;
+
+-- Inserção das Configurações Gerais
+INSERT INTO public.configuracoes (id, whatsapp, instagram, maps_url, endereco, pdf_url, horarios)
+VALUES (
+    'geral',
+    '556181426321',
+    '@backstagekaraoke',
+    'https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6',
+    'CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF',
+    '/cardapio-oficial.pdf',
+    '{
+        "terca": "19:00 → 02:30 (madrugada de quarta)",
+        "quarta": "19:00 → 03:30 (madrugada de quinta)",
+        "quinta": "19:00 → 03:30 (madrugada de sexta)",
+        "sexta": "18:30 → 04:00 (madrugada de sábado)",
+        "sabado": "18:30 → 04:00 (madrugada de domingo)",
+        "domingo": "Fechado ao público (Disponível sob consulta no WhatsApp)",
+        "segunda": "Fechado ao público (Disponível sob consulta no WhatsApp)"
+    }'::jsonb
+)
+ON CONFLICT (id) DO UPDATE SET
+    whatsapp = EXCLUDED.whatsapp,
+    instagram = EXCLUDED.instagram,
+    maps_url = EXCLUDED.maps_url,
+    endereco = EXCLUDED.endereco;
+
+-- ==============================================================================
+-- FIM DO SCRIPT DE MIGRAÇÃO SUPABASE
+-- ==============================================================================
