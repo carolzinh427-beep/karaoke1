@@ -8,25 +8,71 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || '';
-const supabaseAnonKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || '';
+const supabaseUrl = 
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 
+  'https://qepsqxllrgtrrtafpwpe.supabase.co';
+
+const supabasePublishableKey = 
+  (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env?.VITE_SUPABASE_ANON_KEY)) || 
+  '';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
-  supabaseAnonKey && 
+  supabasePublishableKey && 
   supabaseUrl.startsWith('https://') &&
-  !supabaseUrl.includes('seu-projeto')
+  !supabaseUrl.includes('sua-id-de-projeto')
 );
 
-// Inicializa o cliente do Supabase
+// Inicializa o cliente oficial do Supabase
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+  ? createClient(supabaseUrl, supabasePublishableKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
       }
     })
   : null;
+
+/**
+ * Testa a conectividade com o Supabase de forma segura e resiliente.
+ */
+export async function testSupabaseConnection() {
+  if (!supabase) {
+    return {
+      connected: false,
+      configured: false,
+      message: 'Supabase aguardando chave VITE_SUPABASE_PUBLISHABLE_KEY no arquivo .env.local',
+      url: supabaseUrl
+    };
+  }
+
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/`, {
+      method: 'GET',
+      headers: {
+        'apikey': supabasePublishableKey,
+        'Authorization': `Bearer ${supabasePublishableKey}`
+      }
+    });
+
+    return {
+      connected: res.status !== 401,
+      configured: true,
+      status: res.status,
+      message: res.status === 401 
+        ? 'Chave VITE_SUPABASE_PUBLISHABLE_KEY inválida ou não autorizada.' 
+        : 'Conexão com a API do Supabase estabelecida com sucesso!',
+      url: supabaseUrl
+    };
+  } catch (err) {
+    return {
+      connected: false,
+      configured: true,
+      message: 'Erro ao conectar ao endpoint do Supabase: ' + (err.message || String(err)),
+      url: supabaseUrl
+    };
+  }
+}
 
 // ==============================================================================
 // 1. SALAS
