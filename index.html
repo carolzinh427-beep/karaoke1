@@ -121,11 +121,11 @@
           </div>
         </button>
 
-        <!-- 2. Reservar pelo site (Linhas na Direita) - Direciona ao Hero do site (#inicio) -->
-        <a href="#inicio" 
+        <!-- 2. Reservar pelo site (Linhas na Direita) - Direciona ao Salão Principal (#salao-principal) -->
+        <a href="#salao-principal" 
            class="welcome-btn welcome-btn-right" 
            id="enterSiteBtn"
-           onclick="if(window.dismissWelcome){window.dismissWelcome(event,'inicio');}else{document.getElementById('welcomeScreen').style.display='none';try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','false');sessionStorage.setItem('backstage_last_section','inicio');}catch(e){}}">
+           onclick="if(window.dismissWelcome){window.dismissWelcome(event,'salao-principal');}else{document.getElementById('welcomeScreen').style.display='none';try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','false');sessionStorage.setItem('backstage_last_section','salao-principal');}catch(e){}}">
           <span>Reservar pelo site</span>
         </a>
 
@@ -821,86 +821,83 @@
     <!-- ========================================================================
          9. SALÃO PRINCIPAL (COMO FUNCIONA)
          ======================================================================== -->
-    <section class="main-stage-section" id="salao-principal">
+    <section class="salao-mapa-section" id="salao-principal">
       <div class="container">
-        <div class="main-stage-container">
-          <!-- Text and Info -->
-          <div class="main-stage-content">
-            <h2 class="main-stage-title">Salão Principal</h2>
-            <div class="main-stage-sub">Perto do bar e no meio do agito</div>
-
-            <p style="color: var(--text-secondary); margin-bottom: 16px;">
-              Gosta da energia do público vibrando, cantando junto e torcendo a cada nota? O Salão Principal do Backstage é o epicentro da diversão!
-            </p>
-
-            <div style="font-size: 0.95rem; font-weight: 700; color: #00F0FF; margin-bottom: 8px;">
-              Sem custo de reserva
+        <!-- Cabeçalho Oficial do Salão Principal -->
+        <div class="mapa-header-title-box">
+          <div class="mapa-headline">
+            <div class="mapa-brand-tag">
+              Backstage <span>Karaokê</span> • Salão Principal
             </div>
-
-            <!-- Entrada Pix / Crédito -->
-            <div class="entry-rates-box">
-              <div class="entry-card">
-                <span class="entry-method">Entrada no Pix</span>
-                <div class="entry-price" style="color: #25D366;">R$ 20</div>
-              </div>
-              <div class="entry-card">
-                <span class="entry-method">Entrada no Crédito</span>
-                <div class="entry-price" style="color: #00F0FF;">R$ 25</div>
-              </div>
-            </div>
-
-            <!-- Features -->
-            <ul class="stage-features-list">
-              <li class="stage-feature-item">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-                <div>
-                  <strong>Como funciona:</strong> A cada 4 convidados, você recebe um número na mesa e o DJ chama para cantar na ordem numérica
-                </div>
-              </li>
-              <li class="stage-feature-item">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-                <div>
-                  <strong>Comemoração:</strong> Pode trazer bolo e docinhos e decorar a mesa para o seu grupo
-                </div>
-              </li>
-            </ul>
-
-            <!-- Aniversariante não paga entrada -->
-            <div class="birthday-perk-card">
-              <div class="perk-title">
-                ANIVERSARIANTE NÃO PAGA ENTRADA
-              </div>
-              <div class="perk-desc">
-                ...e ainda ganha um <strong>drink de cortesia</strong> para brindar sua noite especial no Backstage!
-              </div>
-            </div>
-
-            <!-- Atenção Regras Salão -->
-            <div class="stage-warning-badge">
-              <strong>ATENÇÃO:</strong> Proibida a entrada de menores de 18 anos no Salão Principal Bebidas e salgados são proibidos
-            </div>
-
-            <div>
-              <a href="https://wa.me/556181426321?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20o%20Sal%C3%A3o%20Principal%20do%20Backstage" 
-                 class="btn btn-cyan btn-lg" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 id="queroSalaoPrincipalBtn">
-                Quero ir para o Salão Principal
-              </a>
+            <div class="mapa-capacity-badge">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>Lotação Máxima: 184 Pessoas</span>
             </div>
           </div>
 
-          <!-- Visual Showcase -->
-          <div class="main-stage-visual">
-            <img src="/assets/brand/microfone-profissional.jpg" alt="Microfone Profissional no Salão Principal do Backstage Karaokê" width="700" height="525" loading="lazy">
+          <!-- Legenda de Status das Mesas -->
+          <div class="mapa-legend-bar">
+            <div class="mapa-legend-item">
+              <span class="legend-dot green"></span>
+              <span>Disponível</span>
+            </div>
+            <div class="mapa-legend-item">
+              <span class="legend-dot yellow"></span>
+              <span>Selecionada</span>
+            </div>
+            <div class="mapa-legend-item">
+              <span class="legend-dot red"></span>
+              <span>Reservada</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade com o Mapa Gráfico Interativo e Lista Sincronizada -->
+        <div class="mapa-layout-grid">
+          <!-- Coluna 1: Imagem Oficial da Planta com Hotspots Clicáveis -->
+          <div class="mapa-visual-container">
+            <img src="/assets/brand/mapa-salao-principal.jpg" 
+                 alt="Mapa e Planta do Salão Principal do Backstage Karaokê com Lotação Máxima de 184 pessoas" 
+                 class="mapa-img-element"
+                 width="800" 
+                 height="1000"
+                 loading="eager">
+
+            <!-- Camada de Hotspots Interativos das Mesas -->
+            <div class="mapa-hotspot-layer" id="mapaHotspotsContainer">
+              <!-- Renderizado dinamicamente via Script / Inicializado no carregamento -->
+            </div>
+          </div>
+
+          <!-- Coluna 2: Informações e Lista de Mesas (Ordem do Mapa / Capacidades) -->
+          <div class="mapa-tables-list-panel">
+            <div>
+              <h3 style="font-size: 1.25rem; color: #FFFFFF; margin-bottom: 6px;">Escolha sua Mesa no Mapa</h3>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+                Clique na mesa desejada na planta ou na lista abaixo para iniciar sua reserva. Cada mesa tem capacidade dimensionada para o conforto do seu grupo:
+              </p>
+            </div>
+
+            <!-- Taxas de Entrada do Salão -->
+            <div class="entry-rates-box" style="margin: 0; padding: 12px 14px;">
+              <div class="entry-card" style="padding: 6px 10px;">
+                <span class="entry-method" style="font-size: 0.72rem;">Pix / Débito</span>
+                <div class="entry-price" style="font-size: 1.1rem; color: #10B981;">R$ 20<span style="font-size: 0.68rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+              </div>
+              <div class="entry-card" style="padding: 6px 10px;">
+                <span class="entry-method" style="font-size: 0.72rem;">Crédito</span>
+                <div class="entry-price" style="font-size: 1.1rem; color: var(--primary-cyan);">R$ 25<span style="font-size: 0.68rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+              </div>
+            </div>
+
+            <!-- Lista Rápida das 11 Mesas -->
+            <div class="tables-list-scroll" id="mapaTablesListScroll">
+              <!-- Preenchido dinamicamente via JS -->
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 10px 12px; font-size: 0.78rem; color: #FCA5A5;">
+              <strong>Classificação Indicativa (18+):</strong> Salão Principal exclusivo para maiores de 18 anos. Para trazer menores, reserve nossas Salas Privadas!
+            </div>
           </div>
         </div>
       </div>
@@ -1240,128 +1237,504 @@
   </div>
 
   <!-- ========================================================================
-       MODAL DE PREENCHIMENTO DE DADOS DA RESERVA (POP-UP DIRETO DA SALA)
+       MODAL DE CHECKOUT & RESERVA NA ORDEM EXATA (9 PASSOS / SALÃO PRINCIPAL & MAPA)
        ======================================================================== -->
   <div class="booking-data-modal" id="bookingDataModal" role="dialog" aria-modal="true" style="display: none;">
     <div class="booking-data-backdrop" onclick="closeBookingDataModal()"></div>
-    <div class="booking-data-dialog" id="bookingDataDialog">
+    <div class="booking-data-dialog checkout-modal-dialog" id="bookingDataDialog" style="max-width: 780px;">
       <div class="booking-data-glow" id="bookingDataGlow"></div>
-      <button type="button" class="booking-data-close" onclick="closeBookingDataModal()" aria-label="Fechar formulário">&times;</button>
+      <button type="button" class="booking-data-close" onclick="closeBookingDataModal()" aria-label="Fechar modal">&times;</button>
 
-      <div class="booking-modal-header">
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center;">
-          <span class="booking-modal-badge" id="modalRoomBadge">Sala Red</span>
-          <span class="booking-modal-date-pill" id="modalDateBadge">📅 Terça-feira, 06/10/2026</span>
+      <!-- Stepper Visual do Fluxo Oficial -->
+      <div class="flow-stepper-track" id="checkoutFlowStepper">
+        <div class="flow-step-item active" id="flowStepBadge1">
+          <span class="flow-step-num">1</span>
+          <span>Mesa no Mapa</span>
         </div>
-        <h3 class="booking-modal-title">Preencha Seus Dados para Reserva</h3>
-        <p class="booking-modal-sub" id="modalPriceSummary">
-          Total da Sala: <strong style="color: #FFF;">R$ 800,00</strong> • Sinal (50%): <strong style="color: var(--primary-cyan);">R$ 400,00</strong>
-        </p>
+        <div class="flow-step-item" id="flowStepBadge2">
+          <span class="flow-step-num">2</span>
+          <span>Data</span>
+        </div>
+        <div class="flow-step-item" id="flowStepBadge3">
+          <span class="flow-step-num">3</span>
+          <span>Horário</span>
+        </div>
+        <div class="flow-step-item" id="flowStepBadge4">
+          <span class="flow-step-num">4</span>
+          <span>Dados &amp; Pessoas</span>
+        </div>
+        <div class="flow-step-item" id="flowStepBadge6">
+          <span class="flow-step-num">5</span>
+          <span>Resumo &amp; Pagamento</span>
+        </div>
+        <div class="flow-step-item" id="flowStepBadge8">
+          <span class="flow-step-num">6</span>
+          <span>Pagar</span>
+        </div>
+        <div class="flow-step-item" id="flowStepBadge9">
+          <span class="flow-step-num">7</span>
+          <span>Confirmação</span>
+        </div>
       </div>
 
-      <form id="modalBookingForm" onsubmit="handleModalBookingSubmit(event)">
+      <!-- ====================================================================
+           PASSO 1: CLIENTE CLICA NA MESA DESEJADA NO MAPA (MESA PRIMEIRO!)
+           ==================================================================== -->
+      <div class="checkout-step-section" id="chkSectionMesa">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+          <h3 class="booking-modal-title" style="margin: 0;">1. Escolha a Mesa Desejada no Mapa</h3>
+          <span class="mapa-capacity-badge">Lotação Máxima: 184 Pessoas</span>
+        </div>
+        <p class="booking-modal-sub" style="margin-bottom: 14px;">
+          Os números representam a <strong>capacidade máxima de pessoas</strong> de cada mesa. A mesa deve ser escolhida primeiro:
+        </p>
+
+        <!-- Legenda Rápida -->
+        <div class="mapa-legend-bar" style="margin-bottom: 12px;">
+          <div class="mapa-legend-item"><span class="legend-dot green"></span><span>Disponível</span></div>
+          <div class="mapa-legend-item"><span class="legend-dot yellow"></span><span>Selecionada</span></div>
+          <div class="mapa-legend-item"><span class="legend-dot red"></span><span>Reservada</span></div>
+        </div>
+
+        <!-- Grade de Seleção das 11 Mesas (com badges "Até X pessoas") -->
+        <div class="tables-list-scroll" id="modalTablesListScroll" style="max-height: 380px;">
+          <!-- Preenchido dinamicamente via JS com as 11 mesas -->
+        </div>
+
+        <div style="margin-top: 18px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.8rem; color: var(--text-muted);" id="modalMesaSelectPrompt">
+            Toque na mesa desejada para avançar para a data.
+          </span>
+          <button type="button" class="btn btn-primary btn-md" id="btnAvancarParaData" onclick="avancarParaPassoData()" disabled>
+            <span>Avançar para a Data (Passo 2) →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           PASSO 2: DEPOIS ESCOLHE A DATA
+           ==================================================================== -->
+      <div class="checkout-step-section" id="chkSectionData" style="display: none;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center;">
+          <span class="booking-modal-badge" id="modalBadgeMesaEscolhida" style="color: #F59E0B; border-color: #F59E0B;">Mesa: Selecionada</span>
+          <span class="booking-modal-date-pill" id="modalBadgeDataDisplay">📅 Selecione o Dia</span>
+        </div>
+
+        <h3 class="booking-modal-title">2. Escolha a Data da Reserva</h3>
+        <p class="booking-modal-sub" style="margin-bottom: 14px;">
+          Toque no dia desejado no calendário para verificar a disponibilidade da mesa escolhida:
+        </p>
+
+        <!-- Calendário Embutido do Modal -->
+        <div class="calendar-card" style="margin: 0 auto 16px; max-width: 440px;">
+          <div class="calendar-top-bar">
+            <button type="button" class="cal-nav-btn" onclick="modalCalPrevMonth()" aria-label="Mês anterior">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="cal-current-label" id="modalCalMonthLabel">Outubro 2026</div>
+            <button type="button" class="cal-nav-btn" onclick="modalCalNextMonth()" aria-label="Próximo mês">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+
+          <div class="calendar-weekdays-row">
+            <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+          </div>
+
+          <div class="calendar-days-grid" id="modalCalDaysGrid">
+            <!-- Dias preenchidos via JS -->
+          </div>
+
+          <div class="calendar-legend-bar" style="padding: 8px 10px; font-size: 0.72rem;">
+            <div class="legend-pill"><span class="legend-circle open-circle"></span> Ter a Sáb (Aberto)</div>
+            <div class="legend-pill"><span class="legend-circle closed-circle"></span> Dom e Seg (Fechado)</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="voltarParaPassoMesa()">
+            ← Voltar ao Mapa
+          </button>
+          <button type="button" class="btn btn-primary btn-md" id="btnAvancarParaHorario" onclick="avancarParaPassoHorario()" disabled>
+            <span>Avançar para o Horário (Passo 3) →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           PASSO 3: DEPOIS ESCOLHE O HORÁRIO
+           ==================================================================== -->
+      <div class="checkout-step-section" id="chkSectionHorario" style="display: none;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center;">
+          <span class="booking-modal-badge" id="modalBadgeMesaEscolhida2" style="color: #F59E0B; border-color: #F59E0B;">Mesa: Selecionada</span>
+          <span class="booking-modal-date-pill" id="modalBadgeDataEscolhida2">📅 Data Definida</span>
+        </div>
+
+        <h3 class="booking-modal-title">3. Escolha o Horário de Chegada</h3>
+        <p class="booking-modal-sub" style="margin-bottom: 16px;">
+          Selecione o horário desejado. Mesas já reservadas para este dia/horário ficam indisponíveis:
+        </p>
+
+        <!-- Grade de Horários Noturnos com Status -->
+        <div class="time-slots-grid" id="modalTimeSlotsGrid" style="margin-bottom: 18px;">
+          <!-- Preenchido via JS com verificação de bloqueio -->
+        </div>
+
+        <div id="horarioBloqueadoAviso" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #EF4444; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; color: #FCA5A5; font-size: 0.8rem;">
+          Esta mesa já está reservada para este horário. Por favor, escolha outro horário livre ou altere a data.
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="voltarParaPassoData()">
+            ← Voltar para Data
+          </button>
+          <button type="button" class="btn btn-primary btn-md" id="btnAvancarParaDados" onclick="avancarParaPassoDados()">
+            <span>Avançar para Seus Dados (Passo 4) →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           PASSO 4 & 5: DADOS DO COMPRADOR E VALIDAÇÃO DE CAPACIDADE DA MESA
+           ==================================================================== -->
+      <div class="checkout-step-section" id="chkSectionDados" style="display: none;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center;">
+          <span class="booking-modal-badge" id="modalBadgeMesaEscolhida3" style="color: #F59E0B; border-color: #F59E0B;">Mesa: Selecionada</span>
+          <span class="booking-modal-date-pill" id="modalBadgeDataEscolhida3">📅 Data Definida</span>
+          <span class="booking-modal-date-pill" id="modalBadgeHoraEscolhida3">⏰ Horário Definido</span>
+        </div>
+
+        <h3 class="booking-modal-title">4. Informe seus Dados e Quantidade de Pessoas</h3>
+        <p class="booking-modal-sub" style="margin-bottom: 16px;">
+          Preencha seus dados de contato e o número de pessoas que irão à mesa:
+        </p>
+
         <div class="modal-form-group">
-          <label for="modalBookingNome" class="field-label">Nome e Sobrenome *</label>
-          <input type="text" id="modalBookingNome" class="field-input" placeholder="Ex: Maria Clara Santos" required autocomplete="name">
+          <label for="modalBookingNome" class="field-label">Nome Completo do Titular *</label>
+          <input type="text" id="modalBookingNome" class="field-input" placeholder="Ex: Maria Clara dos Santos" required autocomplete="name">
         </div>
 
         <div class="modal-form-row">
           <div class="modal-form-group">
-            <label for="modalBookingWhatsapp" class="field-label">WhatsApp com DDD *</label>
+            <label for="modalBookingWhatsapp" class="field-label">Telefone / WhatsApp com DDD *</label>
             <input type="tel" id="modalBookingWhatsapp" class="field-input" placeholder="(61) 98765-4321" required autocomplete="tel">
           </div>
+
           <div class="modal-form-group">
-            <label for="modalBookingPessoas" class="field-label">Quantidade de Pessoas *</label>
-            <input type="number" id="modalBookingPessoas" class="field-input" min="1" max="50" placeholder="Ex: 25 pessoas" required>
+            <label for="modalBookingEmail" class="field-label">E-mail para Envio do Ingresso *</label>
+            <input type="email" id="modalBookingEmail" class="field-input" placeholder="seuemail@exemplo.com" required autocomplete="email">
           </div>
         </div>
 
-        <!-- Termos de Responsabilidade Clicáveis -->
-        <div class="booking-terms-box" style="margin: 14px 0 18px; padding: 12px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;">
-          <label class="terms-label-check" style="cursor: pointer; display: flex; align-items: flex-start; gap: 10px; margin: 0;">
-            <input type="checkbox" id="modalBookingTermosCheck" required checked style="margin-top: 3px; accent-color: var(--primary-cyan); width: 18px; height: 18px; cursor: pointer;">
-            <span class="terms-check-text" style="font-size: 0.84rem; line-height: 1.45; color: var(--text-secondary);">
-              Eu li e concordo com os 
-              <button type="button" class="terms-inline-link" onclick="openTermosModal(event); event.stopPropagation();">
-                termos de responsabilidade da reserva
-              </button> 
-              e a <strong>não devolução do valor de 50% pago na reserva</strong> em caso de desistência.
+        <!-- QUANTIDADE DE PESSOAS COM VALIDAÇÃO DE CAPACIDADE (PASSO 5) -->
+        <div class="modal-form-group">
+          <label for="modalBookingPessoas" class="field-label" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Quantidade de Pessoas no Grupo *</span>
+            <span style="font-size: 0.78rem; color: var(--primary-cyan); font-weight: 700;" id="modalMesaCapacidadeTag">Capacidade: Até 30 pessoas</span>
+          </label>
+          <input type="number" id="modalBookingPessoas" class="field-input" min="1" max="50" value="4" placeholder="Ex: 8 pessoas" required oninput="validarCapacidadeEmTempoReal()">
+          <span style="font-size: 0.76rem; color: var(--text-muted); display: block; margin-top: 4px;" id="modalCapacidadeHelper">
+            O sistema valida se a quantidade informada cabe confortavelmente na mesa escolhida.
+          </span>
+        </div>
+
+        <!-- Alerta de Bloqueio por Excesso de Capacidade (Passo 5) -->
+        <div id="alertaCapacidadeExcedida" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1.5px solid #EF4444; border-radius: 10px; padding: 12px 14px; margin-top: 10px; color: #FCA5A5; font-size: 0.84rem; line-height: 1.45;">
+          <div style="font-weight: 800; color: #EF4444; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            CAPACIDADE EXCEDIDA PARA ESTA MESA
+          </div>
+          <span id="alertaCapacidadeMsg">Esta mesa acomoda no máximo X pessoas.</span>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="voltarParaPassoHorario()">
+            ← Voltar para Horário
+          </button>
+          <button type="button" class="btn btn-primary btn-md" onclick="validarEAvancarParaResumo()">
+            <span>Avançar para Resumo &amp; Pagamento (Passo 6) →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           PASSO 6 & 7: RESUMO DA RESERVA, VALOR E ESCOLHA DO PAGAMENTO
+           ==================================================================== -->
+      <div class="checkout-step-section" id="chkSectionResumo" style="display: none;">
+        <h3 class="booking-modal-title">5. Resumo da Reserva &amp; Forma de Pagamento</h3>
+        <p class="booking-modal-sub" style="margin-bottom: 14px;">
+          Revise os dados da reserva e escolha sua forma de pagamento por pessoa:
+        </p>
+
+        <!-- 6. Mostra o resumo da reserva e o valor -->
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 0.85rem;">
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Mesa Escolhida:</span>
+              <strong id="resumoMesaNome" style="color: #F59E0B;">--</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Data &amp; Horário:</span>
+              <strong id="resumoDataHora" style="color: #FFF;">--</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Titular:</span>
+              <strong id="resumoTitularNome" style="color: #FFF;">--</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Quantidade:</span>
+              <strong id="resumoQtdPessoas" style="color: var(--primary-cyan);">--</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Cliente escolhe o pagamento (Pix R$20, Débito R$20, Crédito R$25) -->
+        <label class="field-label" style="font-size: 0.85rem; font-weight: 800; color: #FFFFFF; margin-bottom: 8px; display: block;">
+          Escolha a Forma de Pagamento da Entrada:
+        </label>
+        <div class="payment-pricing-grid" id="paymentPricingGrid">
+          <!-- PIX: R$ 20 por pessoa -->
+          <div class="payment-method-card selected" id="payCardPix" onclick="selecionarMetodoTarifa('pix')">
+            <div class="method-name">Pix</div>
+            <div class="method-rate">R$ 20<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+            <div class="method-note">Aprovação imediata</div>
+          </div>
+
+          <!-- DÉBITO: R$ 20 por pessoa -->
+          <div class="payment-method-card" id="payCardDebito" onclick="selecionarMetodoTarifa('debito')">
+            <div class="method-name">Débito</div>
+            <div class="method-rate">R$ 20<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+            <div class="method-note">Cartão de débito</div>
+          </div>
+
+          <!-- CRÉDITO: R$ 25 por pessoa -->
+          <div class="payment-method-card" id="payCardCredito" onclick="selecionarMetodoTarifa('credito')">
+            <div class="method-name">Crédito</div>
+            <div class="method-rate" style="color: var(--primary-cyan);">R$ 25<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+            <div class="method-note">Cartão de crédito</div>
+          </div>
+        </div>
+
+        <!-- Valor Total Calculado -->
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1.5px solid #10B981; border-radius: 12px; padding: 14px 18px; text-align: center; margin-bottom: 16px;">
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Valor Total da Reserva:</div>
+          <div style="font-size: 1.85rem; font-family: var(--font-heading); font-weight: 900; color: #10B981; margin: 4px 0;" id="resumoValorTotalCalculado">
+            R$ 80,00
+          </div>
+          <div style="font-size: 0.8rem; color: #CBD5E1;" id="resumoCalculoFormula">
+            4 pessoas × R$ 20,00 (Pix)
+          </div>
+        </div>
+
+        <!-- Termos e Consentimentos Obrigatórios -->
+        <div style="margin-bottom: 16px;">
+          <label class="legal-checkbox-item">
+            <input type="checkbox" id="chkReservaTermosAceitos" required checked>
+            <span class="legal-checkbox-label">
+              Declaro ciência que a reserva garante a exclusividade da mesa para o meu grupo e concordo com os 
+              <button type="button" class="terms-inline-link" onclick="openTermosCompletosModal(event); event.stopPropagation();">Termos de Compra e Reserva</button>
+              e a <button type="button" class="terms-inline-link" onclick="openPoliticaPrivacidadeModal(event); event.stopPropagation();">Política de Privacidade</button>.
             </span>
           </label>
         </div>
 
-        <!-- Botão Reservar Minha Sala -->
-        <button type="submit" class="btn btn-primary btn-lg btn-full" id="btnConfirmarModalBooking" style="padding: 16px 20px; font-size: 1.05rem;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/>
-          </svg>
-          <span>Reservar Minha Sala no WhatsApp</span>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="voltarParaPassoDados()">
+            ← Voltar para Seus Dados
+          </button>
+          <button type="button" class="btn btn-primary btn-md" onclick="avancarParaPassoPagar()">
+            <span>Prosseguir para Pagamento (Passo 8) →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           PASSO 8: PROSSEGUE PARA O PAGAMENTO (INTEGRAÇÃO ASAAS)
+           ==================================================================== -->
+      <div class="checkout-step-section" id="chkSectionPagar" style="display: none;">
+        <h3 class="booking-modal-title">6. Pagamento Seguro da Reserva</h3>
+        <p class="booking-modal-sub" style="margin-bottom: 14px;">
+          Pagamento processado com segurança via Asaas. Nenhum dado de cartão é armazenado no sistema:
+        </p>
+
+        <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--primary-cyan); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
+          <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Total a Pagar:</div>
+          <div style="font-size: 2rem; font-family: var(--font-heading); font-weight: 900; color: #10B981; margin: 4px 0;" id="pagarValorDisplay">
+            R$ 80,00
+          </div>
+          <div style="font-size: 0.8rem; color: #CBD5E1;" id="pagarMetodoDisplay">
+            Pagamento via Pix
+          </div>
+        </div>
+
+        <!-- Detalhes do Pix (caso Pix selecionado) -->
+        <div id="pagarPixBox" style="background: rgba(14,22,45,0.9); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.82rem; font-weight: 800; color: var(--primary-cyan);">Chave Pix Copia e Cola (Asaas):</span>
+            <button type="button" class="btn-admin btn-admin-xs btn-admin-outline" onclick="copiarPixCodigo()" id="btnCopiarPix">
+              Copiar Chave Pix 📋
+            </button>
+          </div>
+          <input type="text" id="chkPixInput" class="field-input" readonly value="financeiro@backstagekaraoke.com.br" style="font-family: monospace; font-size: 0.82rem; background: rgba(0,0,0,0.5);">
+          <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 6px;">
+            Abra seu app do banco, escolha a opção "Pix Copia e Cola" e confirme o pagamento.
+          </div>
+        </div>
+
+        <!-- Detalhes de Débito / Crédito (Asaas Checkout Seguro) -->
+        <div id="pagarCartaoBox" style="display: none; background: rgba(14,22,45,0.9); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">
+            Ambiente de Checkout Seguro Asaas
+          </div>
+          <p style="font-size: 0.78rem; color: #CBD5E1; line-height: 1.45; margin: 0;">
+            A transação de cartão de débito/crédito é processada em ambiente isolado e certificado PCI-DSS do Asaas. Nenhum dado do seu cartão trafega ou fica registrado em nossos servidores.
+          </p>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-lg btn-full" id="btnFinalizarPagamento" onclick="confirmarPagamentoEFinalizar()" style="padding: 16px 20px; font-size: 1.05rem; margin-bottom: 12px;">
+          <span>Confirmar Pagamento e Emitir Reserva ✓</span>
         </button>
 
-        <button type="button" class="btn btn-outline btn-sm btn-full" onclick="backToRoomPersonalityModal()" style="margin-top: 10px; border-color: rgba(255,255,255,0.15); color: var(--text-muted);">
-          ← Voltar e Escolher Outra Sala
-        </button>
+        <div style="text-align: center;">
+          <button type="button" class="btn btn-outline btn-xs" onclick="voltarParaPassoResumo()">
+            ← Alterar Forma de Pagamento
+          </button>
+        </div>
+      </div>
 
-        <div id="modalBookingFeedback" class="booking-status-alert" style="display: none; margin-top: 12px;"></div>
-      </form>
+      <!-- ====================================================================
+           PASSO 9: APÓS PAGAMENTO CONFIRMADO, MOSTRA A CONFIRMAÇÃO DA RESERVA
+           ==================================================================== -->
+      <div class="checkout-step-section" id="chkSectionConfirmacao" style="display: none; text-align: center;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); border: 2px solid #10B981; color: #10B981; margin-bottom: 12px;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+
+        <h3 class="booking-modal-title" style="color: #10B981; margin-bottom: 4px;">Reserva Confirmada com Sucesso!</h3>
+        <p class="booking-modal-sub" style="margin-bottom: 14px;">
+          Sua mesa está garantida. Apresente este código ou QR Code ao chegar na recepção:
+        </p>
+
+        <!-- Card Oficial com QR Code e Código da Reserva -->
+        <div class="qr-code-display-card">
+          <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px;">
+            Apresente na Recepção:
+          </div>
+
+          <div class="qr-code-svg-wrap" id="qrCodeContainer">
+            <!-- Renderizado dinamicamente em SVG nativo -->
+          </div>
+
+          <div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); text-transform: uppercase;">Código Localizador da Reserva:</div>
+            <div class="reservation-code-pill" id="voucherReservationCode">BK-2026-XXXX</div>
+          </div>
+
+          <div style="font-size: 0.85rem; color: #E2E8F0; margin-top: 10px; line-height: 1.5;" id="voucherDetailsBrief">
+            <!-- Detalhes consolidados -->
+          </div>
+        </div>
+
+        <div class="legal-callout-info" style="text-align: left; margin: 14px 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <div style="font-size: 0.8rem;">
+            Um comprovante completo foi gerado e enviado para o e-mail: <strong id="voucherSentEmail">--</strong>.
+          </div>
+        </div>
+
+        <!-- Ações do Voucher / Ingresso -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 16px;">
+          <button type="button" class="btn btn-primary btn-md" onclick="compartilharVoucherWhatsApp()">
+            <span>Compartilhar no WhatsApp 💬</span>
+          </button>
+          <button type="button" class="btn btn-outline btn-md" onclick="imprimirVoucher()">
+            <span>Imprimir / Salvar PDF 🖨️</span>
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeBookingDataModal()">
+            <span>Concluir e Fechar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Feedback de status -->
+      <div id="modalBookingFeedback" class="booking-status-alert" style="display: none; margin-top: 14px;"></div>
     </div>
   </div>
 
   <!-- ========================================================================
-       MODAL DE TERMOS DE RESPONSABILIDADE & CIÊNCIA DA RESERVA
+       MODAL DE LEITURA: TERMOS DE COMPRA E RESERVA (COMPLETO)
        ======================================================================== -->
+  <div class="termos-responsabilidade-modal" id="modalTermosCompletos" role="dialog" aria-modal="true" style="display: none;">
+    <div class="termos-backdrop" onclick="closeDocViewerModal('modalTermosCompletos')"></div>
+    <div class="termos-dialog doc-viewer-modal-dialog">
+      <div class="termos-header">
+        <h3 class="termos-title">Termos e Condições de Compra e Reserva</h3>
+        <button type="button" class="termos-close-btn" onclick="closeDocViewerModal('modalTermosCompletos')" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="termos-body doc-viewer-body" id="modalTermosCompletosBody">
+        <!-- Injetado dinamicamente via JS de legalTexts.js -->
+      </div>
+      <div class="termos-footer">
+        <button type="button" class="btn btn-primary btn-md btn-full" onclick="closeDocViewerModal('modalTermosCompletos')">
+          <span>Entendi os Termos de Reserva</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL DE LEITURA: POLÍTICA DE PRIVACIDADE LGPD (COMPLETO)
+       ======================================================================== -->
+  <div class="termos-responsabilidade-modal" id="modalPoliticaPrivacidade" role="dialog" aria-modal="true" style="display: none;">
+    <div class="termos-backdrop" onclick="closeDocViewerModal('modalPoliticaPrivacidade')"></div>
+    <div class="termos-dialog doc-viewer-modal-dialog">
+      <div class="termos-header">
+        <h3 class="termos-title">Política de Privacidade &amp; Proteção de Dados (LGPD)</h3>
+        <button type="button" class="termos-close-btn" onclick="closeDocViewerModal('modalPoliticaPrivacidade')" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="termos-body doc-viewer-body" id="modalPoliticaPrivacidadeBody">
+        <!-- Injetado dinamicamente via JS de legalTexts.js -->
+      </div>
+      <div class="termos-footer">
+        <button type="button" class="btn btn-primary btn-md btn-full" onclick="closeDocViewerModal('modalPoliticaPrivacidade')">
+          <span>Entendi a Política de Privacidade</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL DE LEITURA: REGRAS ESPECÍFICAS DOS AMBIENTES
+       ======================================================================== -->
+  <div class="termos-responsabilidade-modal" id="modalRegrasAmbiente" role="dialog" aria-modal="true" style="display: none;">
+    <div class="termos-backdrop" onclick="closeDocViewerModal('modalRegrasAmbiente')"></div>
+    <div class="termos-dialog doc-viewer-modal-dialog">
+      <div class="termos-header">
+        <h3 class="termos-title" id="modalRegrasAmbienteHeaderTitle">Regras dos Ambientes</h3>
+        <button type="button" class="termos-close-btn" onclick="closeDocViewerModal('modalRegrasAmbiente')" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="termos-body doc-viewer-body" id="modalRegrasAmbienteBody">
+        <!-- Injetado dinamicamente via JS de legalTexts.js -->
+      </div>
+      <div class="termos-footer">
+        <button type="button" class="btn btn-primary btn-md btn-full" onclick="closeDocViewerModal('modalRegrasAmbiente')">
+          <span>Compreendi as Regras do Espaço</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mantido para compatibilidade retroativa -->
   <div class="termos-responsabilidade-modal" id="termosResponsabilidadeModal" role="dialog" aria-modal="true" style="display: none;">
     <div class="termos-backdrop" onclick="closeTermosModal(event)"></div>
     <div class="termos-dialog">
       <div class="termos-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--primary-cyan); display: flex; align-items: center; justify-content: center; color: var(--primary-cyan);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
-            </svg>
-          </div>
-          <div>
-            <h3 class="termos-title">Termos de Responsabilidade da Reserva</h3>
-            <span class="termos-sub">Backstage Karaokê Brasília • Salas Privadas</span>
-          </div>
-        </div>
+        <h3 class="termos-title">Termos de Responsabilidade da Reserva</h3>
         <button type="button" class="termos-close-btn" onclick="closeTermosModal(event)" aria-label="Fechar termos">&times;</button>
       </div>
-
-      <div class="termos-body">
-        <div class="termos-alert-box">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #FF0055; flex-shrink: 0;">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <div>
-            <strong>CLÁUSULA IMPORTANTE DE SINAL E NÃO DEVOLUÇÃO:</strong><br>
-            A reserva da sala privada é formalizada mediante o pagamento prévio de <strong>50% do valor total</strong> a título de sinal e garantia de exclusividade. Em virtude do bloqueio da data na nossa agenda oficial e da impossibilidade de atender outros grupos no mesmo espaço, <strong>o valor do sinal de 50% NÃO É DEVOLVIDO em caso de cancelamento, desistência ou não comparecimento</strong>.
-          </div>
-        </div>
-
-        <ul class="termos-list">
-          <li>
-            <strong>1. Pagamento do Saldo Restante:</strong> Os 50% restantes do valor da sala deverão ser quitados na recepção do Backstage Karaokê no momento da entrada dos convidados.
-          </li>
-          <li>
-            <strong>2. Capacidade e Limite de Pessoas:</strong> Cada sala possui capacidade máxima estipulada (Sala Red: até 30 pessoas; Sala Green: até 40 pessoas; Sala Blue: até 50 pessoas). Não é permitido ultrapassar a capacidade por motivos de segurança e conforto.
-          </li>
-          <li>
-            <strong>3. Menores de Idade nas Salas:</strong> Menores de 18 anos são bem-vindos nas salas privadas sob a responsabilidade e acompanhamento de seus pais ou responsáveis legais.
-          </li>
-          <li>
-            <strong>4. Cuidados com Equipamentos:</strong> A sala conta com TV de alta definição, sistema de som profissional, microfones sem fio e tablet de controle de músicas. Danos aos equipamentos por mau uso serão de responsabilidade do titular da reserva.
-          </li>
-          <li>
-            <strong>5. Promoção de Terça a Quinta:</strong> O bônus de R$ 200 em consumação é válido exclusivamente para locações realizadas nas noites de terça, quarta ou quinta-feira.
-          </li>
-        </ul>
+      <div class="termos-body" id="termosResponsabilidadeModalBody">
+        <!-- Preenchido via legalTexts.js -->
       </div>
-
       <div class="termos-footer">
         <button type="button" class="btn btn-primary btn-md btn-full" onclick="closeTermosModal(event)">
           <span>Entendi e Concordo com os Termos</span>

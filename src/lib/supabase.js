@@ -284,7 +284,7 @@ export async function deleteGaleriaItemSupabase(id) {
 }
 
 // ==============================================================================
-// 5. RESERVAS
+// 5. RESERVAS & INGRESSOS (COM COMPLIANCE LEGAL, LGPD E ECA)
 // ==============================================================================
 export async function getReservasSupabase() {
   if (!supabase) return null;
@@ -296,16 +296,30 @@ export async function getReservasSupabase() {
   if (error) throw error;
   return (data || []).map(r => ({
     id: r.id,
+    codigoReserva: r.codigo_reserva || '',
     nome: r.nome,
     whatsapp: r.whatsapp,
     email: r.email || '',
     data: r.data,
+    horario: r.horario || '19:00',
+    ambienteId: r.ambiente_id || 'salas-privadas',
+    salaOuMesa: r.sala_ou_mesa || '',
     sala: r.sala,
     pessoas: r.pessoas || 1,
     status: r.status || 'PENDING',
+    statusPagamento: r.status_pagamento || 'aguardando',
+    transacaoId: r.transacao_id || null,
+    qrCodeToken: r.qr_code_token || null,
     valorTotal: r.valor_total ? Number(r.valor_total) : null,
     valorSinal: r.valor_sinal ? Number(r.valor_sinal) : null,
+    valorPago: r.valor_pago ? Number(r.valor_pago) : null,
     termosAceitos: r.termos_aceitos !== false,
+    termosAceitosEm: r.termos_aceitos_em,
+    termosVersao: r.termos_versao || '2026.1',
+    consentimentoMarketing: Boolean(r.consentimento_marketing),
+    presencaMenor: Boolean(r.presenca_menor),
+    responsavelLegalDeclarado: Boolean(r.responsavel_legal_declarado),
+    checkedInAt: r.checked_in_at,
     observacoes: r.observacoes || '',
     origem: r.origem || 'site_cliente',
     criadoEm: r.created_at ? new Date(r.created_at) : new Date(),
@@ -320,16 +334,28 @@ export async function saveReservaSupabase(dados) {
     whatsapp: dados.whatsapp,
     email: dados.email || null,
     data: dados.data,
+    horario: dados.horario || '19:00',
+    ambiente_id: dados.ambienteId || 'salas-privadas',
+    sala_ou_mesa: dados.salaOuMesa || dados.sala || '',
     sala: dados.sala,
     pessoas: dados.pessoas || 1,
     status: dados.status || 'PENDING',
+    status_pagamento: dados.statusPagamento || 'aguardando',
     valor_total: dados.valorTotal || null,
     valor_sinal: dados.valorSinal || null,
+    valor_pago: dados.valorPago || null,
     termos_aceitos: dados.termosAceitos !== false,
+    termos_versao: dados.termosVersao || '2026.1',
+    consentimento_marketing: Boolean(dados.consentimentoMarketing),
+    presenca_menor: Boolean(dados.presencaMenor),
+    responsavel_legal_declarado: Boolean(dados.responsavelLegalDeclarado),
     observacoes: dados.observacoes || '',
     origem: dados.origem || 'site_cliente'
   };
   if (dados.id) payload.id = dados.id;
+  if (dados.codigoReserva) payload.codigo_reserva = dados.codigoReserva;
+  if (dados.transacaoId) payload.transacao_id = dados.transacaoId;
+  if (dados.qrCodeToken) payload.qr_code_token = dados.qrCodeToken;
 
   const { data, error } = await supabase
     .from('reservas')
@@ -339,6 +365,192 @@ export async function saveReservaSupabase(dados) {
 
   if (error) throw error;
   return data;
+}
+
+/**
+ * Criação da reserva com estrita conformidade legal (LGPD, ECA e CDC)
+ */
+export async function criarReservaComCompliance(dados) {
+  if (!supabase) throw new Error('Supabase não configurado');
+  const payload = {
+    codigo_reserva: dados.codigoReserva,
+    nome: dados.nome,
+    whatsapp: dados.whatsapp,
+    email: dados.email || null,
+    data: dados.data,
+    horario: dados.horario || '19:00',
+    ambiente_id: dados.ambienteId || 'salas-privadas',
+    sala_ou_mesa: dados.salaOuMesa || dados.sala || '',
+    sala: dados.sala,
+    pessoas: dados.pessoas || 1,
+    status: dados.status || 'CONFIRMED',
+    status_pagamento: dados.statusPagamento || 'aprovado',
+    transacao_id: dados.transacaoId || null,
+    qr_code_token: dados.qrCodeToken || null,
+    valor_total: dados.valorTotal || null,
+    valor_sinal: dados.valorSinal || null,
+    valor_pago: dados.valorPago || null,
+    termos_aceitos: true,
+    termos_aceitos_em: new Date().toISOString(),
+    termos_versao: dados.termosVersao || '2026.1',
+    consentimento_marketing: Boolean(dados.consentimentoMarketing),
+    presenca_menor: Boolean(dados.presencaMenor),
+    responsavel_legal_declarado: Boolean(dados.responsavelLegalDeclarado),
+    observacoes: dados.observacoes || '',
+    origem: dados.origem || 'site_cliente'
+  };
+
+  const { data, error } = await supabase
+    .from('reservas')
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Busca uma reserva pelo seu código único BK-AAAA-XXXX
+ */
+export async function buscarReservaPorCodigo(codigo) {
+  if (!supabase) return null;
+  const cleanCode = (codigo || '').trim().toUpperCase();
+  const { data, error } = await supabase
+    .from('reservas')
+    .select('*')
+    .eq('codigo_reserva', cleanCode)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Validação de check-in na recepção/portaria
+ */
+export async function validarCheckInReserva(codigoOuId) {
+  if (!supabase) throw new Error('Supabase não configurado');
+  const clean = (codigoOuId || '').trim();
+
+  // Busca por código ou por ID
+  let query = supabase.from('reservas').select('*');
+  if (clean.startsWith('BK-')) {
+    query = query.eq('codigo_reserva', clean.toUpperCase());
+  } else {
+    query = query.eq('id', clean);
+  }
+
+  const { data: reserva, error: findError } = await query.maybeSingle();
+  if (findError) throw findError;
+  if (!reserva) {
+    return { success: false, message: 'Reserva não encontrada. Verifique o código digitado.' };
+  }
+
+  if (reserva.status === 'CHECKED_IN') {
+    return {
+      success: false,
+      alreadyCheckedIn: true,
+      message: `Atenção: Check-in já havia sido realizado em ${new Date(reserva.checked_in_at).toLocaleTimeString('pt-BR')}.`,
+      reserva
+    };
+  }
+
+  if (reserva.status === 'CANCELLED') {
+    return {
+      success: false,
+      message: 'Esta reserva consta como CANCELADA no sistema.',
+      reserva
+    };
+  }
+
+  const now = new Date().toISOString();
+  const { data: updated, error: updateError } = await supabase
+    .from('reservas')
+    .update({
+      status: 'CHECKED_IN',
+      checked_in_at: now
+    })
+    .eq('id', reserva.id)
+    .select()
+    .single();
+
+  if (updateError) throw updateError;
+  return {
+    success: true,
+    message: 'Check-in realizado com sucesso! Entrada liberada.',
+    reserva: updated
+  };
+}
+
+/**
+ * Registra formalmente a trilha de auditoria do aceite da LGPD
+ */
+export async function registrarConsentimentoLGPD({ reservaId, email, tipoDocumento, versao = '2026.1', aceito = true }) {
+  if (!supabase || !email) return null;
+  try {
+    const { data, error } = await supabase
+      .from('registros_consentimento')
+      .insert([{
+        reserva_id: reservaId || null,
+        email,
+        tipo_documento: tipoDocumento,
+        versao,
+        aceito
+      }])
+      .select()
+      .maybeSingle();
+
+    if (error) console.warn('Erro ao registrar consentimento LGPD:', error);
+    return data;
+  } catch (e) {
+    console.warn('Falha silenciosa ao registrar LGPD:', e);
+    return null;
+  }
+}
+
+/**
+ * Registra o histórico seguro do pagamento (sem dados de cartão)
+ */
+export async function registrarPagamentoSeguro(pagamento) {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('pagamentos')
+      .insert([{
+        reserva_id: pagamento.reservaId || null,
+        codigo_reserva: pagamento.codigoReserva,
+        gateway: pagamento.gateway || 'gateway_independente',
+        transacao_id: pagamento.transacaoId,
+        valor: pagamento.valor,
+        metodo: pagamento.metodo || 'pix',
+        status: pagamento.status || 'aprovado',
+        comprador_email: pagamento.compradorEmail || null,
+        pago_em: pagamento.pagoEm || new Date().toISOString()
+      }])
+      .select()
+      .maybeSingle();
+
+    if (error) console.warn('Erro ao salvar histórico de pagamento:', error);
+    return data;
+  } catch (e) {
+    console.warn('Falha silenciosa ao registrar pagamento:', e);
+    return null;
+  }
+}
+
+/**
+ * Busca ambientes cadastrados no Supabase
+ */
+export async function getAmbientesSupabase() {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('ambientes')
+    .select('*')
+    .eq('ativo', true);
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function updateReservaStatusSupabase(id, status) {

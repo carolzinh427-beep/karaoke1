@@ -10,8 +10,36 @@ import {
   getBloqueiosSupabase,
   getSalasSupabase,
   getCardapioSupabase,
-  getGaleriaSupabase
+  getGaleriaSupabase,
+  criarReservaComCompliance,
+  buscarReservaPorCodigo,
+  registrarConsentimentoLGPD,
+  registrarPagamentoSeguro
 } from './lib/supabase.js';
+import {
+  REGRAS_AMBIENTES,
+  TERMOS_COMPRA_RESERVA,
+  POLITICA_PRIVACIDADE,
+  VERSAO_DOCUMENTOS
+} from './lib/legalTexts.js';
+import {
+  generateReservationCode,
+  generateQrCodeToken,
+  generateQrCodeSvg
+} from './lib/qrcode.js';
+import {
+  createPaymentSession,
+  processPaymentConfirmation,
+  PAYMENT_METHODS
+} from './lib/payment.js';
+import {
+  MESAS_SALAO,
+  LOTACAO_MAXIMA_SALAO,
+  TAXAS_POR_PESSOA,
+  validarCapacidadeMesa,
+  calcularValorReserva,
+  getMesaById
+} from './lib/mesasSalao.js';
 
 let activeBlockedDates = [];
 let WHATSAPP_PHONE = '556181426321';
@@ -30,6 +58,7 @@ function bootstrap() {
   try { initSmoothScroll(); } catch(e) { console.warn('initSmoothScroll error:', e); }
   try { initSectionTracking(); } catch(e) { console.warn('initSectionTracking error:', e); }
   try { initBookingSystem(); } catch(e) { console.warn('initBookingSystem error:', e); }
+  try { initMapaSalaoPrincipal(); } catch(e) { console.warn('initMapaSalaoPrincipal error:', e); }
   try { handleInitialHashNavigation(); } catch(e) { console.warn('handleInitialHashNavigation error:', e); }
   try { initSalasGallery(); } catch(e) { console.warn('initSalasGallery error:', e); }
   try { loadPublicDataFromFirestore(); } catch(e) { console.warn('loadPublicDataFromFirestore error:', e); }
@@ -102,7 +131,12 @@ function initWelcomeScreen() {
   if (enterBtn) {
     enterBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      dismiss('inicio'); // Direciona ao Hero do site (#inicio)
+      dismiss('salao-principal');
+      setTimeout(() => {
+        if (window.iniciarFluxoReservaSite) {
+          window.iniciarFluxoReservaSite();
+        }
+      }, 420);
     });
   }
 
@@ -802,50 +836,204 @@ window.confirmRoomFromPopup = () => {
 };
 
 // ============================================================================
-// POP-UP DE DADOS DA RESERVA (FLUXO 100% EM MODAL DIRETO)
+// MAPA INTERATIVO DO SALÃO PRINCIPAL (LOTAÇÃO MÁXIMA: 184 PESSOAS)
+// FLUXO DE RESERVA NA ORDEM EXATA (PASSOS 1 A 9)
 // ============================================================================
-window.openBookingDataModal = () => {
+
+let selectedMesaId = 'mesa-30';
+let selectedReservaData = null; // { dateStr: 'YYYY-MM-DD', formattedDisplay: 'Quarta, 07/10/2026' }
+let selectedReservaHorario = '20:00';
+let selectedMetodoTarifa = 'pix'; // 'pix' | 'debito' | 'credito'
+let modalCalYear = new Date().getFullYear();
+let modalCalMonth = new Date().getMonth();
+let reservasOcupadas = [];
+let activeConfirmedReservation = null;
+
+// Inicializa Mapa e Hotspots
+export function initMapaSalaoPrincipal() {
+  renderHotspotsNoMapa();
+  renderListaMesasNaPagina();
+  renderListaMesasNoModal();
+  carregarReservasOcupadas();
+}
+
+async function carregarReservasOcupadas() {
+  try {
+    if (isSupabaseConfigured) {
+      // Import dinâmico ou consulta simples via supabase
+      const { data, error } = await (await import('./lib/supabase.js')).getReservasSupabase();
+      if (!error && Array.isArray(data)) {
+        reservasOcupadas = data.filter(r => (r.status || '').toUpperCase() !== 'CANCELLED');
+        atualizarStatusMesasNoMapa();
+      }
+    }
+  } catch (e) {
+    console.warn('Consulta reservas ocupadas:', e);
+  }
+}
+
+function isMesaReservada(mesaId, dataStr, horarioStr) {
+  if (!dataStr || !horarioStr) return false;
+  return reservasOcupadas.some(r => {
+    const rData = r.data || '';
+    const rHora = r.horario || '';
+    const rMesa = r.salaOuMesa || r.sala || '';
+    const matchData = rData.includes(dataStr) || (selectedReservaData && rData.includes(selectedReservaData.formattedDisplay));
+    const matchHora = rHora === horarioStr;
+    const matchMesa = rMesa.toLowerCase().includes(mesaId.toLowerCase()) || 
+                      (getMesaById(mesaId) && rMesa.toLowerCase().includes(getMesaById(mesaId).nomeExibicao.toLowerCase()));
+    return matchData && matchHora && matchMesa;
+  });
+}
+
+function renderHotspotsNoMapa() {
+  const container = document.getElementById('mapaHotspotsContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+  MESAS_SALAO.forEach(mesa => {
+    const cord = mesa.cordMap;
+    const hotspot = document.createElement('div');
+    hotspot.className = `mapa-table-hotspot ${mesa.id === selectedMesaId ? 'selected' : 'available'}`;
+    hotspot.id = `hotspot_${mesa.id}`;
+    hotspot.style.top = `${cord.top}%`;
+    hotspot.style.left = `${cord.left}%`;
+    hotspot.style.width = `${cord.width}%`;
+    hotspot.style.height = `${cord.height}%`;
+    hotspot.title = `${mesa.nomeExibicao} (${mesa.rotuloCapacidade})`;
+
+    hotspot.innerHTML = `
+      <span class="hotspot-badge-tag">${mesa.rotuloCapacidade}</span>
+    `;
+
+    hotspot.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.selecionarMesaNoMapa(mesa.id, true);
+    });
+
+    container.appendChild(hotspot);
+  });
+}
+
+function renderListaMesasNaPagina() {
+  const container = document.getElementById('mapaTablesListScroll');
+  if (!container) return;
+
+  container.innerHTML = MESAS_SALAO.map(mesa => `
+    <div class="table-selection-card ${mesa.id === selectedMesaId ? 'selected' : ''}" 
+         id="pageCard_${mesa.id}" 
+         onclick="window.selecionarMesaNoMapa('${mesa.id}', true)">
+      <div class="table-card-info-main">
+        <strong>${mesa.nomeExibicao}</strong>
+        <span>${mesa.localizacao} ${mesa.esticada ? '• Comprida/Esticada' : mesa.comprida ? '• Comprida' : ''}</span>
+      </div>
+      <div class="table-card-cap-pill">${mesa.rotuloCapacidade}</div>
+    </div>
+  `).join('');
+}
+
+function renderListaMesasNoModal() {
+  const container = document.getElementById('modalTablesListScroll');
+  if (!container) return;
+
+  container.innerHTML = MESAS_SALAO.map(mesa => `
+    <div class="table-selection-card ${mesa.id === selectedMesaId ? 'selected' : ''}" 
+         id="modalCard_${mesa.id}" 
+         onclick="window.selecionarMesaNoMapa('${mesa.id}', false)">
+      <div class="table-card-info-main">
+        <strong>${mesa.nomeExibicao}</strong>
+        <span>${mesa.descricao}</span>
+      </div>
+      <div class="table-card-cap-pill">${mesa.rotuloCapacidade}</div>
+    </div>
+  `).join('');
+}
+
+function atualizarStatusMesasNoMapa() {
+  MESAS_SALAO.forEach(mesa => {
+    const hs = document.getElementById(`hotspot_${mesa.id}`);
+    const pc = document.getElementById(`pageCard_${mesa.id}`);
+    const mc = document.getElementById(`modalCard_${mesa.id}`);
+    const isSelected = mesa.id === selectedMesaId;
+
+    if (hs) {
+      hs.classList.remove('available', 'selected', 'reserved');
+      hs.classList.add(isSelected ? 'selected' : 'available');
+    }
+    if (pc) {
+      pc.classList.toggle('selected', isSelected);
+    }
+    if (mc) {
+      mc.classList.toggle('selected', isSelected);
+    }
+  });
+}
+
+// ----------------------------------------------------------------------------
+// FLUXO DE 9 PASSOS
+// ----------------------------------------------------------------------------
+
+// 1. Cliente clica na mesa desejada no mapa
+window.selecionarMesaNoMapa = (mesaId, isFromPageMap = false) => {
+  const mesa = getMesaById(mesaId);
+  if (!mesa) return;
+
+  selectedMesaId = mesaId;
+  atualizarStatusMesasNoMapa();
+
+  // Atualiza etiquetas informativas nos modais
+  const badgeMesa = document.getElementById('modalBadgeMesaEscolhida');
+  const badgeMesa2 = document.getElementById('modalBadgeMesaEscolhida2');
+  const badgeMesa3 = document.getElementById('modalBadgeMesaEscolhida3');
+  const capTag = document.getElementById('modalMesaCapacidadeTag');
+  const capHelper = document.getElementById('modalCapacidadeHelper');
+  const inputPessoas = document.getElementById('modalBookingPessoas');
+  const promptTxt = document.getElementById('modalMesaSelectPrompt');
+  const btnAvancarData = document.getElementById('btnAvancarParaData');
+
+  const descCapacidade = `${mesa.nomeExibicao} (${mesa.rotuloCapacidade})`;
+  if (badgeMesa) badgeMesa.textContent = descCapacidade;
+  if (badgeMesa2) badgeMesa2.textContent = descCapacidade;
+  if (badgeMesa3) badgeMesa3.textContent = descCapacidade;
+  if (capTag) capTag.textContent = `Capacidade: ${mesa.rotuloCapacidade}`;
+  if (capHelper) capHelper.textContent = `Esta mesa acomoda no máximo ${mesa.capacidade} pessoas.`;
+  if (inputPessoas) {
+    inputPessoas.max = mesa.capacidade;
+    if (parseInt(inputPessoas.value || '0', 10) > mesa.capacidade) {
+      inputPessoas.value = Math.min(4, mesa.capacidade);
+    }
+  }
+
+  if (promptTxt) promptTxt.textContent = `✓ ${mesa.nomeExibicao} selecionada!`;
+  if (btnAvancarData) btnAvancarData.disabled = false;
+
+  // Se clicou no mapa da página principal, abre o modal direto no Passo 2 (Data)!
+  if (isFromPageMap) {
+    window.abrirModalNoPasso(2);
+  } else {
+    // Se estava dentro do modal no Passo 1, avança suavemente para o Passo 2 (Data)
+    setTimeout(() => {
+      window.avancarParaPassoData();
+    }, 280);
+  }
+};
+
+window.iniciarFluxoReservaSite = (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  window.abrirModalNoPasso(1);
+};
+
+window.abrirModalNoPasso = (passo = 1) => {
   const modal = document.getElementById('bookingDataModal');
   if (!modal) return;
-
-  const room = ROOM_DATA[selectedBookingRoom] || ROOM_DATA['Sala Red'];
-  const roomBadge = document.getElementById('modalRoomBadge');
-  const dateBadge = document.getElementById('modalDateBadge');
-  const priceSub = document.getElementById('modalPriceSummary');
-  const glow = document.getElementById('bookingDataGlow');
-  const dialog = document.getElementById('bookingDataDialog');
-  const pessoasInput = document.getElementById('modalBookingPessoas');
-
-  if (roomBadge && room) {
-    roomBadge.textContent = `${room.name} (${room.capacidade})`;
-    roomBadge.style.color = room.themeColor;
-    roomBadge.style.borderColor = room.themeColor;
-    roomBadge.style.background = `${room.glowColor || 'rgba(0, 240, 255, 0.2)'}`;
-  }
-
-  if (dialog && room) {
-    dialog.style.borderColor = room.themeColor;
-  }
-
-  if (glow && room) {
-    glow.style.background = `radial-gradient(ellipse at center, ${room.glowColor || 'rgba(0, 240, 255, 0.4)'} 0%, transparent 70%)`;
-  }
-
-  if (dateBadge) {
-    dateBadge.textContent = selectedBookingDate ? `📅 ${selectedBookingDate.formattedDisplay}` : '📅 Data Selecionada';
-  }
-
-  if (priceSub && room) {
-    priceSub.innerHTML = `Total da Sala: <strong style="color: #FFF;">${room.precoTotal}</strong> • Sinal (50%): <strong style="color: var(--primary-cyan);">${room.sinal}</strong>`;
-  }
-
-  if (pessoasInput && room) {
-    pessoasInput.max = room.capacidadeNum;
-    pessoasInput.placeholder = `Ex: ${Math.round(room.capacidadeNum * 0.7)} pessoas (máx: ${room.capacidadeNum})`;
-  }
-
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  if (passo === 1) {
+    window.voltarParaPassoMesa();
+  } else if (passo === 2) {
+    window.avancarParaPassoData();
+  }
 };
 
 window.closeBookingDataModal = () => {
@@ -856,6 +1044,608 @@ window.closeBookingDataModal = () => {
   }
 };
 
+function alternarSecaoFluxo(secaoAtivaId, passoNumero) {
+  const secoes = [
+    'chkSectionMesa',
+    'chkSectionData',
+    'chkSectionHorario',
+    'chkSectionDados',
+    'chkSectionResumo',
+    'chkSectionPagar',
+    'chkSectionConfirmacao'
+  ];
+
+  secoes.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (id === secaoAtivaId ? 'block' : 'none');
+  });
+
+  // Atualiza stepper
+  const badgeMap = {
+    1: 'flowStepBadge1',
+    2: 'flowStepBadge2',
+    3: 'flowStepBadge3',
+    4: 'flowStepBadge4',
+    6: 'flowStepBadge6',
+    8: 'flowStepBadge8',
+    9: 'flowStepBadge9',
+  };
+
+  Object.keys(badgeMap).forEach(p => {
+    const badge = document.getElementById(badgeMap[p]);
+    if (!badge) return;
+    const num = parseInt(p, 10);
+    badge.classList.remove('active', 'completed');
+    if (num === passoNumero) {
+      badge.classList.add('active');
+    } else if (num < passoNumero) {
+      badge.classList.add('completed');
+    }
+  });
+
+  const dialog = document.getElementById('bookingDataDialog');
+  if (dialog) dialog.scrollTop = 0;
+}
+
+// ----------------------------------------------------------------------------
+// 2. Depois escolhe a DATA
+// ----------------------------------------------------------------------------
+window.voltarParaPassoMesa = () => {
+  alternarSecaoFluxo('chkSectionMesa', 1);
+};
+
+window.avancarParaPassoData = () => {
+  alternarSecaoFluxo('chkSectionData', 2);
+  renderModalCalendar();
+};
+
+function renderModalCalendar() {
+  const monthLabel = document.getElementById('modalCalMonthLabel');
+  const daysGrid = document.getElementById('modalCalDaysGrid');
+  if (!monthLabel || !daysGrid) return;
+
+  const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const WEEKDAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+  monthLabel.textContent = `${MONTH_NAMES[modalCalMonth]} ${modalCalYear}`;
+  daysGrid.innerHTML = '';
+
+  const firstDayIndex = new Date(modalCalYear, modalCalMonth, 1).getDay();
+  const totalDays = new Date(modalCalYear, modalCalMonth + 1, 0).getDate();
+  const prevMonthTotalDays = new Date(modalCalYear, modalCalMonth, 0).getDate();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Preenche dias do mês anterior
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    const blank = document.createElement('div');
+    blank.className = 'calendar-day-btn other-month';
+    blank.textContent = prevMonthTotalDays - i;
+    daysGrid.appendChild(blank);
+  }
+
+  // Preenche dias do mês atual
+  for (let d = 1; d <= totalDays; d++) {
+    const cellDate = new Date(modalCalYear, modalCalMonth, d);
+    cellDate.setHours(0, 0, 0, 0);
+    const dayOfWeek = cellDate.getDay();
+    const isPast = cellDate < today;
+    const isClosed = (dayOfWeek === 0 || dayOfWeek === 1); // Dom e Seg fechado
+
+    const dayBtn = document.createElement('button');
+    dayBtn.type = 'button';
+    dayBtn.className = 'calendar-day-btn';
+    dayBtn.textContent = d;
+
+    const dateStr = `${modalCalYear}-${String(modalCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const formattedDisplay = `${WEEKDAY_NAMES[dayOfWeek]}, ${String(d).padStart(2, '0')}/${String(modalCalMonth + 1).padStart(2, '0')}/${modalCalYear}`;
+
+    if (isPast) {
+      dayBtn.classList.add('disabled', 'past');
+      dayBtn.disabled = true;
+    } else if (isClosed) {
+      dayBtn.classList.add('closed');
+      dayBtn.title = 'Fechado aos Domingos e Segundas';
+    } else {
+      dayBtn.classList.add('open');
+      if (selectedReservaData && selectedReservaData.dateStr === dateStr) {
+        dayBtn.classList.add('selected');
+      }
+
+      dayBtn.addEventListener('click', () => {
+        window.selecionarDataModal(dateStr, formattedDisplay);
+      });
+    }
+
+    daysGrid.appendChild(dayBtn);
+  }
+}
+
+window.modalCalPrevMonth = () => {
+  const today = new Date();
+  if (modalCalYear > today.getFullYear() || (modalCalYear === today.getFullYear() && modalCalMonth > today.getMonth())) {
+    modalCalMonth--;
+    if (modalCalMonth < 0) {
+      modalCalMonth = 11;
+      modalCalYear--;
+    }
+    renderModalCalendar();
+  }
+};
+
+window.modalCalNextMonth = () => {
+  modalCalMonth++;
+  if (modalCalMonth > 11) {
+    modalCalMonth = 0;
+    modalCalYear++;
+  }
+  renderModalCalendar();
+};
+
+window.selecionarDataModal = (dateStr, formattedDisplay) => {
+  selectedReservaData = { dateStr, formattedDisplay };
+
+  const dataPill = document.getElementById('modalBadgeDataDisplay');
+  const dataPill2 = document.getElementById('modalBadgeDataEscolhida2');
+  const dataPill3 = document.getElementById('modalBadgeDataEscolhida3');
+  const btnAvancar = document.getElementById('btnAvancarParaHorario');
+
+  if (dataPill) dataPill.textContent = `📅 ${formattedDisplay}`;
+  if (dataPill2) dataPill2.textContent = `📅 ${formattedDisplay}`;
+  if (dataPill3) dataPill3.textContent = `📅 ${formattedDisplay}`;
+  if (btnAvancar) btnAvancar.disabled = false;
+
+  renderModalCalendar();
+
+  // Avança suavemente para o Passo 3 (Horário)
+  setTimeout(() => {
+    window.avancarParaPassoHorario();
+  }, 220);
+};
+
+// ----------------------------------------------------------------------------
+// 3. Depois escolhe o HORÁRIO
+// ----------------------------------------------------------------------------
+window.voltarParaPassoData = () => {
+  alternarSecaoFluxo('chkSectionData', 2);
+};
+
+window.avancarParaPassoHorario = () => {
+  if (!selectedReservaData) {
+    const today = new Date();
+    selectedReservaData = {
+      dateStr: today.toISOString().split('T')[0],
+      formattedDisplay: 'Hoje'
+    };
+  }
+
+  alternarSecaoFluxo('chkSectionHorario', 3);
+  renderModalHorarios();
+};
+
+function renderModalHorarios() {
+  const container = document.getElementById('modalTimeSlotsGrid');
+  const avisoBloqueio = document.getElementById('horarioBloqueadoAviso');
+  if (!container) return;
+
+  const HORARIOS = ['19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30'];
+  container.innerHTML = '';
+
+  HORARIOS.forEach(slot => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'time-slot-btn';
+    btn.textContent = slot;
+
+    // Valida se a mesa já está reservada para aquele dia e horário
+    const ocupada = isMesaReservada(selectedMesaId, selectedReservaData.dateStr, slot);
+
+    if (ocupada) {
+      btn.classList.add('disabled', 'reserved');
+      btn.disabled = true;
+      btn.innerHTML = `${slot} <span style="font-size: 0.65rem; color: #EF4444; display: block;">Ocupada</span>`;
+    } else {
+      if (slot === selectedReservaHorario) {
+        btn.classList.add('selected');
+      }
+
+      btn.addEventListener('click', () => {
+        window.selecionarHorarioModal(slot);
+      });
+    }
+
+    container.appendChild(btn);
+  });
+
+  if (avisoBloqueio) avisoBloqueio.style.display = 'none';
+}
+
+window.selecionarHorarioModal = (slot) => {
+  selectedReservaHorario = slot;
+  const horaPill3 = document.getElementById('modalBadgeHoraEscolhida3');
+  if (horaPill3) horaPill3.textContent = `⏰ ${slot}`;
+
+  renderModalHorarios();
+
+  // Avança para o Passo 4 (Seus Dados)
+  setTimeout(() => {
+    window.avancarParaPassoDados();
+  }, 220);
+};
+
+// ----------------------------------------------------------------------------
+// 4 & 5. Depois informa seus dados & O sistema valida se a quantidade de pessoas cabe
+// ----------------------------------------------------------------------------
+window.voltarParaPassoHorario = () => {
+  alternarSecaoFluxo('chkSectionHorario', 3);
+};
+
+window.avancarParaPassoDados = () => {
+  alternarSecaoFluxo('chkSectionDados', 4);
+  window.validarCapacidadeEmTempoReal();
+};
+
+window.validarCapacidadeEmTempoReal = () => {
+  const input = document.getElementById('modalBookingPessoas');
+  const alerta = document.getElementById('alertaCapacidadeExcedida');
+  const alertaMsg = document.getElementById('alertaCapacidadeMsg');
+  if (!input) return;
+
+  const qtd = parseInt(input.value, 10);
+  const resultado = validarCapacidadeMesa(selectedMesaId, qtd);
+
+  if (!resultado.valida && resultado.excesso) {
+    if (alerta) alerta.style.display = 'block';
+    if (alertaMsg) alertaMsg.textContent = resultado.mensagem;
+    input.style.borderColor = '#EF4444';
+  } else {
+    if (alerta) alerta.style.display = 'none';
+    input.style.borderColor = '';
+  }
+};
+
+// 5. O sistema valida se a quantidade de pessoas cabe na mesa escolhida
+window.validarEAvancarParaResumo = () => {
+  const nome = document.getElementById('modalBookingNome')?.value?.trim();
+  const whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim();
+  const email = document.getElementById('modalBookingEmail')?.value?.trim();
+  const pessoasInput = document.getElementById('modalBookingPessoas');
+  const qtdPessoas = parseInt(pessoasInput?.value || '0', 10);
+
+  if (!nome || !whatsapp || !email) {
+    alert('Por favor, preencha todos os campos obrigatórios (Nome, WhatsApp e E-mail).');
+    return;
+  }
+
+  if (!email.includes('@') || !email.includes('.')) {
+    alert('Por favor, informe um e-mail válido para envio do voucher.');
+    return;
+  }
+
+  // Validação estrita da capacidade da mesa
+  const resultado = validarCapacidadeMesa(selectedMesaId, qtdPessoas);
+  if (!resultado.valida) {
+    const alerta = document.getElementById('alertaCapacidadeExcedida');
+    const alertaMsg = document.getElementById('alertaCapacidadeMsg');
+    if (alerta) alerta.style.display = 'block';
+    if (alertaMsg) alertaMsg.textContent = resultado.mensagem;
+    if (pessoasInput) {
+      pessoasInput.focus();
+      pessoasInput.style.borderColor = '#EF4444';
+    }
+    return;
+  }
+
+  // Se tudo válido, avança para o Passo 6 (Resumo & Valor)
+  window.mostrarResumoEPagamento();
+};
+
+// ----------------------------------------------------------------------------
+// 6 & 7. Mostra o resumo da reserva e o valor & Cliente escolhe o pagamento
+// ----------------------------------------------------------------------------
+window.voltarParaPassoDados = () => {
+  alternarSecaoFluxo('chkSectionDados', 4);
+};
+
+window.mostrarResumoEPagamento = () => {
+  alternarSecaoFluxo('chkSectionResumo', 6);
+
+  const mesa = getMesaById(selectedMesaId);
+  const nome = document.getElementById('modalBookingNome')?.value?.trim() || 'Cliente';
+  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
+
+  // Preenche dados do Passo 6 (Resumo)
+  const resumoMesa = document.getElementById('resumoMesaNome');
+  const resumoDataHora = document.getElementById('resumoDataHora');
+  const resumoTitular = document.getElementById('resumoTitularNome');
+  const resumoQtd = document.getElementById('resumoQtdPessoas');
+
+  if (resumoMesa) resumoMesa.textContent = mesa ? `${mesa.nomeExibicao} (${mesa.rotuloCapacidade})` : 'Mesa Salão';
+  if (resumoDataHora) resumoDataHora.textContent = `${selectedReservaData ? selectedReservaData.formattedDisplay : 'Data'} às ${selectedCheckoutHorario || selectedReservaHorario}`;
+  if (resumoTitular) resumoTitular.textContent = nome;
+  if (resumoQtd) resumoQtd.textContent = `${pessoas} pessoa(s)`;
+
+  // Atualiza valores conforme o método ativo (Passo 7)
+  window.selecionarMetodoTarifa(selectedMetodoTarifa);
+};
+
+// 7. Cliente escolhe o pagamento (Pix R$20, Débito R$20, Crédito R$25)
+window.selecionarMetodoTarifa = (metodo = 'pix') => {
+  selectedMetodoTarifa = metodo;
+  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
+  const calculo = calcularValorReserva(pessoas, metodo);
+
+  // Atualiza destaques dos cards
+  const cardPix = document.getElementById('payCardPix');
+  const cardDebito = document.getElementById('payCardDebito');
+  const cardCredito = document.getElementById('payCardCredito');
+
+  if (cardPix) cardPix.classList.toggle('selected', metodo === 'pix');
+  if (cardDebito) cardDebito.classList.toggle('selected', metodo === 'debito');
+  if (cardCredito) cardCredito.classList.toggle('selected', metodo === 'credito');
+
+  // Atualiza valor total e fórmula
+  const totalEl = document.getElementById('resumoValorTotalCalculado');
+  const formulaEl = document.getElementById('resumoCalculoFormula');
+  const nomeMetodo = metodo === 'pix' ? 'Pix' : metodo === 'debito' ? 'Débito' : 'Crédito';
+
+  if (totalEl) totalEl.textContent = calculo.formatadoTotal;
+  if (formulaEl) formulaEl.textContent = `${pessoas} pessoa(s) × ${calculo.formatadoUnitario} (${nomeMetodo})`;
+};
+
+// ----------------------------------------------------------------------------
+// 8. Prossegue para o pagamento (Preparado para Asaas)
+// ----------------------------------------------------------------------------
+window.voltarParaPassoResumo = () => {
+  alternarSecaoFluxo('chkSectionResumo', 6);
+};
+
+window.avancarParaPassoPagar = () => {
+  const chkTermos = document.getElementById('chkReservaTermosAceitos');
+  if (chkTermos && !chkTermos.checked) {
+    alert('É obrigatório concordar com os termos de compra e reserva para prosseguir.');
+    return;
+  }
+
+  alternarSecaoFluxo('chkSectionPagar', 8);
+
+  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
+  const calculo = calcularValorReserva(pessoas, selectedMetodoTarifa);
+
+  const pagarValor = document.getElementById('pagarValorDisplay');
+  const pagarMetodo = document.getElementById('pagarMetodoDisplay');
+  const pixBox = document.getElementById('pagarPixBox');
+  const cartaoBox = document.getElementById('pagarCartaoBox');
+
+  const nomeMetodo = selectedMetodoTarifa === 'pix' ? 'Pix' : selectedMetodoTarifa === 'debito' ? 'Cartão de Débito' : 'Cartão de Crédito';
+
+  if (pagarValor) pagarValor.textContent = calculo.formatadoTotal;
+  if (pagarMetodo) pagarMetodo.textContent = `Pagamento via ${nomeMetodo} (R$ ${calculo.valorUnitario}/pessoa)`;
+
+  if (selectedMetodoTarifa === 'pix') {
+    if (pixBox) pixBox.style.display = 'block';
+    if (cartaoBox) cartaoBox.style.display = 'none';
+  } else {
+    if (pixBox) pixBox.style.display = 'none';
+    if (cartaoBox) cartaoBox.style.display = 'block';
+  }
+};
+
+window.copiarPixCodigo = () => {
+  const input = document.getElementById('chkPixInput');
+  if (input) {
+    navigator.clipboard?.writeText(input.value);
+    const btn = document.getElementById('btnCopiarPix');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = 'Chave Copiada! ✓';
+      setTimeout(() => { btn.textContent = orig; }, 2200);
+    }
+  }
+};
+
+// ----------------------------------------------------------------------------
+// 9. Após pagamento confirmado, mostra a confirmação da reserva
+// ----------------------------------------------------------------------------
+window.confirmarPagamentoEFinalizar = async () => {
+  const btn = document.getElementById('btnFinalizarPagamento');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Processando e Emitindo Reserva...';
+  }
+
+  const nome = document.getElementById('modalBookingNome')?.value?.trim();
+  const whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim();
+  const email = document.getElementById('modalBookingEmail')?.value?.trim();
+  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
+  const mesa = getMesaById(selectedMesaId);
+  const mesaNome = mesa ? mesa.nomeExibicao : 'Mesa Salão';
+  const calculo = calcularValorReserva(pessoas, selectedMetodoTarifa);
+
+  // Gera código único BK-2026-XXXX e tokens
+  const codigoReserva = generateReservationCode();
+  const qrToken = generateQrCodeToken();
+  const qrSvg = generateQrCodeSvg(codigoReserva, 180);
+
+  // Sessão de pagamento segura integrada com Asaas (sem salvar cartão no Supabase)
+  const sessionPagamento = await createPaymentSession({
+    codigoReserva,
+    valor: calculo.valorTotal,
+    metodo: selectedMetodoTarifa,
+    comprador: { nome, email, whatsapp },
+    ambiente: 'Salão Principal'
+  });
+
+  const confirmacaoPagamento = await processPaymentConfirmation({
+    codigoReserva,
+    transacaoId: sessionPagamento.transacaoId,
+    metodo: selectedMetodoTarifa
+  });
+
+  const reservaData = {
+    codigoReserva,
+    nome,
+    whatsapp,
+    email,
+    data: selectedReservaData ? selectedReservaData.formattedDisplay : 'Hoje',
+    horario: selectedReservaHorario,
+    ambienteId: 'salao-principal',
+    salaOuMesa: mesaNome,
+    sala: mesaNome,
+    pessoas,
+    status: 'CONFIRMED',
+    statusPagamento: 'aprovado',
+    transacaoId: confirmacaoPagamento.transacaoId,
+    qrCodeToken: qrToken,
+    valorTotal: calculo.valorTotal,
+    valorSinal: calculo.valorTotal,
+    valorPago: calculo.valorTotal,
+    metodoPagamento: selectedMetodoTarifa,
+    gateway: 'asaas',
+    origem: 'site_cliente'
+  };
+
+  // Salva no Supabase (com conformidade total e RLS seguro)
+  try {
+    if (isSupabaseConfigured) {
+      await criarReservaComCompliance(reservaData);
+    }
+  } catch (err) {
+    console.warn('Aviso Supabase salvar reserva:', err);
+  }
+
+  // Salva no Firestore
+  try {
+    await salvarAgendamento({
+      ...reservaData,
+      dataIso: selectedReservaData ? selectedReservaData.dateStr : ''
+    });
+  } catch (fireErr) {
+    console.warn('Fallback Firestore agendamento:', fireErr);
+  }
+
+  // Marca imediatamente a mesa como reservada em memória para aquele horário
+  reservasOcupadas.push(reservaData);
+  atualizarStatusMesasNoMapa();
+
+  activeConfirmedReservation = {
+    ...reservaData,
+    qrSvg
+  };
+
+  // 9. Mostra a confirmação da reserva
+  alternarSecaoFluxo('chkSectionConfirmacao', 9);
+
+  const codeEl = document.getElementById('voucherReservationCode');
+  const qrContainer = document.getElementById('qrCodeContainer');
+  const emailEl = document.getElementById('voucherSentEmail');
+  const briefEl = document.getElementById('voucherDetailsBrief');
+
+  if (codeEl) codeEl.textContent = codigoReserva;
+  if (qrContainer) qrContainer.innerHTML = qrSvg;
+  if (emailEl) emailEl.textContent = email;
+  if (briefEl) {
+    briefEl.innerHTML = `
+      <strong>${nome}</strong> • <strong>${mesaNome}</strong><br>
+      📅 ${reservaData.data} às ${reservaData.horario} • 👥 ${pessoas} pessoas<br>
+      <span style="color: #10B981; font-weight: 700;">✓ Pago: ${calculo.formatadoTotal} (${selectedMetodoTarifa.toUpperCase()})</span>
+    `;
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = 'Confirmar Pagamento e Emitir Reserva ✓';
+  }
+};
+
+window.compartilharVoucherWhatsApp = () => {
+  if (!activeConfirmedReservation) return;
+  const r = activeConfirmedReservation;
+  const msg = [
+    `🎤 *MEU INGRESSO & RESERVA — BACKSTAGE KARAOKÊ*`,
+    ``,
+    `🎫 *Código:* ${r.codigoReserva}`,
+    `👤 *Titular:* ${r.nome}`,
+    `🏛️ *Mesa/Espaço:* ${r.salaOuMesa}`,
+    `📅 *Data:* ${r.data} às ${r.horario}`,
+    `👥 *Convidados:* ${r.pessoas} pessoa(s)`,
+    `💰 *Valor Pago:* R$ ${Number(r.valorPago || 0).toFixed(2).replace('.', ',')} (${(r.metodoPagamento || 'Pix').toUpperCase()})`,
+    ``,
+    `📍 *Endereço:* CLN 307, Bloco A, Subsolo - Asa Norte, Brasília/DF`,
+    `Apresente este código na recepção para liberar sua entrada!`
+  ].join('\n');
+
+  window.open(createWhatsAppUrl(msg), '_blank');
+};
+
+window.imprimirVoucher = () => {
+  window.print();
+};
+
+// Visualizadores de Documentos Jurídicos Completos
+window.openTermosCompletosModal = (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  const body = document.getElementById('modalTermosCompletosBody');
+  if (body) {
+    body.innerHTML = TERMOS_COMPRA_RESERVA
+      .split('\n\n')
+      .map(p => {
+        if (p.startsWith('# ')) return `<h1>${p.substring(2)}</h1>`;
+        if (p.startsWith('### ')) return `<h3>${p.substring(4)}</h3>`;
+        if (p.startsWith('---')) return `<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;">`;
+        return `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+      })
+      .join('');
+  }
+  const modal = document.getElementById('modalTermosCompletos');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.openPoliticaPrivacidadeModal = (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  const body = document.getElementById('modalPoliticaPrivacidadeBody');
+  if (body) {
+    body.innerHTML = POLITICA_PRIVACIDADE
+      .split('\n\n')
+      .map(p => {
+        if (p.startsWith('# ')) return `<h1>${p.substring(2)}</h1>`;
+        if (p.startsWith('### ')) return `<h3>${p.substring(4)}</h3>`;
+        if (p.startsWith('---')) return `<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;">`;
+        return `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+      })
+      .join('');
+  }
+  const modal = document.getElementById('modalPoliticaPrivacidade');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.openRegrasAmbienteModal = (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  const body = document.getElementById('modalRegrasAmbienteBody');
+  const header = document.getElementById('modalRegrasAmbienteHeaderTitle');
+  const regraObj = REGRAS_AMBIENTES[selectedCheckoutEnv] || REGRAS_AMBIENTES['salas-privadas'];
+  if (header) header.textContent = regraObj.titulo;
+  if (body) {
+    body.innerHTML = `
+      <div class="legal-callout-warning" style="margin-bottom: 16px;">
+        <div>${regraObj.avisoDestaque}</div>
+      </div>
+      <h4 style="color: #FFF; margin-bottom: 10px;">Diretrizes e Regras Oficiais:</h4>
+      <ul style="padding-left: 20px;">
+        ${regraObj.regras.map(r => `<li style="margin-bottom: 8px;">${r}</li>`).join('')}
+      </ul>
+    `;
+  }
+  const modal = document.getElementById('modalRegrasAmbiente');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeDocViewerModal = (modalId) => {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.style.display = 'none';
+};
+
+// Retrocompatibilidade
 window.backToRoomPersonalityModal = () => {
   window.closeBookingDataModal();
   if (selectedBookingRoom) {
@@ -863,204 +1653,33 @@ window.backToRoomPersonalityModal = () => {
   }
 };
 
-window.handleModalBookingSubmit = async (e) => {
+window.handleModalBookingSubmit = (e) => {
   if (e && e.preventDefault) e.preventDefault();
-
-  const feedback = document.getElementById('modalBookingFeedback');
-  const nome = document.getElementById('modalBookingNome')?.value?.trim();
-  const whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim();
-  const pessoas = document.getElementById('modalBookingPessoas')?.value?.trim();
-  const termosCheck = document.getElementById('modalBookingTermosCheck')?.checked;
-
-  if (!selectedBookingDate) {
-    alert('Por favor, selecione primeiro uma data no calendário!');
-    window.closeBookingDataModal();
-    window.goToBookingStep(1);
-    return;
-  }
-
-  if (!selectedBookingRoom) {
-    alert('Por favor, escolha uma sala privada antes de prosseguir!');
-    window.closeBookingDataModal();
-    window.goToBookingStep(2);
-    return;
-  }
-
-  if (!nome || !whatsapp || !pessoas) {
-    alert('Por favor, preencha seu Nome, WhatsApp e Quantidade de convidados!');
-    return;
-  }
-
-  if (!termosCheck) {
-    alert('É obrigatório ler e concordar com os Termos de Responsabilidade para efetuar a reserva.');
-    return;
-  }
-
-  const roomInfo = ROOM_DATA[selectedBookingRoom] || {
-    name: selectedBookingRoom,
-    capacidade: 'Conforme sala',
-    precoTotal: 'R$ 800,00',
-    sinal: 'R$ 400,00'
-  };
-
-  if (feedback) {
-    feedback.style.display = 'block';
-    feedback.className = 'booking-status-alert info';
-    feedback.textContent = 'Registrando sua reserva com segurança e abrindo o WhatsApp...';
-  }
-
-  try {
-    await salvarAgendamento({
-      nome,
-      whatsapp,
-      data: selectedBookingDate.formattedDisplay,
-      dataIso: selectedBookingDate.dateStr,
-      sala: selectedBookingRoom,
-      pessoas: parseInt(pessoas, 10),
-      valorTotal: roomInfo.precoTotal,
-      sinal: roomInfo.sinal,
-      termosAceitos: true
-    });
-  } catch (err) {
-    console.warn('Registro Firestore offline resiliente:', err);
-  }
-
-  const msg = [
-    `Olá! Gostaria de reservar minha sala no Backstage Karaokê:`,
-    ``,
-    `👤 *Nome:* ${nome}`,
-    `📱 *WhatsApp:* ${whatsapp}`,
-    `📅 *Data Escolhida:* ${selectedBookingDate.formattedDisplay}`,
-    `🎤 *Sala:* ${roomInfo.name} (${roomInfo.capacidade})`,
-    `👥 *Convidados:* ${pessoas} pessoas`,
-    `💰 *Valor da Sala:* ${roomInfo.precoTotal} (Sinal de 50%: ${roomInfo.sinal})`,
-    ``,
-    `📋 *Declaração de Ciência e Responsabilidade:*`,
-    `Eu li os termos de responsabilidade e concordo com a não devolução do valor de 50% pago na reserva em caso de desistência.`
-  ].join('\n');
-
-  const wppUrl = createWhatsAppUrl(msg);
-
-  if (feedback) {
-    feedback.className = 'booking-status-alert success';
-    feedback.textContent = '✓ Reserva registrada com sucesso! Abrindo o WhatsApp oficial...';
-  }
-
-  setTimeout(() => {
-    window.open(wppUrl, '_blank');
-    window.closeBookingDataModal();
-  }, 400);
+  window.confirmarPagamentoEFinalizar();
 };
 
-// Submissão do Formulário de Agendamento Embutido (Mantido para fallback)
-window.handleBookingSubmit = async (e) => {
+window.handleBookingSubmit = (e) => {
   if (e && e.preventDefault) e.preventDefault();
-
-  const feedback = document.getElementById('bookingStatusAlert');
-  const nome = document.getElementById('bookingNome')?.value?.trim();
-  const whatsapp = document.getElementById('bookingWhatsapp')?.value?.trim();
-  const pessoas = document.getElementById('bookingPessoas')?.value?.trim();
-  const termosCheck = document.getElementById('bookingTermosCheck')?.checked;
-
-  if (!selectedBookingDate) {
-    alert('Por favor, selecione uma data disponível no calendário!');
-    window.goToBookingStep(1);
-    return;
-  }
-
-  if (!selectedBookingRoom) {
-    alert('Por favor, escolha uma sala privada antes de prosseguir com os dados!');
-    window.goToBookingStep(2);
-    return;
-  }
-
-  if (!nome || !whatsapp || !pessoas) {
-    alert('Por favor, preencha todos os campos obrigatórios (Nome, WhatsApp e Quantidade de convidados)!');
-    return;
-  }
-
-  if (!termosCheck) {
-    alert('É necessário ler e concordar com os Termos de Responsabilidade para prosseguir com a reserva.');
-    return;
-  }
-
-  const roomInfo = ROOM_DATA[selectedBookingRoom] || {
-    name: selectedBookingRoom,
-    capacidade: 'Conforme sala',
-    precoTotal: 'R$ 800,00',
-    sinal: 'R$ 400,00'
-  };
-
-  if (feedback) {
-    feedback.style.display = 'block';
-    feedback.className = 'booking-status-alert info';
-    feedback.textContent = 'Registrando sua reserva com segurança e abrindo o WhatsApp...';
-  }
-
-  try {
-    await salvarAgendamento({
-      nome,
-      whatsapp,
-      data: selectedBookingDate.formattedDisplay,
-      dataIso: selectedBookingDate.dateStr,
-      sala: selectedBookingRoom,
-      pessoas: parseInt(pessoas, 10),
-      valorTotal: roomInfo.precoTotal,
-      sinal: roomInfo.sinal,
-      termosAceitos: true
-    });
-  } catch (err) {
-    console.warn('Registro Firestore offline resiliente:', err);
-  }
-
-  const msg = [
-    `Olá! Gostaria de reservar minha sala no Backstage Karaokê:`,
-    ``,
-    `👤 *Nome:* ${nome}`,
-    `📱 *WhatsApp:* ${whatsapp}`,
-    `📅 *Data Escolhida:* ${selectedBookingDate.formattedDisplay}`,
-    `🎤 *Sala:* ${roomInfo.name} (${roomInfo.capacidade})`,
-    `👥 *Convidados:* ${pessoas} pessoas`,
-    `💰 *Valor da Sala:* ${roomInfo.precoTotal} (Sinal de 50%: ${roomInfo.sinal})`,
-    ``,
-    `📋 *Declaração de Ciência e Responsabilidade:*`,
-    `Eu li os termos de responsabilidade e concordo com a não devolução do valor de 50% pago na reserva em caso de desistência.`
-  ].join('\n');
-
-  const wppUrl = createWhatsAppUrl(msg);
-
-  if (feedback) {
-    feedback.className = 'booking-status-alert success';
-    feedback.textContent = '✓ Reserva gerada com sucesso! Redirecionando para o WhatsApp oficial...';
-  }
-
-  setTimeout(() => {
-    window.open(wppUrl, '_blank');
-  }, 400);
+  window.openBookingDataModal();
 };
 
-// Global Termos Modal Trigger (100% Clicável em qualquer ponto do site)
+// Global Termos Modal Trigger
 window.openTermosModal = (e) => {
   if (e) {
     if (e.preventDefault) e.preventDefault();
     if (e.stopPropagation) e.stopPropagation();
   }
-  const modal = document.getElementById('termosResponsabilidadeModal');
-  if (modal) {
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  }
+  window.openTermosCompletosModal(e);
 };
 
 window.closeTermosModal = (e) => {
   if (e && e.preventDefault) e.preventDefault();
+  window.closeDocViewerModal('modalTermosCompletos');
   const modal = document.getElementById('termosResponsabilidadeModal');
-  if (modal) {
-    modal.style.display = 'none';
-    const dataModal = document.getElementById('bookingDataModal');
-    if (!dataModal || dataModal.style.display === 'none') {
-      document.body.style.overflow = '';
-    }
+  if (modal) modal.style.display = 'none';
+  const dataModal = document.getElementById('bookingDataModal');
+  if (!dataModal || dataModal.style.display === 'none') {
+    document.body.style.overflow = '';
   }
 };
 

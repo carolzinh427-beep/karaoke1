@@ -1,0 +1,194 @@
+/**
+ * ==============================================================================
+ * BACKSTAGE KARAOKÊ — CLIENTE DE INTEGRAÇÃO OFICIAL ASAAS (BACKEND SEGURO)
+ * ==============================================================================
+ * REGRAS CRÍTICAS DE SEGURANÇA:
+ * 1. A chave ASAAS_API_KEY fica restrita ao servidor/Node.js (Serverless).
+ * 2. NUNCA utilize o prefixo 'VITE_' nesta chave.
+ * 3. NUNCA retorne a chave nem envie credenciais para o cliente/navegador.
+ * 4. Não armazene chaves nem dados de cartão no Supabase ou banco de dados.
+ * ==============================================================================
+ */
+
+const SANDBOX_BASE_URL = 'https://api-sandbox.asaas.com/v3';
+const PRODUCTION_BASE_URL = 'https://api.asaas.com/v3';
+
+export function getAsaasConfig() {
+  const apiKey = (process.env.ASAAS_API_KEY || '').trim();
+  const envSetting = (process.env.ASAAS_ENVIRONMENT || 'sandbox').trim().toLowerCase();
+
+  // Determina ambiente: produção apenas se expressamente configurado ou chave de produção
+  const isProduction = envSetting === 'production' || (apiKey.startsWith('$aact_') && !apiKey.includes('hml') && envSetting !== 'sandbox');
+  const baseUrl = isProduction ? PRODUCTION_BASE_URL : SANDBOX_BASE_URL;
+
+  return {
+    apiKey,
+    baseUrl,
+    environment: isProduction ? 'production' : 'sandbox',
+    isConfigured: Boolean(apiKey && apiKey.length > 5),
+    webhookSecret: (process.env.ASAAS_WEBHOOK_SECRET || '').trim()
+  };
+}
+
+/**
+ * Executa requisição autenticada à API v3 do Asaas
+ */
+export async function asaasRequest(endpoint, options = {}) {
+  const config = getAsaasConfig();
+
+  if (!config.isConfigured) {
+    throw new Error(
+      'ASAAS_API_KEY não configurada no servidor. Defina a variável de ambiente ASAAS_API_KEY no arquivo .env.local ou nas Environment Variables da Vercel.'
+    );
+  }
+
+  const url = `${config.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'User-Agent': 'BackstageKaraoke-AsaasIntegration/1.0',
+    'access_token': config.apiKey,
+    ...(options.headers || {})
+  };
+
+  const response = await fetch(url, {
+    ...options,
+    headers
+  });
+
+  const contentType = response.headers.get('content-type') || '';
+  let data = null;
+
+  if (contentType.includes('application/json')) {
+    data = await response.json().catch(() => null);
+  } else {
+    const text = await response.text();
+    data = { raw: text };
+  }
+
+  if (!response.ok) {
+    const errorMsg = data?.errors?.[0]?.description || data?.message || `Erro HTTP ${response.status} na API do Asaas`;
+    const err = new Error(errorMsg);
+    err.status = response.status;
+    err.details = data?.errors || data;
+    throw err;
+  }
+
+  return data;
+}
+
+/**
+ * Busca cliente existente por e-mail ou cria um novo cadastro no Asaas
+ */
+export async function obterOuCriarClienteAsaas({ nome, email, telefone, cpfCnpj }) {
+  if (!email && !telefone) {
+    throw new Error('E-mail ou telefone obrigatório para cadastrar cliente no Asaas.');
+  }
+
+  // 1. Tenta buscar cliente existente por e-mail
+  if (email) {
+    try {
+      const searchRes = await asaasRequest(`/customers?email=${encodeURIComponent(email)}`, {
+        method: 'GET'
+      });
+      if (searchRes?.data && searchRes.data.length > 0) {
+        return searchRes.data[0];
+      }
+    } catch (e) {
+      console.warn('Aviso: busca por cliente Asaas via e-mail falhou:', e.message);
+    }
+  }
+
+  // 2. Limpa formatação do telefone
+  const foneLimpo = (telefone || '').replace(/\D/g, '');
+
+  // 3. Cria novo cliente
+  const payload = {
+    name: nome || 'Cliente Backstage',
+    email: email || undefined,
+    mobilePhone: foneLimpo.length >= 10 ? foneLimpo : undefined,
+    cpfCnpj: cpfCnpj ? cpfCnpj.replace(/\D/g, '') : undefined,
+    notificationDisabled: false
+  };
+
+  return await asaasRequest('/customers', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+/**
+ * Cria cobrança no Asaas (Pix, Cartão de Crédito ou Débito)
+ */
+export async function criarCobrancaAsaas({
+  customerId,
+  billingType = 'PIX',
+  valor,
+  dueDate,
+  description,
+  externalReference
+}) {
+  if (!customerId) throw new Error('customerId é obrigatório para gerar cobrança.');
+  if (!valor || valor <= 0) throw new Error('Valor inválido para cobrança.');
+
+  // Data de vencimento (padrão: hoje ou data fornecida)
+  const due = dueDate || new Date().toISOString().split('T')[0];
+
+  const payload = {
+    customer: customerId,
+    billingType: billingType.toUpperCase(),
+    value: Number(valor).toFixed(2),
+    dueDate: due,
+    description: description || 'Reserva de Mesa — Backstage Karaokê',
+    externalReference: externalReference || undefined,
+    postalService: false
+  };
+
+  return await asaasRequest('/payments', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+/**
+ * Recupera o código Pix Copia e Cola e a imagem QR Code de uma cobrança Pix
+ */
+export async function obterPixQrCodeAsaas(paymentId) {
+  if (!paymentId) throw new Error('paymentId obrigatório para obter QrCode Pix.');
+  return await asaasRequest(`/payments/${paymentId}/pixQrCode`, {
+    method: 'GET'
+  });
+}
+
+/**
+ * Consulta o status atualizado de uma cobrança
+ */
+export async function consultarCobrancaAsaas(paymentId) {
+  if (!paymentId) throw new Error('paymentId obrigatório para consulta.');
+  return await asaasRequest(`/payments/${paymentId}`, {
+    method: 'GET'
+  });
+}
+
+/**
+ * Valida integridade e autenticidade da requisição de Webhook recebida do Asaas
+ */
+export function validarWebhookAsaas(req) {
+  const config = getAsaasConfig();
+  if (!config.webhookSecret) {
+    // Se não há secret configurado, aceita em modo padrão
+    return { valido: true };
+  }
+
+  const tokenRecebido = req.headers['asaas-access-token'] || 
+                        req.headers['authorization'] || 
+                        req.headers['x-asaas-token'] || '';
+
+  if (tokenRecebido.trim() !== config.webhookSecret.trim()) {
+    return {
+      valido: false,
+      erro: 'Token de autenticação do Webhook Asaas inválido ou ausente.'
+    };
+  }
+
+  return { valido: true };
+}

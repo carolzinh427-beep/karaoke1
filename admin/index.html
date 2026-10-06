@@ -254,6 +254,31 @@
         </div>
       </form>
     </div>
+  <!-- Modal de Validação de Ingresso / Check-In de Recepção -->
+  <div id="adminCheckInModal" class="admin-modal-overlay">
+    <div class="admin-modal-card" style="max-width: 520px;">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title">Validar Ingresso / Check-In (Recepção)</h3>
+        <button type="button" class="admin-modal-close" onclick="window.closeCheckInModal()">&times;</button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="inputCheckInCode">Código da Reserva ou Localizador (QR Code)</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="inputCheckInCode" class="form-input" placeholder="Ex: BK-2026-XXXX" style="text-transform: uppercase; font-family: monospace; font-weight: 800; font-size: 1.1rem;">
+            <button type="button" class="btn-admin btn-admin-primary" onclick="window.processarCheckInCode()" id="btnProcessarCheckIn">Validar</button>
+          </div>
+          <span style="font-size: 0.76rem; color: var(--admin-text-muted); display: block; margin-top: 4px;">
+            Digite o código impresso/celular do cliente ou cole o código capturado pelo leitor de QR Code.
+          </span>
+        </div>
+
+        <div id="checkInResultBox" style="display: none; padding: 14px; border-radius: 10px; margin-top: 12px;"></div>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.closeCheckInModal()">Fechar</button>
+      </div>
+    </div>
   </div>
 
   <style>

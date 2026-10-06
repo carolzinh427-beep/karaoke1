@@ -127,34 +127,122 @@ CREATE TRIGGER trigger_galeria_updated_at
 
 
 -- ------------------------------------------------------------------------------
--- 6. TABELA: RESERVAS E AGENDAMENTOS
+-- ------------------------------------------------------------------------------
+-- 6. TABELA: AMBIENTES E ESPAÇOS
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.ambientes (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    tipo TEXT NOT NULL, -- 'aberto', 'privado', 'jogos'
+    faixa_etaria TEXT NOT NULL,
+    permite_menor BOOLEAN NOT NULL DEFAULT FALSE,
+    capacidade_maxima INTEGER NOT NULL DEFAULT 40,
+    valor_base NUMERIC(10,2) DEFAULT 0,
+    descricao TEXT DEFAULT '',
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ------------------------------------------------------------------------------
+-- 7. TABELA: RESERVAS E AGENDAMENTOS (EXPANDIDA COM CONFORMIDADE LEGAL)
 -- ------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.reservas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    codigo_reserva VARCHAR(20) UNIQUE,
     nome TEXT NOT NULL,
     whatsapp TEXT NOT NULL,
     email TEXT DEFAULT NULL,
     data TEXT NOT NULL,               -- Formato YYYY-MM-DD
-    sala TEXT NOT NULL,               -- Identificador ou nome da sala
+    horario TEXT DEFAULT '19:00',
+    ambiente_id TEXT DEFAULT 'salas-privadas',
+    sala_ou_mesa TEXT DEFAULT '',
+    sala TEXT NOT NULL,               -- Retrocompatibilidade com salas
     pessoas INTEGER NOT NULL DEFAULT 1,
-    status TEXT NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'CONFIRMED', 'CANCELLED'
+    status TEXT NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'CONFIRMED', 'CANCELLED', 'CHECKED_IN'
+    status_pagamento TEXT NOT NULL DEFAULT 'aguardando', -- 'aguardando', 'aprovado', 'recusado'
+    transacao_id TEXT DEFAULT NULL,
+    qr_code_token TEXT UNIQUE DEFAULT NULL,
     valor_total NUMERIC(10,2) DEFAULT NULL,
     valor_sinal NUMERIC(10,2) DEFAULT NULL,
+    valor_pago NUMERIC(10,2) DEFAULT NULL,
     termos_aceitos BOOLEAN NOT NULL DEFAULT TRUE,
+    termos_aceitos_em TIMESTAMPTZ DEFAULT NOW(),
+    termos_versao TEXT DEFAULT '2026.1',
+    consentimento_marketing BOOLEAN NOT NULL DEFAULT FALSE,
+    presenca_menor BOOLEAN NOT NULL DEFAULT FALSE,
+    responsavel_legal_declarado BOOLEAN NOT NULL DEFAULT FALSE,
+    checked_in_at TIMESTAMPTZ DEFAULT NULL,
     observacoes TEXT DEFAULT '',
     origem TEXT NOT NULL DEFAULT 'site_cliente',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Migração de colunas caso a tabela já exista
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS codigo_reserva VARCHAR(20) UNIQUE;
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS email TEXT DEFAULT NULL;
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS horario TEXT DEFAULT '19:00';
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS ambiente_id TEXT DEFAULT 'salas-privadas';
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS sala_ou_mesa TEXT DEFAULT '';
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS status_pagamento TEXT DEFAULT 'aguardando';
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS transacao_id TEXT DEFAULT NULL;
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS qr_code_token TEXT UNIQUE DEFAULT NULL;
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS valor_pago NUMERIC(10,2) DEFAULT NULL;
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS termos_aceitos_em TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS termos_versao TEXT DEFAULT '2026.1';
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS consentimento_marketing BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS presenca_menor BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS responsavel_legal_declarado BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS checked_in_at TIMESTAMPTZ DEFAULT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_reservas_data ON public.reservas(data);
 CREATE INDEX IF NOT EXISTS idx_reservas_status ON public.reservas(status);
+CREATE INDEX IF NOT EXISTS idx_reservas_codigo ON public.reservas(codigo_reserva);
+CREATE INDEX IF NOT EXISTS idx_reservas_email ON public.reservas(email);
 
 DROP TRIGGER IF EXISTS trigger_reservas_updated_at ON public.reservas;
 CREATE TRIGGER trigger_reservas_updated_at
     BEFORE UPDATE ON public.reservas
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- ------------------------------------------------------------------------------
+-- 8. TABELA: HISTÓRICO DE PAGAMENTOS SEGUROS (PCI-DSS & LGPD)
+-- ------------------------------------------------------------------------------
+-- Nunca armazena dados de cartão (número, CVV, senhas).
+CREATE TABLE IF NOT EXISTS public.pagamentos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reserva_id UUID REFERENCES public.reservas(id) ON DELETE CASCADE,
+    codigo_reserva VARCHAR(20) NOT NULL,
+    gateway TEXT NOT NULL DEFAULT 'gateway_independente',
+    transacao_id TEXT NOT NULL,
+    valor NUMERIC(10,2) NOT NULL,
+    metodo TEXT NOT NULL DEFAULT 'pix', -- 'pix', 'cartao_credito'
+    status TEXT NOT NULL DEFAULT 'aguardando', -- 'aguardando', 'aprovado', 'recusado'
+    comprador_email TEXT DEFAULT NULL,
+    pago_em TIMESTAMPTZ DEFAULT NULL,
+    metadata_seguro JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pagamentos_reserva ON public.pagamentos(reserva_id);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_transacao ON public.pagamentos(transacao_id);
+
+-- ------------------------------------------------------------------------------
+-- 9. TABELA: AUDITORIA DE CONSENTIMENTOS E ACEITE (LGPD)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.registros_consentimento (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reserva_id UUID REFERENCES public.reservas(id) ON DELETE SET NULL,
+    email TEXT NOT NULL,
+    tipo_documento TEXT NOT NULL, -- 'termos_compra', 'politica_privacidade', 'marketing'
+    versao TEXT NOT NULL DEFAULT '2026.1',
+    aceito BOOLEAN NOT NULL DEFAULT TRUE,
+    ip_hash TEXT DEFAULT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_consentimentos_email ON public.registros_consentimento(email);
 
 
 -- ------------------------------------------------------------------------------
@@ -267,10 +355,45 @@ CREATE POLICY "Configurações leitura pública" ON public.configuracoes FOR SEL
 DROP POLICY IF EXISTS "Configurações escrita painel" ON public.configuracoes;
 CREATE POLICY "Configurações escrita painel" ON public.configuracoes FOR ALL USING (true) WITH CHECK (true);
 
+-- Políticas para Ambientes
+ALTER TABLE public.ambientes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Ambientes leitura pública" ON public.ambientes;
+CREATE POLICY "Ambientes leitura pública" ON public.ambientes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Ambientes escrita painel" ON public.ambientes;
+CREATE POLICY "Ambientes escrita painel" ON public.ambientes FOR ALL USING (true) WITH CHECK (true);
+
+-- Políticas para Pagamentos (PCI-DSS & LGPD)
+ALTER TABLE public.pagamentos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Pagamentos inserção pública" ON public.pagamentos;
+CREATE POLICY "Pagamentos inserção pública" ON public.pagamentos FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Pagamentos leitura painel" ON public.pagamentos;
+CREATE POLICY "Pagamentos leitura painel" ON public.pagamentos FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Pagamentos atualização painel" ON public.pagamentos;
+CREATE POLICY "Pagamentos atualização painel" ON public.pagamentos FOR UPDATE USING (true) WITH CHECK (true);
+
+-- Políticas para Registros de Consentimento (Auditoria LGPD)
+ALTER TABLE public.registros_consentimento ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Consentimentos inserção pública" ON public.registros_consentimento;
+CREATE POLICY "Consentimentos inserção pública" ON public.registros_consentimento FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Consentimentos leitura painel" ON public.registros_consentimento;
+CREATE POLICY "Consentimentos leitura painel" ON public.registros_consentimento FOR SELECT USING (true);
+
 
 -- ------------------------------------------------------------------------------
 -- 10. POVOAMENTO INICIAL (SEED OFICIAL)
 -- ------------------------------------------------------------------------------
+
+-- Inserção dos Ambientes Regulamentados
+INSERT INTO public.ambientes (id, nome, tipo, faixa_etaria, permite_menor, capacidade_maxima, valor_base, descricao, ativo)
+VALUES
+    ('salao-principal', 'Salão Principal (Palco & Bar)', 'aberto', '18+ (Classificação Indicativa Estrita)', false, 80, 0.00, 'Ambiente vibrante com palco integrado de karaokê, mesas e bar. Entrada e permanência restritas a maiores de 18 anos.', true),
+    ('salas-privadas', 'Salas Privativas VIP (Red, Green, Blue)', 'privado', 'Livre com Responsável Legal', true, 50, 400.00, 'Salas privativas acústicas exclusivas com som profissional. Entrada de menores permitida exclusivamente com a presença e vigilância contínua do responsável legal.', true),
+    ('sinuca-bilhar', 'Área de Jogos, Sinuca & Bilhar', 'jogos', '18+ (Art. 80 do ECA - Lei 8.069/1990)', false, 20, 0.00, 'Mesas profissionais de bilhar. Proibida a entrada e permanência de crianças e adolescentes nos termos do Artigo 80 do Estatuto da Criança e do Adolescente.', true)
+ON CONFLICT (id) DO UPDATE SET
+    nome = EXCLUDED.nome,
+    faixa_etaria = EXCLUDED.faixa_etaria,
+    permite_menor = EXCLUDED.permite_menor,
+    descricao = EXCLUDED.descricao;
 
 -- Inserção das 3 Salas Oficiais
 INSERT INTO public.salas (id, nome, slug, capacidade, preco_total, sinal, restante, descricao, imagem, ativo, ordem)

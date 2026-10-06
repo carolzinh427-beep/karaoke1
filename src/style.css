@@ -5506,3 +5506,640 @@ img, video {
   }
 }
 
+/* ==========================================================================
+   CHECKOUT COMPLIANCE LEGAL — ETAPAS, AMBIENTES, HORÁRIOS & QR CODE
+   ========================================================================== */
+.checkout-modal-dialog {
+  max-width: 680px !important;
+  width: 95% !important;
+  background: #060914 !important;
+  border-radius: 20px !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.4) !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 240, 255, 0.2) !important;
+  padding: 24px 28px !important;
+}
+
+.checkout-steps-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 8px;
+}
+
+.checkout-step-dot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: var(--transition-fast);
+}
+
+.checkout-step-dot.active {
+  color: var(--primary-cyan);
+}
+
+.checkout-step-dot.completed {
+  color: #10B981;
+}
+
+.checkout-step-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFF;
+}
+
+.checkout-step-dot.active .checkout-step-badge {
+  background: var(--primary-cyan);
+  color: #050813;
+  font-weight: 800;
+}
+
+.checkout-step-dot.completed .checkout-step-badge {
+  background: #10B981;
+  color: #050813;
+  font-weight: 800;
+}
+
+.time-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.time-slot-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #CBD5E1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-align: center;
+}
+
+.time-slot-btn:hover {
+  border-color: var(--primary-cyan);
+  color: #FFF;
+}
+
+.time-slot-btn.selected {
+  background: var(--primary-cyan);
+  color: #050813;
+  border-color: var(--primary-cyan);
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+
+.env-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .env-selector-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.env-card-option {
+  background: rgba(14, 22, 45, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 12px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-align: left;
+}
+
+.env-card-option:hover {
+  border-color: rgba(0, 240, 255, 0.5);
+}
+
+.env-card-option.selected {
+  border-color: var(--primary-cyan);
+  background: rgba(0, 240, 255, 0.08);
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+}
+
+.env-card-option.room-red.selected {
+  border-color: #FF3366;
+  background: rgba(255, 51, 102, 0.08);
+  box-shadow: 0 0 16px rgba(255, 51, 102, 0.2);
+}
+
+.legal-callout-warning {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #FCA5A5;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  margin: 12px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.legal-callout-info {
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #93C5FD;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  margin: 12px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.legal-checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.legal-checkbox-item input[type="checkbox"] {
+  accent-color: var(--primary-cyan);
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.legal-checkbox-label {
+  font-size: 0.82rem;
+  color: #CBD5E1;
+  line-height: 1.4;
+}
+
+.qr-code-display-card {
+  background: #0A0F24;
+  border: 1.5px solid var(--primary-cyan);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+  margin: 16px 0;
+}
+
+.qr-code-svg-wrap {
+  display: inline-block;
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  margin-bottom: 14px;
+}
+
+.reservation-code-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1.5px dashed var(--primary-cyan);
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--primary-cyan);
+  margin: 8px 0;
+}
+
+.doc-viewer-modal-dialog {
+  max-width: 780px !important;
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  background: #090E1F !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px !important;
+  padding: 28px !important;
+  color: #E2E8F0 !important;
+}
+
+.doc-viewer-body h1, .doc-viewer-body h2, .doc-viewer-body h3 {
+  color: #FFFFFF;
+  margin: 18px 0 8px;
+}
+
+.doc-viewer-body p, .doc-viewer-body li {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #CBD5E1;
+  margin-bottom: 8px;
+}
+
+/* ==========================================================================
+   15. MAPA INTERATIVO DO SALÃO PRINCIPAL (LOTAÇÃO MÁXIMA: 184 PESSOAS)
+   ========================================================================== */
+.salao-mapa-section {
+  padding: 80px 0 100px;
+  background: radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.05) 0%, rgba(5, 7, 15, 0.98) 70%);
+  position: relative;
+  overflow: hidden;
+}
+
+.mapa-header-title-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: rgba(10, 16, 35, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 14px;
+  padding: 16px 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.mapa-headline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mapa-brand-tag {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #FFFFFF;
+  text-transform: uppercase;
+}
+
+.mapa-brand-tag span {
+  color: var(--primary-cyan);
+}
+
+.mapa-capacity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid var(--primary-cyan);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--primary-cyan);
+  text-transform: uppercase;
+}
+
+.mapa-legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mapa-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.legend-dot.green { background-color: #10B981; color: #10B981; }
+.legend-dot.yellow { background-color: #F59E0B; color: #F59E0B; }
+.legend-dot.red { background-color: #EF4444; color: #EF4444; }
+
+.mapa-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+
+@media (min-width: 992px) {
+  .mapa-layout-grid {
+    grid-template-columns: 1.15fr 0.85fr;
+  }
+}
+
+.mapa-visual-container {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1.5px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.15);
+  background: #060913;
+}
+
+.mapa-img-element {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Hotspots clicáveis diretamente sobre a imagem do mapa */
+.mapa-hotspot-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+
+.mapa-table-hotspot {
+  position: absolute;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  background: rgba(16, 185, 129, 0.12);
+  z-index: 10;
+}
+
+.mapa-table-hotspot:hover {
+  transform: scale(1.04);
+  z-index: 20;
+}
+
+.mapa-table-hotspot.available {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.22);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.mapa-table-hotspot.selected {
+  border-color: #F59E0B !important;
+  background: rgba(245, 158, 11, 0.45) !important;
+  box-shadow: 0 0 20px #F59E0B, inset 0 0 10px rgba(245, 158, 11, 0.5) !important;
+  animation: pulseSelection 1.5s infinite;
+}
+
+.mapa-table-hotspot.reserved {
+  border-color: #EF4444 !important;
+  background: rgba(239, 68, 68, 0.4) !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+@keyframes pulseSelection {
+  0% { box-shadow: 0 0 12px #F59E0B; }
+  50% { box-shadow: 0 0 24px #F59E0B, 0 0 8px #FFF; }
+  100% { box-shadow: 0 0 12px #F59E0B; }
+}
+
+.hotspot-badge-tag {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  color: #FFFFFF;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.mapa-table-hotspot.selected .hotspot-badge-tag {
+  background: #F59E0B;
+  color: #000;
+  font-weight: 900;
+  border-color: #FFF;
+}
+
+/* Painel Lateral com Lista Sincronizada das Mesas */
+.mapa-tables-list-panel {
+  background: rgba(10, 16, 35, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tables-list-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.table-selection-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.table-selection-card:hover {
+  background: rgba(0, 240, 255, 0.05);
+  border-color: rgba(0, 240, 255, 0.3);
+  transform: translateX(4px);
+}
+
+.table-selection-card.selected {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: #F59E0B;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+}
+
+.table-selection-card.reserved {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.table-card-info-main strong {
+  display: block;
+  font-size: 0.92rem;
+  color: #FFFFFF;
+}
+
+.table-card-info-main span {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.table-card-cap-pill {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+
+.table-selection-card.selected .table-card-cap-pill {
+  background: rgba(245, 158, 11, 0.25);
+  color: #F59E0B;
+  border-color: #F59E0B;
+}
+
+.table-selection-card.reserved .table-card-cap-pill {
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+  border-color: #EF4444;
+}
+
+/* Cards de Opções de Pagamento com Tarifas por Pessoa */
+.payment-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.payment-method-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.payment-method-card:hover {
+  border-color: var(--primary-cyan);
+  background: rgba(0, 240, 255, 0.06);
+}
+
+.payment-method-card.selected {
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+}
+
+.payment-method-card .method-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.payment-method-card .method-rate {
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-family: var(--font-heading);
+  color: #10B981;
+}
+
+.payment-method-card .method-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Stepper de 9 Etapas */
+.flow-stepper-track {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px 12px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.flow-step-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.flow-step-item.active {
+  background: rgba(0, 240, 255, 0.15);
+  color: var(--primary-cyan);
+  font-weight: 800;
+}
+
+.flow-step-item.completed {
+  color: #10B981;
+}
+
+.flow-step-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.flow-step-item.active .flow-step-num {
+  background: var(--primary-cyan);
+  color: #000;
+}
+
+.flow-step-item.completed .flow-step-num {
+  background: #10B981;
+  color: #000;
+}
+
+
+

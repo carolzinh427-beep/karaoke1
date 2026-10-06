@@ -29,8 +29,14 @@ export default defineConfig(({ mode }) => {
               return next();
             }
 
-            // Rotas de API Cloudinary para ambiente de desenvolvimento local
-            if (req.url && (req.url.startsWith('/api/cloudinary-sign') || req.url.startsWith('/api/cloudinary-delete'))) {
+            // Rotas de API Cloudinary e Asaas para ambiente de desenvolvimento local
+            if (req.url && (
+              req.url.startsWith('/api/cloudinary-sign') || 
+              req.url.startsWith('/api/cloudinary-delete') ||
+              req.url.startsWith('/api/asaas-criar-cobranca') ||
+              req.url.startsWith('/api/asaas-webhook') ||
+              req.url.startsWith('/api/asaas-status')
+            )) {
               const chunks = [];
               req.on('data', chunk => chunks.push(chunk));
               req.on('end', async () => {
@@ -57,9 +63,18 @@ export default defineConfig(({ mode }) => {
                     await signHandler(req, res);
                   } else if (req.url.startsWith('/api/cloudinary-delete')) {
                     await deleteHandler(req, res);
+                  } else if (req.url.startsWith('/api/asaas-criar-cobranca')) {
+                    const asaasCriarHandler = (await import('./api/asaas-criar-cobranca.js')).default;
+                    await asaasCriarHandler(req, res);
+                  } else if (req.url.startsWith('/api/asaas-webhook')) {
+                    const asaasWebhookHandler = (await import('./api/asaas-webhook.js')).default;
+                    await asaasWebhookHandler(req, res);
+                  } else if (req.url.startsWith('/api/asaas-status')) {
+                    const asaasStatusHandler = (await import('./api/asaas-status.js')).default;
+                    await asaasStatusHandler(req, res);
                   }
                 } catch (handlerErr) {
-                  console.error('Erro na API Cloudinary no servidor dev:', handlerErr);
+                  console.error('Erro na API no servidor dev:', handlerErr);
                   res.statusCode = 500;
                   res.setHeader('Content-Type', 'application/json');
                   res.end(JSON.stringify({ error: handlerErr.message }));

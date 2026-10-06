@@ -25,6 +25,8 @@ import {
   getReservasSupabase,
   updateReservaStatusSupabase,
   deleteReservaSupabase,
+  validarCheckInReserva,
+  buscarReservaPorCodigo,
   getBloqueiosSupabase,
   saveBloqueioSupabase,
   deleteBloqueioSupabase,
@@ -882,9 +884,13 @@ function renderReservasView() {
     <div class="view-header">
       <div class="view-headline">
         <h2>Gerenciamento de Reservas</h2>
-        <p>Confirme ou cancele solicitações de salas com registro de histórico e controle de ocupação</p>
+        <p>Controle de ocupação, validação de ingressos na portaria com QR Code e histórico financeiro</p>
       </div>
-      <div class="view-actions">
+      <div class="view-actions" style="display: flex; gap: 8px;">
+        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.openModalValidarCheckIn()" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Validar Ingresso / QR Code</span>
+        </button>
         <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.refreshReservas()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           Atualizar
@@ -903,7 +909,7 @@ function renderReservasView() {
         </div>
 
         <div style="max-width: 320px; width: 100%;">
-          <input type="text" class="form-input" placeholder="Buscar por cliente ou WhatsApp..." value="${state.searchTermReservas}" oninput="window.searchReservas(this.value)">
+          <input type="text" class="form-input" placeholder="Buscar por código, cliente ou WhatsApp..." value="${state.searchTermReservas}" oninput="window.searchReservas(this.value)">
         </div>
       </div>
     </div>
@@ -921,12 +927,12 @@ function renderReservasView() {
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Cliente</th>
-                <th>WhatsApp</th>
+                <th>Código / Cliente</th>
+                <th>Contato</th>
                 <th>Data / Horário</th>
-                <th>Sala</th>
-                <th>Convidados</th>
-                <th>Aceite Termos</th>
+                <th>Espaço / Sala</th>
+                <th>Pessoas</th>
+                <th>Pagamento</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -949,6 +955,9 @@ function renderReservaRow(r) {
   if (st === 'CONFIRMED' || st === 'CONFIRMADA') {
     badgeClass = 'confirmed';
     badgeLabel = 'Confirmada';
+  } else if (st === 'CHECKED_IN') {
+    badgeClass = 'confirmed';
+    badgeLabel = '✓ Check-in Realizado';
   } else if (st === 'CANCELLED' || st === 'CANCELADA') {
     badgeClass = 'cancelled';
     badgeLabel = 'Cancelada';
@@ -961,11 +970,21 @@ function renderReservaRow(r) {
   if ((r.sala || '').includes('Green')) roomClass = 'green';
   if ((r.sala || '').includes('Blue')) roomClass = 'blue';
 
+  const codigo = r.codigoReserva || (r.id ? r.id.substring(0, 10).toUpperCase() : '-');
+  const isCheckedIn = st === 'CHECKED_IN';
+  const isPaid = (r.statusPagamento || '').toLowerCase() === 'aprovado' || (r.valorPago && r.valorPago > 0);
+
   return `
     <tr>
       <td>
-        <strong style="color: var(--admin-text-main);">${r.nome || 'Cliente não identificado'}</strong>
-        <div style="font-size: 0.75rem; color: var(--admin-text-dim);">Criado em: ${formatTimestamp(r.criadoEm || r.dataCriacao)}</div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+          <span style="font-family: monospace; font-size: 0.78rem; font-weight: 800; background: rgba(0, 240, 255, 0.12); color: var(--admin-cyan); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0, 240, 255, 0.25);">
+            ${codigo}
+          </span>
+        </div>
+        <strong style="color: var(--admin-text-main); font-size: 0.95rem;">${r.nome || 'Cliente não identificado'}</strong>
+        ${r.email ? `<div style="font-size: 0.76rem; color: var(--admin-text-muted);">${r.email}</div>` : ''}
+        <div style="font-size: 0.72rem; color: var(--admin-text-dim);">Criado em: ${formatTimestamp(r.criadoEm || r.dataCriacao)}</div>
       </td>
       <td>
         <a href="${wppLink}" target="_blank" rel="noopener noreferrer" style="color: var(--admin-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
@@ -975,23 +994,40 @@ function renderReservaRow(r) {
       </td>
       <td>
         <span style="font-weight: 700;">${r.data || 'A definir'}</span>
-        ${r.horario ? `<div style="font-size: 0.8rem; color: var(--admin-text-muted);">${r.horario}</div>` : ''}
+        ${r.horario ? `<div style="font-size: 0.8rem; color: var(--admin-cyan); font-weight: 600;">${r.horario}</div>` : ''}
       </td>
       <td>
-        <span class="badge-room ${roomClass}">${r.sala || 'Sala'}</span>
+        <span class="badge-room ${roomClass}">${r.salaOuMesa || r.sala || 'Sala'}</span>
       </td>
       <td>
-        <span>${r.pessoas ? `${r.pessoas} pessoas` : '-'}</span>
+        <span>${r.pessoas ? `${r.pessoas} convidados` : '-'}</span>
+        ${r.presencaMenor ? `
+          <div style="font-size: 0.72rem; color: #F59E0B; margin-top: 2px;" title="Responsável legal declarado pelo comprador nos termos do ECA e LGPD">
+            ⚠️ Menor (Resp. declarado)
+          </div>
+        ` : ''}
       </td>
       <td>
-        <span style="font-size: 0.75rem; color: var(--admin-green); font-weight: 700;">✓ Termos Aceitos</span>
+        ${isPaid ? `
+          <span style="font-size: 0.75rem; color: var(--admin-green); font-weight: 700;">
+            ✓ Sinal Pago ${r.valorPago ? `(R$ ${Number(r.valorPago).toFixed(0)})` : ''}
+          </span>
+        ` : `
+          <span style="font-size: 0.75rem; color: var(--admin-yellow); font-weight: 700;">Aguardando</span>
+        `}
       </td>
       <td>
         <span class="badge-status ${badgeClass}">${badgeLabel}</span>
       </td>
       <td>
-        <div style="display: flex; gap: 6px;">
-          ${st !== 'CONFIRMED' && st !== 'CONFIRMADA' ? `
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          ${!isCheckedIn && st !== 'CANCELLED' && st !== 'CANCELADA' ? `
+            <button type="button" class="btn-admin btn-admin-primary btn-admin-xs" onclick="window.fazerCheckInDireto('${r.id}')" title="Validar Check-In na Entrada">
+              Check-In
+            </button>
+          ` : ''}
+
+          ${st !== 'CONFIRMED' && st !== 'CONFIRMADA' && !isCheckedIn ? `
             <button type="button" class="btn-admin btn-admin-success btn-admin-xs" onclick="window.confirmarReserva('${r.id}')" title="Confirmar Reserva">
               Confirmar
             </button>
@@ -2113,6 +2149,194 @@ window.refreshReservas = async () => {
   await fetchReservas();
   showToast('Lista de reservas atualizada.', 'info');
   renderApp();
+};
+
+// 8.1.1 Validação de Ingresso / Check-In Portaria
+window.openModalValidarCheckIn = () => {
+  const modal = document.getElementById('adminCheckInModal');
+  const input = document.getElementById('inputCheckInCode');
+  const resultBox = document.getElementById('checkInResultBox');
+  if (input) input.value = '';
+  if (resultBox) {
+    resultBox.style.display = 'none';
+    resultBox.innerHTML = '';
+  }
+  if (modal) modal.classList.add('active');
+  if (input) setTimeout(() => input.focus(), 150);
+};
+
+window.closeCheckInModal = () => {
+  const modal = document.getElementById('adminCheckInModal');
+  if (modal) modal.classList.remove('active');
+};
+
+window.processarCheckInCode = async () => {
+  const input = document.getElementById('inputCheckInCode');
+  const resultBox = document.getElementById('checkInResultBox');
+  const btn = document.getElementById('btnProcessarCheckIn');
+  if (!input || !resultBox) return;
+
+  const code = (input.value || '').trim().toUpperCase();
+  if (!code) {
+    showToast('Informe o código da reserva ou escaneie o QR Code.', 'error');
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  resultBox.style.display = 'block';
+  resultBox.style.background = 'rgba(255, 255, 255, 0.05)';
+  resultBox.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+  resultBox.style.color = 'var(--admin-text-main)';
+  resultBox.innerHTML = '<div style="text-align: center; padding: 10px;">Consultando sistema e validando ingresso...</div>';
+
+  try {
+    let result = null;
+
+    // Tenta primeiro via Supabase
+    if (isSupabaseConfigured) {
+      try {
+        result = await validarCheckInReserva(code);
+      } catch (e) {
+        console.warn('Tentativa Supabase check-in:', e);
+      }
+    }
+
+    // Fallback para estado local / Firestore
+    if (!result || !result.success) {
+      const localRes = state.reservas.find(r => 
+        (r.codigoReserva && r.codigoReserva.toUpperCase() === code) ||
+        (r.id && (r.id === code || r.id.substring(0, 10).toUpperCase() === code))
+      );
+
+      if (localRes) {
+        const st = (localRes.status || '').toUpperCase();
+        if (st === 'CHECKED_IN') {
+          result = {
+            success: false,
+            alreadyCheckedIn: true,
+            message: 'Atenção: Este ingresso / reserva JÁ REALIZOU CHECK-IN anteriormente!',
+            reserva: localRes
+          };
+        } else if (st === 'CANCELLED' || st === 'CANCELADA') {
+          result = {
+            success: false,
+            message: 'Ingresso Inválido: Esta reserva foi CANCELADA.',
+            reserva: localRes
+          };
+        } else {
+          if (db) {
+            try {
+              await updateDoc(doc(db, 'reservas', localRes.id), {
+                status: 'CHECKED_IN',
+                checkedInEm: serverTimestamp()
+              });
+            } catch (err) {}
+          }
+          localRes.status = 'CHECKED_IN';
+          result = {
+            success: true,
+            message: 'Ingresso válido! Check-in liberado com sucesso.',
+            reserva: localRes
+          };
+        }
+      }
+    }
+
+    if (result && result.success) {
+      const r = result.reserva || {};
+      const resNome = r.nome_cliente || r.nome || 'Cliente';
+      const resEspaco = r.sala_ou_mesa || r.sala || r.ambiente_tipo || 'Salão / Sala';
+      const resData = r.data_reserva || r.data || '-';
+      const resHorario = r.horario || '-';
+      const resPessoas = r.pessoas || r.quantidade_pessoas || 1;
+      const resMenor = r.presenca_menor || r.presencaMenor;
+
+      // Sincroniza estado local
+      const inState = state.reservas.find(item => item.id === r.id || (item.codigoReserva && item.codigoReserva === (r.codigo_reserva || code)));
+      if (inState) inState.status = 'CHECKED_IN';
+
+      resultBox.style.background = 'rgba(16, 185, 129, 0.15)';
+      resultBox.style.border = '1px solid #10B981';
+      resultBox.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; color: #10B981; font-weight: 800; font-size: 1.05rem; margin-bottom: 8px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          ENTRADA LIBERADA - CHECK-IN CONFIRMADO
+        </div>
+        <div style="font-size: 0.88rem; line-height: 1.5; color: #E2E8F0;">
+          <div><strong>Código:</strong> <span style="font-family: monospace; color: var(--admin-cyan);">${code}</span></div>
+          <div><strong>Titular:</strong> ${resNome}</div>
+          <div><strong>Ambiente / Espaço:</strong> ${resEspaco}</div>
+          <div><strong>Data & Horário:</strong> ${resData} às ${resHorario}</div>
+          <div><strong>Quantidade de Pessoas:</strong> ${resPessoas} pessoa(s)</div>
+          ${resMenor ? '<div style="color: #F59E0B; margin-top: 4px; font-weight: 600;">⚠️ Grupo possui menor sob tutela de responsável legal declarado.</div>' : ''}
+        </div>
+      `;
+      showToast('Check-in aprovado!', 'success');
+      renderApp();
+    } else {
+      const isAlready = result && result.alreadyCheckedIn;
+      resultBox.style.background = isAlready ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+      resultBox.style.border = `1px solid ${isAlready ? '#F59E0B' : '#EF4444'}`;
+      resultBox.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; color: ${isAlready ? '#F59E0B' : '#EF4444'}; font-weight: 800; font-size: 1rem; margin-bottom: 6px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          ${isAlready ? 'ALERTA: CHECK-IN JÁ UTILIZADO' : 'CÓDIGO NÃO LOCALIZADO / INVÁLIDO'}
+        </div>
+        <div style="font-size: 0.85rem; color: #CBD5E1;">
+          ${(result && result.message) || 'Código não cadastrado ou com pagamento pendente.'}
+        </div>
+      `;
+      showToast(isAlready ? 'Check-in já havia sido utilizado.' : 'Ingresso não encontrado.', 'error');
+    }
+  } catch (err) {
+    console.error('Erro ao processar check-in:', err);
+    resultBox.style.background = 'rgba(239, 68, 68, 0.15)';
+    resultBox.style.border = '1px solid #EF4444';
+    resultBox.innerHTML = `<div style="color: #EF4444;">Erro ao processar check-in: ${err.message || 'Falha de comunicação'}</div>`;
+    showToast('Erro ao validar código.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+window.fazerCheckInDireto = async (id) => {
+  const res = state.reservas.find(r => r.id === id);
+  if (!res) return;
+
+  if (res.status === 'CHECKED_IN') {
+    showToast('Check-in já foi realizado para esta reserva.', 'info');
+    return;
+  }
+
+  if (!confirm(`Confirmar entrada e realizar CHECK-IN para "${res.nome}" (${res.sala || 'Espaço'})?`)) {
+    return;
+  }
+
+  try {
+    if (isSupabaseConfigured) {
+      try {
+        await validarCheckInReserva(res.codigoReserva || id);
+      } catch (supaErr) {
+        console.warn('Aviso Supabase check-in direto:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        await updateDoc(doc(db, 'reservas', id), {
+          status: 'CHECKED_IN',
+          checkedInEm: serverTimestamp()
+        });
+      } catch (e) {}
+    }
+
+    res.status = 'CHECKED_IN';
+    showToast(`Check-in de ${res.nome} realizado com sucesso!`, 'success');
+    renderApp();
+  } catch (err) {
+    console.error('Erro ao registrar check-in:', err);
+    showToast('Erro ao registrar check-in.', 'error');
+  }
 };
 
 // 8.2 Ações do Calendário
