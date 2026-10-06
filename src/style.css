@@ -5769,6 +5769,7 @@ img, video {
   background: radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.05) 0%, rgba(5, 7, 15, 0.98) 70%);
   position: relative;
   overflow: hidden;
+  scroll-margin-top: 80px;
 }
 
 .mapa-header-title-box {
@@ -5889,66 +5890,140 @@ img, video {
   position: absolute;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid transparent;
-  background: rgba(16, 185, 129, 0.12);
+  border: 1.5px solid rgba(0, 240, 255, 0.45);
+  background: rgba(6, 12, 26, 0.45);
   z-index: 10;
+  text-decoration: none;
+  user-select: none;
 }
 
 .mapa-table-hotspot:hover {
-  transform: scale(1.04);
-  z-index: 20;
+  transform: scale(1.05);
+  border-color: #00F0FF;
+  background: rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 22px rgba(0, 240, 255, 0.75), inset 0 0 12px rgba(0, 240, 255, 0.35);
+  z-index: 30;
 }
 
 .mapa-table-hotspot.available {
-  border-color: #10B981;
-  background: rgba(16, 185, 129, 0.22);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+  border-color: rgba(16, 185, 129, 0.65);
+  background: rgba(16, 185, 129, 0.16);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+}
+
+.mapa-table-hotspot.available:hover {
+  border-color: #00F0FF;
+  background: rgba(0, 240, 255, 0.22);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.85), inset 0 0 10px rgba(0, 240, 255, 0.4);
 }
 
 .mapa-table-hotspot.selected {
   border-color: #F59E0B !important;
-  background: rgba(245, 158, 11, 0.45) !important;
-  box-shadow: 0 0 20px #F59E0B, inset 0 0 10px rgba(245, 158, 11, 0.5) !important;
+  background: rgba(245, 158, 11, 0.38) !important;
+  box-shadow: 0 0 24px #F59E0B, inset 0 0 14px rgba(245, 158, 11, 0.6) !important;
   animation: pulseSelection 1.5s infinite;
+  z-index: 25;
 }
 
 .mapa-table-hotspot.reserved {
   border-color: #EF4444 !important;
   background: rgba(239, 68, 68, 0.4) !important;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
   cursor: not-allowed;
   opacity: 0.75;
 }
 
 @keyframes pulseSelection {
   0% { box-shadow: 0 0 12px #F59E0B; }
-  50% { box-shadow: 0 0 24px #F59E0B, 0 0 8px #FFF; }
+  50% { box-shadow: 0 0 26px #F59E0B, 0 0 10px #FFF; }
   100% { box-shadow: 0 0 12px #F59E0B; }
 }
 
-.hotspot-badge-tag {
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
-  color: #FFFFFF;
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+/* Placa interativa de alta legibilidade que sobrepõe os números da imagem antiga */
+.table-plate-overlay {
+  background: rgba(6, 11, 24, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 6px;
+  padding: 3px 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   pointer-events: none;
-  white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 240, 255, 0.2);
+  transition: all 0.25s ease;
+  width: 94%;
+  max-width: 98%;
 }
 
-.mapa-table-hotspot.selected .hotspot-badge-tag {
-  background: #F59E0B;
-  color: #000;
+.mapa-table-hotspot:hover .table-plate-overlay {
+  background: rgba(4, 15, 30, 0.98);
+  border-color: #00F0FF;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.85), 0 4px 14px rgba(0, 0, 0, 0.9);
+  transform: scale(1.04);
+}
+
+.mapa-table-hotspot.selected .table-plate-overlay {
+  background: rgba(30, 20, 5, 0.96);
+  border-color: #F59E0B;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.9);
+}
+
+.plate-title-text {
+  font-family: inherit;
+  font-size: clamp(0.52rem, 0.85vw, 0.72rem);
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.15;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+}
+
+.mapa-table-hotspot.selected .plate-title-text {
+  color: #FEF3C7;
+}
+
+.plate-action-hint {
+  font-size: clamp(0.42rem, 0.65vw, 0.55rem);
+  font-weight: 700;
+  color: #10B981;
+  line-height: 1;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mapa-table-hotspot:hover .plate-action-hint {
+  color: #00F0FF;
+}
+
+.mapa-table-hotspot.selected .plate-action-hint {
+  color: #F59E0B;
   font-weight: 900;
-  border-color: #FFF;
+}
+
+.table-plate-overlay.compact {
+  padding: 2px 4px;
+}
+
+.table-plate-overlay.compact .plate-title-text {
+  font-size: clamp(0.48rem, 0.75vw, 0.62rem);
+}
+
+.table-quick-book-btn {
+  white-space: nowrap;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.2px;
+  border-radius: 6px;
 }
 
 /* Painel Lateral com Lista Sincronizada das Mesas */
