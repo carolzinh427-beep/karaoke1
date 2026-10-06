@@ -41,8 +41,39 @@ import {
   getMesaById
 } from './lib/mesasSalao.js';
 
+// ============================================================================
+// ESTADO GLOBAL COMPARTILHADO (CALENDÁRIO, SALAS E SALÃO PRINCIPAL)
+// ============================================================================
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+const WEEKDAY_NAMES = [
+  'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
+  'Quinta-feira', 'Sexta-feira', 'Sábado'
+];
+
 let activeBlockedDates = [];
 let WHATSAPP_PHONE = '556181426321';
+
+// Estado do Calendário de Salas
+let selectedBookingDate = null;
+let selectedBookingRoom = null;
+let pendingRoomSelection = null;
+let currentBookingStep = 1;
+let currentCalYear = new Date().getFullYear();
+let currentCalMonth = new Date().getMonth();
+
+// Estado do Mapa e Calendário do Salão Principal
+let selectedMesaId = 'mesa-30';
+let selectedReservaData = null; // { dateStr: 'YYYY-MM-DD', formattedDisplay: 'Quarta, 07/10/2026' }
+let selectedReservaHorario = '20:00';
+let selectedMetodoTarifa = 'pix'; // 'pix' | 'debito' | 'credito'
+let modalCalYear = new Date().getFullYear();
+let modalCalMonth = new Date().getMonth();
+let reservasOcupadas = [];
+let activeConfirmedReservation = null;
 
 export function createWhatsAppUrl(message) {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
@@ -64,11 +95,6 @@ function bootstrap() {
   try { loadPublicDataFromFirestore(); } catch(e) { console.warn('loadPublicDataFromFirestore error:', e); }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bootstrap);
-} else {
-  bootstrap();
-}
 
 // 0. Welcome Screen / Splash Landing
 function initWelcomeScreen() {
@@ -440,22 +466,6 @@ function handleInitialHashNavigation() {
 }
 
 // 9. Interactive Booking System (Fluxo em 3 Passos & Pop-up por Sala)
-let selectedBookingDate = null;
-let selectedBookingRoom = null;
-let pendingRoomSelection = null;
-let currentBookingStep = 1;
-let currentCalYear = new Date().getFullYear();
-let currentCalMonth = new Date().getMonth();
-
-const MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-];
-
-const WEEKDAY_NAMES = [
-  'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
-  'Quinta-feira', 'Sexta-feira', 'Sábado'
-];
 
 // Dados e Personalidades Exclusivas das Salas
 const ROOM_DATA = {
@@ -840,14 +850,7 @@ window.confirmRoomFromPopup = () => {
 // FLUXO DE RESERVA NA ORDEM EXATA (PASSOS 1 A 9)
 // ============================================================================
 
-let selectedMesaId = 'mesa-30';
-let selectedReservaData = null; // { dateStr: 'YYYY-MM-DD', formattedDisplay: 'Quarta, 07/10/2026' }
-let selectedReservaHorario = '20:00';
-let selectedMetodoTarifa = 'pix'; // 'pix' | 'debito' | 'credito'
-let modalCalYear = new Date().getFullYear();
-let modalCalMonth = new Date().getMonth();
-let reservasOcupadas = [];
-let activeConfirmedReservation = null;
+
 
 // Inicializa Mapa e Hotspots
 export function initMapaSalaoPrincipal() {
@@ -1158,6 +1161,19 @@ function renderModalCalendar() {
     }
 
     daysGrid.appendChild(dayBtn);
+  }
+
+  // 3. Dias do próximo mês para completar a grade em um retângulo perfeito (35 ou 42 células)
+  const totalCellsRendered = firstDayIndex + totalDays;
+  const targetTotal = totalCellsRendered > 35 ? 42 : 35;
+  const nextDaysNeeded = targetTotal - totalCellsRendered;
+
+  for (let n = 1; n <= nextDaysNeeded; n++) {
+    const nextBtn = document.createElement('div');
+    nextBtn.className = 'calendar-day-btn other-month';
+    nextBtn.textContent = n;
+    nextBtn.setAttribute('aria-hidden', 'true');
+    daysGrid.appendChild(nextBtn);
   }
 }
 
@@ -2046,4 +2062,11 @@ async function loadPublicDataFromFirestore() {
   } catch(err) {
     console.warn('Sync público geral:', err);
   }
+}
+
+// Inicialização imediata ao final do script garantindo que todo o escopo está carregado
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrap);
+} else {
+  bootstrap();
 }
