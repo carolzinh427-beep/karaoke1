@@ -652,11 +652,78 @@ img, video {
   z-index: 10;
   width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 0 16px;
-  pointer-events: none;
   box-sizing: border-box;
+}
+
+.hero-action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  z-index: 12;
+  pointer-events: auto;
+}
+
+.hero-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 28px;
+  border-radius: 999px;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.hero-cta-sala {
+  background: linear-gradient(135deg, #FF007A 0%, #D90065 100%);
+  color: #FFFFFF !important;
+  border: 1.5px solid rgba(255, 0, 122, 0.6);
+  box-shadow: 0 8px 30px rgba(255, 0, 122, 0.4), 0 0 15px rgba(255, 0, 122, 0.25);
+}
+.hero-cta-sala:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 35px rgba(255, 0, 122, 0.65), 0 0 25px rgba(255, 0, 122, 0.4);
+  color: #FFFFFF !important;
+}
+
+.hero-cta-mesa {
+  background: linear-gradient(135deg, #00F0FF 0%, #00B8D9 100%);
+  color: #050813 !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.6);
+  box-shadow: 0 8px 30px rgba(0, 240, 255, 0.4), 0 0 15px rgba(0, 240, 255, 0.25);
+}
+.hero-cta-mesa:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 35px rgba(0, 240, 255, 0.65), 0 0 25px rgba(0, 240, 255, 0.4);
+  color: #050813 !important;
+}
+
+@media (max-width: 576px) {
+  .hero-action-buttons {
+    margin-top: 16px;
+    gap: 10px;
+    width: 100%;
+  }
+  .hero-cta-btn {
+    padding: 11px 18px;
+    font-size: 0.90rem;
+    flex: 1 1 calc(50% - 10px);
+    max-width: 200px;
+  }
 }
 
 .hero-grand-logo-box {
@@ -5766,7 +5833,7 @@ img, video {
    15. MAPA INTERATIVO DO SALÃO PRINCIPAL (LOTAÇÃO MÁXIMA: 184 PESSOAS)
    ========================================================================== */
 .salao-mapa-section {
-  padding: 36px 0 44px;
+  padding: 20px 0 24px;
   background: radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.05) 0%, rgba(5, 7, 15, 0.98) 70%);
   position: relative;
   overflow: hidden;
@@ -5778,12 +5845,12 @@ img, video {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   background: rgba(10, 16, 35, 0.85);
   border: 1px solid rgba(0, 240, 255, 0.3);
   border-radius: 12px;
-  padding: 10px 16px;
-  margin-bottom: 12px;
+  padding: 8px 14px;
+  margin-bottom: 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
@@ -5857,15 +5924,15 @@ img, video {
 
 @media (min-width: 860px) {
   .mapa-layout-grid {
-    grid-template-columns: 410px 1fr;
-    gap: 18px;
+    grid-template-columns: 345px 1fr;
+    gap: 16px;
     align-items: start;
   }
 }
 
 .karaoke-map-container {
   width: 100%;
-  max-width: 410px;
+  max-width: 345px;
   margin: 0 auto;
 }
 
@@ -6051,7 +6118,7 @@ img, video {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 350px;
+  max-height: 290px;
   overflow-y: auto;
   padding-right: 4px;
 }

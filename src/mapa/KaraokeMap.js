@@ -64,27 +64,19 @@ export class KaraokeMap {
   renderLayout() {
     this.container.innerHTML = `
       <div class="kmap-wrapper">
-        <!-- BARRA SUPERIOR DE CONTROLES E LEGENDA -->
+        <!-- BARRA SUPERIOR DE CONTROLES E FILTROS -->
         <div class="kmap-toolbar">
-          <div class="kmap-toolbar-left">
-            <span class="kmap-live-tag">
-              <span class="kmap-live-dot"></span> MAPA INTERATIVO
-            </span>
+          <!-- Filtro de Demonstração de Status -->
+          <div class="kmap-filter-group" role="group" aria-label="Filtro de mesas">
+            <button type="button" class="kmap-filter-btn active" data-filter="todas" id="kfilterTodas">Todas (11)</button>
+            <button type="button" class="kmap-filter-btn" data-filter="disponiveis" id="kfilterDisponiveis">Disponíveis</button>
           </div>
 
-          <div class="kmap-toolbar-right">
-            <!-- Filtro de Demonstração de Status -->
-            <div class="kmap-filter-group" role="group" aria-label="Filtro de mesas">
-              <button type="button" class="kmap-filter-btn active" data-filter="todas" id="kfilterTodas">Todas (11)</button>
-              <button type="button" class="kmap-filter-btn" data-filter="disponiveis" id="kfilterDisponiveis">Disponíveis</button>
-            </div>
-
-            <!-- Controles de Zoom e Pan -->
-            <div class="kmap-zoom-controls" aria-label="Controles de zoom">
-              <button type="button" class="kmap-zoom-btn" id="kmapZoomIn" title="Aumentar zoom" aria-label="Aumentar zoom">+</button>
-              <button type="button" class="kmap-zoom-btn" id="kmapZoomOut" title="Diminuir zoom" aria-label="Diminuir zoom">−</button>
-              <button type="button" class="kmap-zoom-btn" id="kmapZoomReset" title="Ajustar à tela" aria-label="Resetar zoom">⟲</button>
-            </div>
+          <!-- Controles de Zoom e Pan -->
+          <div class="kmap-zoom-controls" aria-label="Controles de zoom">
+            <button type="button" class="kmap-zoom-btn" id="kmapZoomIn" title="Aumentar zoom" aria-label="Aumentar zoom">+</button>
+            <button type="button" class="kmap-zoom-btn" id="kmapZoomOut" title="Diminuir zoom" aria-label="Diminuir zoom">−</button>
+            <button type="button" class="kmap-zoom-btn" id="kmapZoomReset" title="Ajustar à tela" aria-label="Resetar zoom">⟲</button>
           </div>
         </div>
 
@@ -96,11 +88,6 @@ export class KaraokeMap {
 
           <!-- Tooltip flutuante de hover sobre mesas -->
           <div class="kmap-floating-tooltip" id="kmapTooltip" style="display: none;"></div>
-
-          <!-- Dica indicativa suave -->
-          <div class="kmap-touch-hint">
-            <span>Toque em qualquer mesa para reservar</span>
-          </div>
         </div>
 
         <!-- PAINEL INFORMATIVO / CARD DA MESA SELECIONADA -->

@@ -158,8 +158,8 @@ function initWelcomeScreen() {
   if (enterBtn) {
     enterBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      // Leva direto para o mapa interativo do salão principal sem abrir pop-up antes de escolher a mesa
-      dismiss('salao-principal');
+      // Direciona ao Hero onde o usuário pode escolher entre Reservar Sala e Reservar Mesa
+      dismiss('inicio');
     });
   }
 
