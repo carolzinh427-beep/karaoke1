@@ -256,22 +256,15 @@ export const ARCHITECTURAL_ELEMENTS = {
   },
   sofas: [
     {
-      id: 'sofa-lateral-esquerdo',
-      name: 'Sofá Lateral Esquerdo',
+      id: 'sofa-lateral-esquerdo-l',
+      name: 'Sofá Lateral Esquerdo em L',
       x: 45,
-      y: 320,
-      width: 48,
-      height: 420,
-      orientation: 'vertical'
-    },
-    {
-      id: 'sofa-lounge-inferior-esq',
-      name: 'Sofá Lounge Canto Inferior',
-      x: 45,
-      y: 770,
-      width: 190,
-      height: 140,
-      orientation: 'lounge_l'
+      y: 310,
+      width: 205,
+      height: 670,
+      armWidth: 48,
+      armHeight: 52,
+      orientation: 'continuous_l'
     },
     {
       id: 'sofa-enclosure-mesa-8',

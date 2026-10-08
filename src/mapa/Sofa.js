@@ -11,9 +11,11 @@ export function renderSofas(sofasList) {
 }
 
 function renderSingleSofa(sofa) {
-  const { id, x, y, width, height, orientation } = sofa;
+  const { id, x, y, width, height, armWidth, armHeight, orientation } = sofa;
 
   switch (orientation) {
+    case 'continuous_l':
+      return renderContinuousLSofa(id, x, y, width, height, armWidth || 48, armHeight || 52);
     case 'lounge_l':
       return renderLoungeLSofa(id, x, y, width, height);
     case 'u_shape':
@@ -22,6 +24,126 @@ function renderSingleSofa(sofa) {
     default:
       return renderVerticalSofa(id, x, y, width, height);
   }
+}
+
+/**
+ * Sofá contínuo em L no lado esquerdo (não quebrado, sem emendas)
+ * Desce desde a lateral do Palco ao longo de toda a parede esquerda e
+ * dobra em L contínuo sob a Mesa 1 (30).
+ */
+function renderContinuousLSofa(id, x, y, width, height, armW, armH) {
+  const xLeft = x;
+  const xVertRight = x + armW;
+  const xHorizRight = x + width;
+  const yTop = y;
+  const yInner = y + height - armH;
+  const yBottom = y + height;
+
+  // Caminho do formato em L suave, contínuo e sem emendas
+  const pathD = `
+    M ${xLeft + 6},${yTop}
+    L ${xVertRight - 6},${yTop}
+    Q ${xVertRight},${yTop} ${xVertRight},${yTop + 6}
+    L ${xVertRight},${yInner - 6}
+    Q ${xVertRight},${yInner} ${xVertRight + 6},${yInner}
+    L ${xHorizRight - 6},${yInner}
+    Q ${xHorizRight},${yInner} ${xHorizRight},${yInner + 6}
+    L ${xHorizRight},${yBottom - 6}
+    Q ${xHorizRight},${yBottom} ${xHorizRight - 6},${yBottom}
+    L ${xLeft + 6},${yBottom}
+    Q ${xLeft},${yBottom} ${xLeft},${yBottom - 6}
+    L ${xLeft},${yTop + 6}
+    Q ${xLeft},${yTop} ${xLeft + 6},${yTop}
+    Z
+  `;
+
+  // Almofadas da haste vertical (ao longo da parede esquerda)
+  const vertCushionCount = 10;
+  const vertStart = yTop + 8;
+  const vertAvailableH = (yInner - 8) - vertStart;
+  const vertCushionStep = Math.floor(vertAvailableH / vertCushionCount);
+  const vertCushionH = vertCushionStep - 4;
+
+  let vertCushions = '';
+  for (let i = 0; i < vertCushionCount; i++) {
+    const cy = vertStart + i * vertCushionStep;
+    vertCushions += `
+      <rect x="${xLeft + 10}" y="${cy}" width="${armW - 16}" height="${vertCushionH}" rx="5"
+            fill="#0F172E" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+      <line x1="${xLeft + 14}" y1="${cy + 3}" x2="${xLeft + armW - 10}" y2="${cy + 3}" 
+            stroke="rgba(255, 255, 255, 0.05)" stroke-width="1" stroke-linecap="round" />
+    `;
+  }
+
+  // Almofada do canto do L
+  const cornerCushion = `
+    <rect x="${xLeft + 10}" y="${yInner + 6}" width="${armW - 16}" height="${armH - 14}" rx="5"
+          fill="#0F172E" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+  `;
+
+  // Almofadas da haste horizontal (sob a Mesa 30)
+  const horizStart = xVertRight + 6;
+  const horizEnd = xHorizRight - 8;
+  const horizAvailableW = horizEnd - horizStart;
+  const horizCushionCount = 3;
+  const horizCushionStep = Math.floor(horizAvailableW / horizCushionCount);
+  const horizCushionW = horizCushionStep - 5;
+
+  let horizCushions = '';
+  for (let i = 0; i < horizCushionCount; i++) {
+    const cx = horizStart + i * horizCushionStep;
+    horizCushions += `
+      <rect x="${cx}" y="${yInner + 6}" width="${horizCushionW}" height="${armH - 14}" rx="5"
+          fill="#0F172E" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+      <line x1="${cx + 3}" y1="${yInner + 9}" x2="${cx + horizCushionW - 3}" y2="${yInner + 9}" 
+            stroke="rgba(255, 255, 255, 0.05)" stroke-width="1" stroke-linecap="round" />
+    `;
+  }
+
+  return `
+    <g class="map-element map-sofa" id="${id}">
+      <!-- Sombra do sofá contínuo em L -->
+      <path d="${pathD}" fill="#03050B" transform="translate(3, 4)" opacity="0.8" />
+
+      <!-- Estrutura / Estofado base contínuo em L -->
+      <path d="${pathD}" 
+            fill="#0A1020" 
+            stroke="rgba(0, 240, 255, 0.3)" 
+            stroke-width="1.4" />
+
+      <!-- Faixa de encosto traseiro encostado na parede -->
+      <rect x="${xLeft + 2}" y="${yTop + 2}" width="7" height="${height - 4}" rx="3" fill="#050811" />
+      <rect x="${xLeft + 2}" y="${yBottom - 8}" width="${width - 4}" height="6" rx="2" fill="#050811" />
+
+      <!-- Almofadas da extensão vertical -->
+      ${vertCushions}
+
+      <!-- Almofada do canto -->
+      ${cornerCushion}
+
+      <!-- Almofadas da extensão horizontal -->
+      ${horizCushions}
+
+      <!-- Linha neon ciano contínua acompanhando o contorno interno -->
+      <path d="M ${xVertRight},${yTop + 10} L ${xVertRight},${yInner} L ${xHorizRight - 8},${yInner}" 
+            fill="none" 
+            stroke="rgba(0, 240, 255, 0.45)" 
+            stroke-width="1.8" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" />
+
+      <!-- Rótulo SOFÁ na extensão vertical -->
+      <text x="${xLeft + armW / 2}" y="${yTop + (yInner - yTop) / 2}" 
+            text-anchor="middle" 
+            transform="rotate(-90 ${xLeft + armW / 2} ${yTop + (yInner - yTop) / 2})" 
+            class="map-label-sofa">SOFÁ</text>
+
+      <!-- Rótulo SOFÁ na extensão horizontal sob a mesa -->
+      <text x="${xVertRight + horizAvailableW / 2}" y="${yInner + armH / 2 + 4}" 
+            text-anchor="middle" 
+            class="map-label-sofa">SOFÁ</text>
+    </g>
+  `;
 }
 
 /**
