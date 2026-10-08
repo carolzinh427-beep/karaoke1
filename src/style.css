@@ -5766,7 +5766,7 @@ img, video {
    15. MAPA INTERATIVO DO SALÃO PRINCIPAL (LOTAÇÃO MÁXIMA: 184 PESSOAS)
    ========================================================================== */
 .salao-mapa-section {
-  padding: 80px 0 100px;
+  padding: 36px 0 44px;
   background: radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.05) 0%, rgba(5, 7, 15, 0.98) 70%);
   position: relative;
   overflow: hidden;
@@ -5778,26 +5778,26 @@ img, video {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
   background: rgba(10, 16, 35, 0.85);
   border: 1px solid rgba(0, 240, 255, 0.3);
-  border-radius: 14px;
-  padding: 16px 22px;
-  margin-bottom: 24px;
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .mapa-headline {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .mapa-brand-tag {
   font-family: var(--font-heading);
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: #FFFFFF;
   text-transform: uppercase;
 }
@@ -5812,9 +5812,9 @@ img, video {
   gap: 6px;
   background: rgba(0, 240, 255, 0.12);
   border: 1px solid var(--primary-cyan);
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: var(--radius-pill);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: var(--primary-cyan);
@@ -5824,24 +5824,24 @@ img, video {
 .mapa-legend-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .mapa-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
+  gap: 6px;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #E2E8F0;
 }
 
 .legend-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 6px currentColor;
 }
 
 .legend-dot.green { background-color: #10B981; color: #10B981; }
@@ -5851,12 +5851,12 @@ img, video {
 .mapa-layout-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 28px;
+  gap: 16px;
 }
 
 @media (min-width: 992px) {
   .mapa-layout-grid {
-    grid-template-columns: 1.15fr 0.85fr;
+    grid-template-columns: 1.12fr 0.88fr;
   }
 }
 
@@ -6027,34 +6027,34 @@ img, video {
   border-radius: 6px;
 }
 
-/* Painel Lateral com Lista Sincronizada das Mesas */
+/* Painel Lateral com Lista Sincronizada das Mesas (Compacto) */
 .mapa-tables-list-panel {
   background: rgba(10, 16, 35, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .tables-list-scroll {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 520px;
+  gap: 6px;
+  max-height: 350px;
   overflow-y: auto;
-  padding-right: 6px;
+  padding-right: 4px;
 }
 
 .table-selection-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border: 1.2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -6062,13 +6062,13 @@ img, video {
 .table-selection-card:hover {
   background: rgba(0, 240, 255, 0.05);
   border-color: rgba(0, 240, 255, 0.3);
-  transform: translateX(4px);
+  transform: translateX(2px);
 }
 
 .table-selection-card.selected {
   background: rgba(245, 158, 11, 0.12);
   border-color: #F59E0B;
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
 }
 
 .table-selection-card.reserved {
@@ -6079,19 +6079,19 @@ img, video {
 
 .table-card-info-main strong {
   display: block;
-  font-size: 0.92rem;
+  font-size: 0.84rem;
   color: #FFFFFF;
 }
 
 .table-card-info-main span {
-  font-size: 0.76rem;
+  font-size: 0.70rem;
   color: var(--text-muted);
 }
 
 .table-card-cap-pill {
-  font-size: 0.76rem;
+  font-size: 0.70rem;
   font-weight: 800;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: var(--radius-pill);
   background: rgba(16, 185, 129, 0.15);
   color: #10B981;
