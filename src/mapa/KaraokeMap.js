@@ -68,9 +68,8 @@ export class KaraokeMap {
         <div class="kmap-toolbar">
           <div class="kmap-toolbar-left">
             <span class="kmap-live-tag">
-              <span class="kmap-live-dot"></span> PLANTA 100% INTERATIVA
+              <span class="kmap-live-dot"></span> MAPA INTERATIVO
             </span>
-            <span class="kmap-capacity-pill">Lotação Máxima: ${getTotalCapacity()} pessoas</span>
           </div>
 
           <div class="kmap-toolbar-right">
@@ -218,13 +217,13 @@ export class KaraokeMap {
         </defs>
 
         <!-- 1. PAREDES EXTERNAS E ESTRUTURA DO EDIFÍCIO -->
-        <rect x="20" y="20" width="${width - 40}" height="${height - 40}" rx="18" 
-              fill="#060914" stroke="#1E293B" stroke-width="6" />
+        <rect x="18" y="18" width="${width - 36}" height="${height - 36}" rx="14" 
+              fill="#060914" stroke="#1E293B" stroke-width="4" />
 
         <!-- 2. PISO DO SALÃO PRINCIPAL COM TEXTURA DE ARDÓSIA -->
-        <rect x="35" y="35" width="${width - 70}" height="${height - 70}" rx="14" 
+        <rect x="22" y="22" width="${width - 44}" height="${height - 44}" rx="10" 
               fill="url(#roomFloorGradient)" />
-        <rect x="35" y="35" width="${width - 70}" height="${height - 70}" rx="14" 
+        <rect x="22" y="22" width="${width - 44}" height="${height - 44}" rx="10" 
               fill="url(#floorTilePattern)" />
 
         <!-- 3. DETALHES DE AMBIENTAÇÃO / ESPAÇO XADREZ (SUPERIOR DIREITO) -->

@@ -17,7 +17,7 @@
 export const MAP_DIMENSIONS = {
   width: 1000,
   height: 1200,
-  viewBox: '0 0 1000 1200'
+  viewBox: '16 16 968 1168'
 };
 
 export const LOTACAO_MAXIMA_SALAO = 184;

@@ -5852,12 +5852,21 @@ img, video {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+  align-items: start;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 860px) {
   .mapa-layout-grid {
-    grid-template-columns: 1.12fr 0.88fr;
+    grid-template-columns: 410px 1fr;
+    gap: 18px;
+    align-items: start;
   }
+}
+
+.karaoke-map-container {
+  width: 100%;
+  max-width: 410px;
+  margin: 0 auto;
 }
 
 .mapa-visual-container {
