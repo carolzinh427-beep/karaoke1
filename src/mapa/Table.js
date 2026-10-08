@@ -278,17 +278,41 @@ function renderChairs(type, cx, cy, w, h, config) {
 
   // Cabeceiras (topo e fundo)
   if (config.top > 0) {
-    chairs += `
-      <rect x="${cx - 14}" y="${cy - halfH - 14}" width="28" height="10" rx="3" 
-            class="table-chair" fill="#121A30" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
-    `;
+    const count = config.top;
+    if (count === 1) {
+      chairs += `
+        <rect x="${cx - 14}" y="${cy - halfH - 14}" width="28" height="10" rx="3" 
+              class="table-chair" fill="#121A30" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+      `;
+    } else {
+      const spacing = (w - 20) / count;
+      for (let i = 0; i < count; i++) {
+        const chX = cx - halfW + 10 + i * spacing + (spacing - 24) / 2;
+        chairs += `
+          <rect x="${chX}" y="${cy - halfH - 14}" width="24" height="10" rx="3" 
+                class="table-chair" fill="#121A30" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+        `;
+      }
+    }
   }
 
   if (config.bottom > 0) {
-    chairs += `
-      <rect x="${cx - 14}" y="${cy + halfH + 4}" width="28" height="10" rx="3" 
-            class="table-chair" fill="#121A30" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
-    `;
+    const count = config.bottom;
+    if (count === 1) {
+      chairs += `
+        <rect x="${cx - 14}" y="${cy + halfH + 4}" width="28" height="10" rx="3" 
+              class="table-chair" fill="#121A30" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+      `;
+    } else {
+      const spacing = (w - 20) / count;
+      for (let i = 0; i < count; i++) {
+        const chX = cx - halfW + 10 + i * spacing + (spacing - 24) / 2;
+        chairs += `
+          <rect x="${chX}" y="${cy + halfH + 4}" width="24" height="10" rx="3" 
+                class="table-chair" fill="#121A30" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+        `;
+      }
+    }
   }
 
   return chairs;

@@ -144,15 +144,15 @@ export const TABLES_DATA = [
     name: 'Mesa 8',
     capacity: 14,
     type: 'lounge_horizontal',
-    x: 370,
+    x: 395,
     y: 975,
-    width: 140,
-    height: 80,
+    width: 125,
+    height: 72,
     rotation: 0,
     status: 'disponivel',
     location: 'Inferior Central / Área do Sofá',
     description: 'Mesa confortável com assentos estofados e ambiente aconchegante para grupos de até 14 pessoas.',
-    chairsConfig: { top: 4, bottom: 4, left: 3, right: 3, hasEnclosingSofa: true }
+    chairsConfig: { top: 3, left: 2, right: 0, bottom: 0, hasEnclosingSofa: true }
   },
   {
     id: 'mesa-9',
@@ -269,11 +269,13 @@ export const ARCHITECTURAL_ELEMENTS = {
     {
       id: 'sofa-enclosure-mesa-8',
       name: 'Sofá Mesa 8',
-      x: 280,
-      y: 935,
-      width: 230,
-      height: 150,
-      orientation: 'u_shape'
+      x: 365,
+      y: 905,
+      width: 150,
+      height: 175,
+      armWidth: 42,
+      armHeight: 40,
+      orientation: 'mesa8_lounge'
     },
     {
       id: 'sofa-lateral-direito',

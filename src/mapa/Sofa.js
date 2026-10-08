@@ -16,10 +16,11 @@ function renderSingleSofa(sofa) {
   switch (orientation) {
     case 'continuous_l':
       return renderContinuousLSofa(id, x, y, width, height, armWidth || 48, armHeight || 52);
+    case 'mesa8_lounge':
+    case 'u_shape':
+      return renderMesa8LoungeSofa(id, x, y, width, height, armWidth || 42, armHeight || 40);
     case 'lounge_l':
       return renderLoungeLSofa(id, x, y, width, height);
-    case 'u_shape':
-      return renderUShapeSofa(id, x, y, width, height);
     case 'vertical':
     default:
       return renderVerticalSofa(id, x, y, width, height);
@@ -226,26 +227,120 @@ function renderLoungeLSofa(id, x, y, width, height) {
 }
 
 /**
- * Sofá envolvente na área inferior (ao redor da Mesa 8)
+ * Sofá envolvente da Mesa 8 / Mesa 14:
+ * - Lado maior no lado direito da mesa (haste vertical longa)
+ * - Parte menor embaixo (haste horizontal curta)
+ * - Virado para o lado esquerdo (encosto no lado direito e fundo, assentos voltados para a mesa)
  */
-function renderUShapeSofa(id, x, y, width, height) {
+function renderMesa8LoungeSofa(id, x, y, width, height, armW, armH) {
+  const xLeft = x;
+  const xRight = x + width;
+  const xInnerRight = x + width - armW;
+  const yTop = y;
+  const yBottom = y + height;
+  const yInnerBottom = y + height - armH;
+
+  // Caminho contínuo em L no canto inferior direito
+  const pathD = `
+    M ${xInnerRight + 6},${yTop}
+    L ${xRight - 6},${yTop}
+    Q ${xRight},${yTop} ${xRight},${yTop + 6}
+    L ${xRight},${yBottom - 6}
+    Q ${xRight},${yBottom} ${xRight - 6},${yBottom}
+    L ${xLeft + 6},${yBottom}
+    Q ${xLeft},${yBottom} ${xLeft},${yBottom - 6}
+    L ${xLeft},${yInnerBottom + 6}
+    Q ${xLeft},${yInnerBottom} ${xLeft + 6},${yInnerBottom}
+    L ${xInnerRight - 6},${yInnerBottom}
+    Q ${xInnerRight},${yInnerBottom} ${xInnerRight},${yInnerBottom - 6}
+    L ${xInnerRight},${yTop + 6}
+    Q ${xInnerRight},${yTop} ${xInnerRight + 6},${yTop}
+    Z
+  `;
+
+  // Almofadas da haste vertical direita (LADO MAIOR: ~3 almofadas)
+  const vertAvailableH = (yInnerBottom - 8) - (yTop + 8);
+  const vertCount = 3;
+  const vertStep = Math.floor(vertAvailableH / vertCount);
+  const vertH = vertStep - 4;
+
+  let vertCushions = '';
+  for (let i = 0; i < vertCount; i++) {
+    const cy = yTop + 8 + i * vertStep;
+    vertCushions += `
+      <rect x="${xInnerRight + 6}" y="${cy}" width="${armW - 14}" height="${vertH}" rx="4"
+            fill="#0F172E" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+      <line x1="${xInnerRight + 9}" y1="${cy + 3}" x2="${xRight - 10}" y2="${cy + 3}"
+            stroke="rgba(255, 255, 255, 0.05)" stroke-width="1" stroke-linecap="round" />
+    `;
+  }
+
+  // Almofada do canto inferior direito
+  const cornerCushion = `
+    <rect x="${xInnerRight + 6}" y="${yInnerBottom + 6}" width="${armW - 14}" height="${armH - 12}" rx="4"
+          fill="#0F172E" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+  `;
+
+  // Almofadas da haste horizontal inferior (PARTE MENOR: 2 almofadas)
+  const horizAvailableW = (xInnerRight - 8) - (xLeft + 8);
+  const horizCount = 2;
+  const horizStep = Math.floor(horizAvailableW / horizCount);
+  const horizW = horizStep - 5;
+
+  let horizCushions = '';
+  for (let i = 0; i < horizCount; i++) {
+    const cx = xLeft + 8 + i * horizStep;
+    horizCushions += `
+      <rect x="${cx}" y="${yInnerBottom + 6}" width="${horizW}" height="${armH - 12}" rx="4"
+            fill="#0F172E" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+      <line x1="${cx + 3}" y1="${yInnerBottom + 9}" x2="${cx + horizW - 3}" y2="${yInnerBottom + 9}"
+            stroke="rgba(255, 255, 255, 0.05)" stroke-width="1" stroke-linecap="round" />
+    `;
+  }
+
   return `
     <g class="map-element map-sofa" id="${id}">
-      <!-- Encosto em formato L / U em volta da mesa 8 -->
-      <path d="M ${x + width},${y + height} L ${x},${y + height} L ${x},${y} L ${x + 40},${y} L ${x + 40},${y + height - 38} L ${x + width},${y + height - 38} Z" 
+      <!-- Sombra -->
+      <path d="${pathD}" fill="#03050B" transform="translate(3, 4)" opacity="0.8" />
+
+      <!-- Estrutura base estofada -->
+      <path d="${pathD}" 
             fill="#0A1020" 
             stroke="rgba(0, 240, 255, 0.3)" 
             stroke-width="1.4" />
 
-      <!-- Almofadas do sofá envolvente -->
-      <rect x="${x + 6}" y="${y + 8}" width="28" height="38" rx="4" fill="#0F172E" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
-      <rect x="${x + 6}" y="${y + 50}" width="28" height="44" rx="4" fill="#0F172E" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
-      <rect x="${x + 48}" y="${y + height - 32}" width="48" height="26" rx="4" fill="#0F172E" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
-      <rect x="${x + 102}" y="${y + height - 32}" width="54" height="26" rx="4" fill="#0F172E" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
-      <rect x="${x + 162}" y="${y + height - 32}" width="58" height="26" rx="4" fill="#0F172E" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+      <!-- Encosto traseiro: lado direito (virado para fora/Mesa 12) -->
+      <rect x="${xRight - 7}" y="${yTop + 2}" width="5" height="${height - 4}" rx="2" fill="#050811" />
+      <!-- Encosto traseiro: parte inferior (virado para baixo) -->
+      <rect x="${xLeft + 2}" y="${yBottom - 7}" width="${width - 4}" height="5" rx="2" fill="#050811" />
 
-      <!-- Rótulo SOFÁ -->
-      <text x="${x + 130}" y="${y + height - 14}" text-anchor="middle" class="map-label-sofa">SOFÁ</text>
+      <!-- Almofadas verticais do lado direito (LADO MAIOR) -->
+      ${vertCushions}
+
+      <!-- Almofada do canto -->
+      ${cornerCushion}
+
+      <!-- Almofadas horizontais da parte de baixo (PARTE MENOR) -->
+      ${horizCushions}
+
+      <!-- Linha neon ciano no contorno interno (virada para a mesa/lado esquerdo) -->
+      <path d="M ${xInnerRight},${yTop + 8} L ${xInnerRight},${yInnerBottom} L ${xLeft + 8},${yInnerBottom}" 
+            fill="none" 
+            stroke="rgba(0, 240, 255, 0.45)" 
+            stroke-width="1.8" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" />
+
+      <!-- Rótulo SOFÁ na parte de baixo -->
+      <text x="${xLeft + horizAvailableW / 2 + 6}" y="${yInnerBottom + armH / 2 + 4}" 
+            text-anchor="middle" 
+            class="map-label-sofa">SOFÁ</text>
+
+      <!-- Rótulo SOFÁ na extensão vertical direita -->
+      <text x="${xInnerRight + armW / 2}" y="${yTop + vertAvailableH / 2 + 8}" 
+            text-anchor="middle" 
+            transform="rotate(-90 ${xInnerRight + armW / 2} ${yTop + vertAvailableH / 2 + 8})" 
+            class="map-label-sofa">SOFÁ</text>
     </g>
   `;
 }
