@@ -89,20 +89,6 @@ export class KaraokeMap {
           <!-- Tooltip flutuante de hover sobre mesas -->
           <div class="kmap-floating-tooltip" id="kmapTooltip" style="display: none;"></div>
         </div>
-
-        <!-- PAINEL INFORMATIVO / CARD DA MESA SELECIONADA -->
-        <div class="kmap-footer-panel">
-          <div class="kmap-selected-card" id="kmapSelectedCard">
-            <div class="kselected-info">
-              <span class="kselected-badge" id="kselectedBadge">Toque em uma mesa para selecionar</span>
-              <strong class="kselected-title" id="kselectedTitle">Escolha sua Mesa na Planta</strong>
-              <span class="kselected-desc" id="kselectedDesc">Ao clicar em qualquer mesa disponível, o modal de reserva se abrirá para preenchimento.</span>
-            </div>
-            <button type="button" class="kmodal-submit-btn kselected-cta-btn" id="kselectedCtaBtn" disabled>
-              <span>Reserve sua mesa</span>
-            </button>
-          </div>
-        </div>
       </div>
     `;
   }
@@ -301,19 +287,6 @@ export class KaraokeMap {
     if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => this.setZoom(this.zoom - 0.15));
     if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => this.resetZoom());
 
-    // Botão de CTA da mesa selecionada
-    const ctaBtn = document.getElementById('kselectedCtaBtn');
-    if (ctaBtn) {
-      ctaBtn.addEventListener('click', () => {
-        if (this.selectedTableId) {
-          const table = this.tables.find(t => t.id === this.selectedTableId);
-          if (table && table.status === 'disponivel') {
-            this.modal.open(table);
-          }
-        }
-      });
-    }
-
     // Filtros de status (todas / disponíveis)
     const filterTodas = document.getElementById('kfilterTodas');
     const filterDisp = document.getElementById('kfilterDisponiveis');
@@ -378,26 +351,7 @@ export class KaraokeMap {
       }
     });
 
-    // Atualiza painel inferior
-    const table = this.tables.find(t => t.id === tableId);
-    const badge = document.getElementById('kselectedBadge');
-    const title = document.getElementById('kselectedTitle');
-    const desc = document.getElementById('kselectedDesc');
-    const ctaBtn = document.getElementById('kselectedCtaBtn');
-
-    if (table) {
-      if (badge) {
-        badge.textContent = `✓ ${table.name} Selecionada`;
-        badge.className = 'kselected-badge active';
-      }
-      if (title) title.textContent = `${table.name} • Capacidade para ${table.capacity} pessoas`;
-      if (desc) desc.textContent = `${table.location} — ${table.description}`;
-      if (ctaBtn) {
-        ctaBtn.disabled = false;
-        ctaBtn.innerHTML = `<span>Continuar Reserva para ${table.name} (${table.capacity} pessoas) →</span>`;
-      }
-    }
-
+    // Atualiza lista lateral de mesas sincronizada
     this.updateTablesList();
   }
 

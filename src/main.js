@@ -1536,20 +1536,57 @@ window.imprimirVoucher = () => {
   window.print();
 };
 
+// Função utilitária para renderização de markdown dos documentos jurídicos
+function renderLegalMarkdown(text) {
+  if (!text) return '';
+  return text
+    .split('\n\n')
+    .map(block => {
+      const trimmed = block.trim();
+      if (!trimmed) return '';
+      if (trimmed.startsWith('# ')) {
+        return `<h1 style="color: #FFFFFF; font-size: 1.35rem; margin: 0 0 12px; font-weight: 800;">${trimmed.substring(2)}</h1>`;
+      }
+      if (trimmed.startsWith('## ')) {
+        return `<h2 style="color: #FFFFFF; font-size: 1.15rem; margin: 18px 0 8px; font-weight: 700;">${trimmed.substring(3)}</h2>`;
+      }
+      if (trimmed.startsWith('### ')) {
+        return `<h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">${trimmed.substring(4)}</h3>`;
+      }
+      if (trimmed.startsWith('#### ')) {
+        return `<h4 style="color: #FFFFFF; font-size: 0.95rem; margin: 14px 0 6px; font-weight: 600;">${trimmed.substring(5)}</h4>`;
+      }
+      if (trimmed.startsWith('---')) {
+        return `<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;">`;
+      }
+      // Listas de marcadores (linhas iniciando com - ou *)
+      const lines = trimmed.split('\n');
+      if (lines.length > 1 && lines.every(line => line.trim().startsWith('- ') || line.trim().startsWith('* '))) {
+        const items = lines.map(line => {
+          const itemText = line.trim().replace(/^[-*]\s+/, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          return `<li style="margin-bottom: 6px;">${itemText}</li>`;
+        }).join('');
+        return `<ul style="padding-left: 20px; margin: 8px 0 12px; color: #CBD5E1;">${items}</ul>`;
+      }
+      // Caixa de aviso/destaque
+      if (trimmed.startsWith('> ')) {
+        const alertText = trimmed.replace(/^>\s*/gm, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return `<div class="termos-alert-box" style="margin: 12px 0;">${alertText}</div>`;
+      }
+      const formatted = trimmed
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+      return `<p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">${formatted}</p>`;
+    })
+    .join('');
+}
+
 // Visualizadores de Documentos Jurídicos Completos
 window.openTermosCompletosModal = (e) => {
   if (e && e.preventDefault) e.preventDefault();
   const body = document.getElementById('modalTermosCompletosBody');
   if (body) {
-    body.innerHTML = TERMOS_COMPRA_RESERVA
-      .split('\n\n')
-      .map(p => {
-        if (p.startsWith('# ')) return `<h1>${p.substring(2)}</h1>`;
-        if (p.startsWith('### ')) return `<h3>${p.substring(4)}</h3>`;
-        if (p.startsWith('---')) return `<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;">`;
-        return `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
-      })
-      .join('');
+    body.innerHTML = renderLegalMarkdown(TERMOS_COMPRA_RESERVA);
   }
   const modal = document.getElementById('modalTermosCompletos');
   if (modal) modal.style.display = 'flex';
@@ -1559,15 +1596,7 @@ window.openPoliticaPrivacidadeModal = (e) => {
   if (e && e.preventDefault) e.preventDefault();
   const body = document.getElementById('modalPoliticaPrivacidadeBody');
   if (body) {
-    body.innerHTML = POLITICA_PRIVACIDADE
-      .split('\n\n')
-      .map(p => {
-        if (p.startsWith('# ')) return `<h1>${p.substring(2)}</h1>`;
-        if (p.startsWith('### ')) return `<h3>${p.substring(4)}</h3>`;
-        if (p.startsWith('---')) return `<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;">`;
-        return `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
-      })
-      .join('');
+    body.innerHTML = renderLegalMarkdown(POLITICA_PRIVACIDADE);
   }
   const modal = document.getElementById('modalPoliticaPrivacidade');
   if (modal) modal.style.display = 'flex';

@@ -44,8 +44,8 @@ export const REGRAS_AMBIENTES = {
       'O titular da reserva declara expressamente ser o pai, mãe ou tutor legal com autoridade sobre os menores presentes no seu grupo.',
       'Não coletamos nem armazenamos dados pessoais de crianças no sistema, nos termos do art. 14 da LGPD (minimização e melhor interesse da criança).',
       'A capacidade máxima de ocupação estipulada para cada sala (Red: 30 pessoas; Green: 40 pessoas; Blue: 50 pessoas) deve ser rigorosamente respeitada por normas do Corpo de Bombeiros e segurança.',
-      'A reserva é confirmada mediante pagamento do sinal de 50%. Em razão do bloqueio da sala na agenda e da exclusividade do espaço, o valor do sinal não é reembolsável em caso de desistência ou não comparecimento.',
-      'O saldo remanescente de 50% é quitado diretamente na recepção no momento da entrada do grupo.',
+      'A reserva é confirmada mediante pagamento do sinal de 50%. O sinal garante a disponibilidade exclusiva do espaço. Em caso de cancelamento pelo cliente fora das hipóteses legais, o valor do sinal poderá ser retido conforme os termos da contratação.',
+      'O saldo remanescente de 50% é quitado conforme as condições informadas no momento da reserva.',
       'Danos e avarias causados aos equipamentos de som, microfones, TVs e tablets das salas serão de responsabilidade do titular contratante.'
     ]
   },
@@ -72,59 +72,158 @@ export const REGRAS_AMBIENTES = {
 export const TERMOS_COMPRA_RESERVA = `
 # TERMOS E CONDIÇÕES DE COMPRA E RESERVA — BACKSTAGE KARAOKÊ
 
-**Versão dos Termos:** ${VERSAO_DOCUMENTOS}  
-**Última Atualização:** Outubro de 2026  
+**Versão:** ${VERSAO_DOCUMENTOS}  
+**Última atualização:** Outubro de 2026  
 **Estabelecimento:** Backstage Karaokê Brasília  
 **Endereço:** CLN 307, Bloco A, Subsolo — Asa Norte, Brasília/DF  
 
 ---
 
-### 1. DO OBJETO
-1.1. O presente instrumento regula a reserva de espaços, salas privativas e ingressos para o **Backstage Karaokê Brasília**, através da sua plataforma digital.
-1.2. A conclusão da compra e/ou reserva formaliza um contrato de prestação de serviços de entretenimento e hospitalidade entre o titular da compra e o Backstage Karaokê.
+### 1. OBJETO
+
+1.1. Estes Termos e Condições regulam a contratação de reservas, utilização de salas privativas, espaços e demais serviços disponibilizados pelo Backstage Karaokê Brasília, inclusive por meio de sua plataforma digital.
+
+1.2. Ao concluir uma reserva ou compra, o cliente declara que teve acesso prévio a estes Termos, compreendeu suas condições e concorda com as regras aplicáveis à utilização do estabelecimento.
+
+1.3. A reserva somente será considerada confirmada após a identificação e confirmação do pagamento exigido para a modalidade contratada.
 
 ---
 
-### 2. CLÁUSULA DE SINAL E GARANTIA DE EXCLUSIVIDADE
-2.1. A reserva de salas privadas exige o pagamento prévio de **50% (cinquenta por cento)** do valor total a título de sinal (arras confirmatórias), nos termos do art. 417 do Código Civil Brasileiro.
-2.2. O pagamento do sinal gera o bloqueio imediato e irrevogável da data e horário selecionados, impedindo a locação para quaisquer outros grupos.
-2.3. Em decorrência da indisponibilização do espaço e dos custos de preparação da sala, **o valor de 50% pago a título de sinal NÃO É REEMBOLSÁVEL** em casos de cancelamento, desistência ou não comparecimento (*no-show*).
-2.4. O saldo remanescente de 50% deverá ser pago na recepção do estabelecimento na data agendada, antes do acesso à sala.
+### 2. RESERVA E PAGAMENTO DE SINAL
+
+2.1. Para determinadas reservas, especialmente salas privativas, poderá ser exigido pagamento antecipado correspondente a 50% (cinquenta por cento) do valor total da reserva, a título de sinal/arras, conforme as condições apresentadas no momento da contratação.
+
+2.2. O pagamento do sinal é utilizado para garantir a disponibilidade exclusiva do espaço, data e horário escolhidos pelo cliente.
+
+2.3. Após a confirmação da reserva, o estabelecimento deixa de disponibilizar aquele espaço e horário para novas reservas, assumindo compromissos de organização, preparação e disponibilidade relacionados à contratação.
+
+2.4. O saldo remanescente de 50% (cinquenta por cento), quando aplicável, deverá ser pago conforme as condições informadas no momento da reserva.
 
 ---
 
-### 3. CAPACIDADE MÁXIMA E OCUPAÇÃO
-3.1. Por razões estritas de segurança, comodidade e normas do Corpo de Bombeiros Militar do DF, cada ambiente possui capacidade máxima inegociável:
-- **Sala Red:** até 30 pessoas.
-- **Sala Green:** até 40 pessoas.
+### 3. CANCELAMENTO E REEMBOLSO
+
+3.1. As solicitações de cancelamento deverão ser realizadas pelos canais oficiais disponibilizados pelo Backstage Karaokê.
+
+3.2. Nas contratações realizadas fora do estabelecimento comercial, inclusive por meio do site, será respeitado o direito de arrependimento previsto na legislação aplicável, quando cabível.
+
+3.3. Fora das hipóteses de cancelamento e reembolso previstas em lei, quando o cancelamento ocorrer por iniciativa do cliente após a confirmação da reserva, o valor correspondente ao sinal de 50% poderá ser retido, observadas as condições da contratação e a legislação aplicável.
+
+3.4. A retenção do sinal decorre do fato de que, após a confirmação da reserva, o estabelecimento mantém aquele espaço e horário exclusivamente destinados ao cliente, deixando de disponibilizá-los a terceiros, além dos custos e compromissos relacionados à preparação do atendimento.
+
+3.5. Nesses casos, eventual restituição será parcial, limitada aos valores efetivamente reembolsáveis de acordo com estas condições e com a legislação aplicável, não significando necessariamente a devolução integral do valor inicialmente pago.
+
+3.6. O não comparecimento do cliente (no-show), sem cancelamento prévio, será tratado conforme as mesmas regras de cancelamento aplicáveis à modalidade contratada.
+
+3.7. Caso o cancelamento ocorra por responsabilidade do Backstage Karaokê, ou quando houver impossibilidade de prestação do serviço por fato imputável ao estabelecimento, serão observados os direitos do consumidor, incluindo, quando cabível, a restituição dos valores pagos ou a remarcação da reserva, conforme acordado com o cliente e a legislação aplicável.
+
+3.8. Situações excepcionais serão analisadas individualmente, especialmente nos casos de força maior ou outras circunstâncias devidamente comprovadas.
+
+---
+
+### 4. REMARCAÇÃO
+
+4.1. O cliente poderá solicitar a remarcação da reserva com antecedência mínima de 72 (setenta e duas) horas, sujeita à disponibilidade de data, horário e espaço.
+
+4.2. A remarcação não será considerada automaticamente confirmada até que o Backstage Karaokê confirme a nova data e horário.
+
+4.3. Eventuais diferenças de valores decorrentes da nova data, horário ou espaço poderão ser aplicadas, desde que previamente informadas ao cliente.
+
+---
+
+### 5. CAPACIDADE DOS ESPAÇOS
+
+5.1. Cada espaço possui capacidade máxima determinada de acordo com suas características, segurança e regras de funcionamento do estabelecimento.
+
+5.2. Os limites de ocupação deverão ser respeitados integralmente e não poderão ser ultrapassados.
+
+5.3. Atualmente, as capacidades máximas informadas para as salas são:
+- **Sala Red:** até 30 pessoas;
+- **Sala Green:** até 40 pessoas;
 - **Sala Blue:** até 50 pessoas.
-3.2. Não será admitida entrada de número de convidados superior ao limite máximo contratado.
+
+5.4. O cliente deverá informar corretamente a quantidade de pessoas no momento da reserva.
 
 ---
 
-### 4. REGRAS DE IDADE, ACESSO E CUMPRIMENTO DO ECA
-4.1. **Salão Principal:** Ambiente de convívio geral com classificação interna restrita a **maiores de 18 anos**. É obrigatória a apresentação de documento oficial com foto.
-4.2. **Salas Privadas:** É admitida a presença de menores de 18 anos nas salas privativas, **desde que sob a responsabilidade e acompanhamento presencial ininterrupto de seus pais ou responsáveis legais**.
-4.3. **Área de Sinuca e Bilhar:** Em cumprimento estrito ao **artigo 80 da Lei Federal nº 8.069/1990 (Estatuto da Criança e do Adolescente - ECA)**, é proibida a entrada e permanência de crianças e adolescentes no espaço que explore comercialmente sinuca ou bilhar, salvo com autorização da autoridade judiciária competente.
+### 6. REGRAS DE IDADE E ACESSO
+
+#### 6.1. Salão Principal
+- O Salão Principal é destinado exclusivamente a maiores de 18 anos.
+- O estabelecimento poderá solicitar documento oficial com foto para comprovação da idade.
+
+#### 6.2. Salas Privativas
+- A presença de menores de 18 anos nas salas privativas será permitida de acordo com as regras do estabelecimento e da legislação aplicável, sendo necessária a presença e responsabilidade do pai, mãe ou responsável legal quando exigida.
+- O estabelecimento poderá solicitar documentação para comprovação de identidade, idade e responsabilidade legal.
+
+#### 6.3. Área de sinuca e bilhar
+- É expressamente proibida a entrada e permanência de crianças e adolescentes na área destinada à exploração comercial de sinuca, bilhar ou atividades congêneres.
+- Essa regra decorre do art. 80 do Estatuto da Criança e do Adolescente (Lei nº 8.069/1990).
+- **AVISO IMPORTANTE:** menores de idade não podem entrar ou permanecer na área de sinuca/bilhar.
 
 ---
 
-### 5. HORÁRIOS, TOLERÂNCIA E PERMANÊNCIA
-5.1. O estabelecimento opera nos horários oficiais cadastrados (Terça a Sábado, no período noturno/madrugada).
-5.2. O grupo tem tolerância máxima de 30 (trinta) minutos para ocupar o espaço reservado.
-5.3. O encerramento do funcionamento respeitará impreterivelmente o alvará de funcionamento e horário limite do estabelecimento.
+### 7. HORÁRIOS E TOLERÂNCIA
+
+7.1. As reservas deverão respeitar os horários disponibilizados no sistema de reservas.
+
+7.2. Será concedida tolerância de até 30 (trinta) minutos para chegada e ocupação da reserva, salvo condições específicas informadas no momento da contratação.
+
+7.3. A tolerância não implica extensão automática do horário contratado.
+
+7.4. O encerramento das atividades observará os horários de funcionamento e as autorizações legais do estabelecimento.
 
 ---
 
-### 6. CUIDADOS COM EQUIPAMENTOS E INSTALAÇÕES
-6.1. As salas privadas contam com equipamentos audiovisuais de alta performance, microfones profissionais, monitores e tablets digitais.
-6.2. O contratante titular é o responsável legal pela integridade dos equipamentos disponibilizados durante o período de locação, comprometendo-se a ressarcir danos decorrentes de dolo ou mau uso.
+### 8. EQUIPAMENTOS E INSTALAÇÕES
+
+8.1. O cliente deverá utilizar adequadamente os equipamentos, móveis, instalações e demais bens disponibilizados pelo Backstage Karaokê.
+
+8.2. O responsável pela reserva poderá responder pelos danos causados por utilização inadequada, mau uso ou conduta deliberada que resulte em dano ao patrimônio do estabelecimento, observada a legislação aplicável.
 
 ---
 
-### 7. CANCELAMENTO, FORÇA MAIOR E REMARCAÇÃO
-7.1. Solicitações de remarcação de data poderão ser analisadas com antecedência mínima de 72 (setenta e duas) horas, mediante disponibilidade na agenda do Backstage Karaokê.
-7.2. O Backstage Karaokê reserva-se o direito de cancelar reservas em caso de motivos de força maior ou problemas técnicos imprevisíveis, assegurando nessa hipótese a restituição integral dos valores pagos pelo cliente ou a remarcação prioritária.
+### 9. RESPONSABILIDADE SOBRE INFORMAÇÕES DA RESERVA
+
+9.1. O titular da reserva é responsável pela veracidade dos dados fornecidos no momento da contratação.
+
+9.2. O titular deverá conferir cuidadosamente data, horário, espaço, quantidade de pessoas e demais informações antes de finalizar a reserva.
+
+9.3. A confirmação da reserva será encaminhada pelos canais disponibilizados pelo estabelecimento.
+
+---
+
+### 10. CANCELAMENTO PELO ESTABELECIMENTO
+
+10.1. Em situações excepcionais que impossibilitem a prestação do serviço, incluindo problemas técnicos graves, determinações de autoridades, situações de força maior ou outras circunstâncias alheias ao controle razoável do estabelecimento, o Backstage Karaokê poderá cancelar ou remarcar a reserva.
+
+10.2. Nesses casos, o cliente será comunicado e serão observadas as alternativas e direitos previstos na legislação aplicável, podendo ser oferecida remarcação ou restituição dos valores pagos, conforme o caso.
+
+---
+
+### 11. ACEITE DOS TERMOS
+
+11.1. Antes de concluir uma reserva ou compra pelo site, o cliente deverá ter acesso a estes Termos e manifestar sua concordância quando exigido.
+
+11.2. O aceite destes Termos não afasta nem limita os direitos assegurados ao consumidor pela legislação brasileira.
+
+---
+
+### 12. PROTEÇÃO DE DADOS
+
+12.1. Os dados pessoais fornecidos durante a reserva serão tratados de acordo com a legislação aplicável de proteção de dados e com a Política de Privacidade do Backstage Karaokê.
+
+12.2. O estabelecimento deverá disponibilizar ao cliente informações sobre a finalidade, utilização, armazenamento e demais aspectos relacionados ao tratamento de seus dados pessoais.
+
+---
+
+### 13. DISPOSIÇÕES FINAIS
+
+13.1. Estes Termos deverão ser interpretados em conjunto com a Política de Privacidade, regras de utilização dos espaços e demais informações apresentadas ao cliente no momento da contratação.
+
+13.2. Em caso de conflito entre uma disposição destes Termos e uma norma legal de proteção ao consumidor aplicável ao caso, prevalecerá a legislação vigente.
+
+13.3. O Backstage Karaokê poderá atualizar estes Termos sempre que necessário, mantendo disponível a versão vigente em seu site.
 `;
 
 /**

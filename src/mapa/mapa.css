@@ -387,55 +387,9 @@
 .ktooltip-status.reservada { color: #EF4444; }
 .ktooltip-status.indisponivel { color: #94A3B8; }
 
-/* 7. PAINEL INFERIOR DA MESA SELECIONADA */
+/* 7. PAINEL INFERIOR DA MESA SELECIONADA (REMOVIDO A PEDIDO DO USUÁRIO) */
 .kmap-footer-panel {
-  padding: 8px 14px;
-  background: rgba(8, 14, 30, 0.95);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.kmap-selected-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.kselected-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.kselected-badge {
-  font-size: 0.68rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #94A3B8;
-}
-
-.kselected-badge.active {
-  color: #F59E0B;
-}
-
-.kselected-title {
-  font-size: 0.96rem;
-  color: #FFFFFF;
-}
-
-.kselected-desc {
-  font-size: 0.74rem;
-  color: #94A3B8;
-  max-width: 500px;
-}
-
-.kselected-cta-btn {
-  white-space: nowrap;
-  padding: 8px 16px !important;
-  font-size: 0.85rem !important;
-  border-radius: 8px !important;
+  display: none !important;
 }
 
 /* 8. MODAL DE RESERVA (RESERVATION MODAL) */
