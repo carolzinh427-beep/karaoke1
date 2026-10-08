@@ -9,6 +9,7 @@ import {
   DEFAULT_CATEGORIAS,
   DEFAULT_CARDAPIO,
   DEFAULT_CONFIGURACOES,
+  DEFAULT_PROMOCOES,
   seedDatabaseIfNeeded,
 } from '../lib/catalogData.js';
 import {
@@ -80,6 +81,7 @@ const state = {
   cardapioPageSize: 12,
   galeria: [],
   activeFilterGaleria: 'todas',
+  promocoes: [...DEFAULT_PROMOCOES],
   configuracoes: { ...DEFAULT_CONFIGURACOES },
   activeFilterReservas: 'todas',
   searchTermReservas: '',
@@ -98,6 +100,7 @@ const routes = {
   '/admin/cardapio': { title: 'Cardápio', sectionId: 'cardapio' },
   '/admin/cardapio/pdf': { title: 'PDF do Cardápio', sectionId: 'cardapio-pdf' },
   '/admin/galeria': { title: 'Galeria de Mídia', sectionId: 'galeria' },
+  '/admin/promocoes': { title: 'Promoções e Destaques', sectionId: 'promocoes' },
   '/admin/configuracoes': { title: 'Configurações', sectionId: 'configuracoes' },
 };
 
@@ -222,6 +225,7 @@ onAuthStateChanged(auth, async (user) => {
       fetchCategorias(),
       fetchGaleria(),
       fetchConfiguracoes(),
+      fetchPromocoes(),
     ]);
 
     const initialRoute = window.location.pathname;
@@ -547,6 +551,47 @@ async function fetchConfiguracoes() {
   }
 }
 
+// 5.7 Promoções da Semana e Destaques da Home
+async function fetchPromocoes() {
+  // 1. Tenta do localStorage para carregamento imediato
+  try {
+    const local = localStorage.getItem('backstage_promocoes');
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed) && parsed.length >= 3) {
+        state.promocoes = parsed;
+      }
+    }
+  } catch(e) {}
+
+  // 2. Consulta Firestore
+  if (db) {
+    try {
+      const docRef = doc(db, 'configuracoes', 'promocoes');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().cards) {
+        state.promocoes = docSnap.data().cards;
+        localStorage.setItem('backstage_promocoes', JSON.stringify(state.promocoes));
+        return state.promocoes;
+      } else {
+        const gSnap = await getDoc(doc(db, 'configuracoes', 'geral'));
+        if (gSnap.exists() && gSnap.data().promocoes) {
+          state.promocoes = gSnap.data().promocoes;
+          localStorage.setItem('backstage_promocoes', JSON.stringify(state.promocoes));
+          return state.promocoes;
+        }
+      }
+    } catch (err) {
+      console.warn('Aviso Firestore promocoes:', err);
+    }
+  }
+
+  if (!state.promocoes || !state.promocoes.length) {
+    state.promocoes = JSON.parse(JSON.stringify(DEFAULT_PROMOCOES));
+  }
+  return state.promocoes;
+}
+
 // ============================================================================
 // 6. RENDERIZAÇÃO DA INTERFACE DO PAINEL
 // ============================================================================
@@ -616,6 +661,11 @@ function renderApp() {
           <button type="button" class="nav-item-btn ${state.currentRoute === '/admin/galeria' ? 'active' : ''}" onclick="window.adminNav('/admin/galeria')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <span>Galeria</span>
+          </button>
+
+          <button type="button" class="nav-item-btn ${state.currentRoute === '/admin/promocoes' ? 'active' : ''}" onclick="window.adminNav('/admin/promocoes')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>Promoções</span>
           </button>
 
           <button type="button" class="nav-item-btn ${state.currentRoute === '/admin/configuracoes' ? 'active' : ''}" onclick="window.adminNav('/admin/configuracoes')">
@@ -742,6 +792,8 @@ function renderCurrentSection() {
       return renderCardapioPdfView();
     case '/admin/galeria':
       return renderGaleriaView();
+    case '/admin/promocoes':
+      return renderPromocoesView();
     case '/admin/configuracoes':
       return renderConfiguracoesView();
     default:
@@ -1799,6 +1851,17 @@ function renderGaleriaView() {
       </div>
     </div>
 
+    <!-- Atalho Destaque para Promoções da Home -->
+    <div class="admin-card" style="margin-bottom: 24px; padding: 14px 20px; border-left: 4px solid var(--admin-magenta); background: rgba(255, 0, 122, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <strong style="color: #FFF; font-size: 0.95rem;">⭐ Cards Promocionais e Destaques da Página Inicial</strong>
+        <p style="margin: 2px 0 0; color: var(--admin-text-muted); font-size: 0.82rem;">Altere os 3 cards da home (Sábado no centro, drinks nas laterais, títulos e descrições opcionais).</p>
+      </div>
+      <button type="button" class="btn-admin btn-admin-primary btn-admin-xs" onclick="window.adminNav('/admin/promocoes')">
+        Gerenciar Promoções da Home &rarr;
+      </button>
+    </div>
+
     <!-- Filtros de Salas da Galeria -->
     <div class="admin-card" style="margin-bottom: 24px; padding: 14px 20px;">
       <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
@@ -2029,6 +2092,135 @@ function renderConfiguracoesView() {
         </div>
       </form>
     </div>
+  `;
+}
+
+// 7.10 Promoções da Semana & Destaques da Home
+function renderPromocoesView() {
+  const cards = (state.promocoes && state.promocoes.length >= 3) 
+    ? state.promocoes 
+    : [...DEFAULT_PROMOCOES];
+
+  return `
+    <div class="view-header">
+      <div class="view-headline">
+        <h2>Promoções e Destaques da Semana</h2>
+        <p>Altere as imagens, títulos e descrições dos 3 cards da página inicial. Sábado no centro e drinks nas laterais.</p>
+      </div>
+      <div class="view-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.handleResetPromocoes()">
+          Restaurar Padrão
+        </button>
+        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarPromosTop" onclick="document.getElementById('formAdminPromocoes').requestSubmit()">
+          💾 Salvar Alterações
+        </button>
+      </div>
+    </div>
+
+    <!-- Dica sobre Descrição Opcional -->
+    <div class="admin-card" style="margin-bottom: 24px; padding: 14px 20px; border-left: 4px solid var(--admin-cyan); background: rgba(0, 240, 255, 0.04);">
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="color: var(--admin-cyan); font-size: 1.3rem; line-height: 1;">💡</div>
+        <div style="font-size: 0.85rem; color: var(--admin-text-main); line-height: 1.5;">
+          <strong style="color: #FFF;">Legenda Opcional nos Cards:</strong><br>
+          Os cards laterais vêm sem descrição por padrão (destacando apenas as fotos dos drinks).
+          Se você preencher o <strong>Título</strong> ou a <strong>Descrição</strong>, a tarja de texto será exibida automaticamente por cima da foto no site.
+          Se deixar em branco, o site exibirá a <strong>foto 100% limpa</strong>, ideal para drinks, petiscos e ambiente.
+        </div>
+      </div>
+    </div>
+
+    <form id="formAdminPromocoes" onsubmit="window.handleSalvarPromocoes(event)">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px;">
+        ${cards.map((card, idx) => {
+          const isCenter = idx === 1;
+          const posLabel = idx === 0 
+            ? 'Card 1 — Lateral Esquerda (ex: Drinks)' 
+            : (idx === 1 ? 'Card 2 — Centro (Destaque Principal / Sábado)' : 'Card 3 — Lateral Direita (ex: Balde / Bebidas)');
+          const hasContent = Boolean((card.titulo && card.titulo.trim()) || (card.descricao && card.descricao.trim()));
+
+          return `
+            <div class="admin-card promo-editor-card" style="border: 1px solid ${isCenter ? 'var(--admin-magenta)' : 'var(--admin-border)'}; position: relative; background: ${isCenter ? 'linear-gradient(180deg, rgba(255, 0, 122, 0.05) 0%, rgba(13, 19, 39, 0.95) 100%)' : 'var(--admin-card-bg)'};">
+              
+              <!-- Cabeçalho do Card -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+                <div>
+                  <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; color: ${isCenter ? 'var(--admin-magenta)' : 'var(--admin-cyan)'};">
+                    ${isCenter ? '⭐ Destaque Central' : '🏷️ Lateral'}
+                  </span>
+                  <h4 style="margin: 2px 0 0; font-size: 0.95rem; font-weight: 800; color: #FFF;">${posLabel}</h4>
+                </div>
+                <div>
+                  <span id="promoBadgeStatus_${idx}" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; font-weight: 700; ${hasContent ? 'background: rgba(0, 240, 255, 0.15); color: var(--admin-cyan);' : 'background: rgba(16, 185, 129, 0.15); color: #10B981;'}">
+                    ${hasContent ? 'Com Legenda' : 'Apenas Foto'}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Prévia Visual da Imagem -->
+              <div style="position: relative; height: 180px; border-radius: 8px; overflow: hidden; margin-bottom: 14px; background: #000; border: 1px solid rgba(255,255,255,0.1);">
+                <img id="promoPreview_${idx}" src="${card.imagemUrl}" alt="Prévia" style="width: 100%; height: 100%; object-fit: cover;">
+                <div id="promoOverlayPreview_${idx}" style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 10px 12px; background: linear-gradient(180deg, transparent 0%, rgba(4,6,14,0.95) 100%); display: ${hasContent ? 'block' : 'none'};">
+                  <div id="promoTagPreview_${idx}" style="font-size: 0.65rem; color: var(--admin-cyan); font-weight: 800; text-transform: uppercase;">${card.tag || ''}</div>
+                  <div id="promoTituloPreview_${idx}" style="font-size: 0.88rem; color: #FFF; font-weight: 800;">${card.titulo || ''}</div>
+                </div>
+              </div>
+
+              <!-- Controles de Imagem -->
+              <div class="form-group" style="margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label class="form-label" style="margin: 0;">Imagem do Card</label>
+                  <label class="btn-admin btn-admin-outline btn-admin-xs" style="cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>Upload Foto</span>
+                    <input type="file" accept="image/*" style="display: none;" onchange="window.handlePromoFileUpload(event, ${idx})">
+                  </label>
+                </div>
+                <input type="text" id="promoUrl_${idx}" class="form-input" value="${card.imagemUrl || ''}" placeholder="URL ou /assets/promos/..." oninput="window.handlePromoUrlChange(${idx}, this.value)" style="font-size: 0.8rem;">
+                
+                <!-- Atalhos rápidos de fotos -->
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
+                  <span style="font-size: 0.70rem; color: var(--admin-text-muted); align-self: center; margin-right: 2px;">Atalhos:</span>
+                  <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-drinks.png')">🍹 Drinks</button>
+                  <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-sabado.jpg')">🎤 Sábado</button>
+                  <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-heineken.png')">🍻 Balde</button>
+                  <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-quinta.jpg')">🍸 Quinta</button>
+                  <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-sexta.jpg')">🍺 Sexta</button>
+                </div>
+              </div>
+
+              <!-- Tag (Opcional) -->
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" for="promoTag_${idx}">Tag / Destaque (Opcional)</label>
+                <input type="text" id="promoTag_${idx}" class="form-input" value="${card.tag || ''}" placeholder="Ex: Noite Especial, Rodada Dupla..." oninput="window.updatePromoCardPreviewLive(${idx})">
+              </div>
+
+              <!-- Título (Opcional) -->
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" for="promoTitulo_${idx}">Título (Opcional - deixe vazio para só foto)</label>
+                <input type="text" id="promoTitulo_${idx}" class="form-input" value="${card.titulo || ''}" placeholder="Ex: Sábado no Backstage" oninput="window.updatePromoCardPreviewLive(${idx})">
+              </div>
+
+              <!-- Descrição (Opcional) -->
+              <div class="form-group" style="margin-bottom: 4px;">
+                <label class="form-label" for="promoDesc_${idx}">Descrição (Opcional - deixe vazio para só foto)</label>
+                <textarea id="promoDesc_${idx}" class="form-input" rows="3" placeholder="Ex: Open de chopp das 19h às 23h..." oninput="window.updatePromoCardPreviewLive(${idx})" style="resize: vertical; font-size: 0.84rem;">${card.descricao || ''}</textarea>
+              </div>
+
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn-admin btn-admin-outline" onclick="window.handleResetPromocoes()">
+          Restaurar Padrão
+        </button>
+        <button type="submit" class="btn-admin btn-admin-primary" id="btnSalvarPromocoes">
+          💾 Salvar Alterações das Promoções
+        </button>
+      </div>
+    </form>
   `;
 }
 
@@ -3839,6 +4031,236 @@ window.handleSalvarConfiguracoes = async (e) => {
   } finally {
     if (btn) btn.disabled = false;
   }
+};
+
+// ============================================================================
+// 8.9 AÇÕES DE PROMOÇÕES E DESTAQUES DA HOME
+// ============================================================================
+async function compressImageIfNeeded(file, maxDimension = 1920, quality = 0.85) {
+  if (!file || !file.type.startsWith('image/')) return file;
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let width = img.naturalWidth || img.width;
+      let height = img.naturalHeight || img.height;
+      if (width <= maxDimension && height <= maxDimension && file.size < 1.5 * 1024 * 1024) {
+        return resolve(file);
+      }
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        if (!blob) return resolve(file);
+        const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), {
+          type: 'image/webp',
+          lastModified: Date.now()
+        });
+        resolve(compressedFile);
+      }, 'image/webp', quality);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
+window.handlePromoUrlChange = (idx, value) => {
+  const preview = document.getElementById(`promoPreview_${idx}`);
+  if (preview && value) {
+    preview.src = value;
+  }
+};
+
+window.setPromoPreset = (idx, url) => {
+  const urlInput = document.getElementById(`promoUrl_${idx}`);
+  const preview = document.getElementById(`promoPreview_${idx}`);
+  if (urlInput) urlInput.value = url;
+  if (preview) preview.src = url;
+  window.updatePromoCardPreviewLive(idx);
+};
+
+window.updatePromoCardPreviewLive = (idx) => {
+  const tagVal = document.getElementById(`promoTag_${idx}`)?.value || '';
+  const titleVal = document.getElementById(`promoTitulo_${idx}`)?.value || '';
+  const descVal = document.getElementById(`promoDesc_${idx}`)?.value || '';
+  const hasText = Boolean(titleVal.trim() || descVal.trim());
+
+  const overlay = document.getElementById(`promoOverlayPreview_${idx}`);
+  const tagEl = document.getElementById(`promoTagPreview_${idx}`);
+  const titEl = document.getElementById(`promoTituloPreview_${idx}`);
+  const badge = document.getElementById(`promoBadgeStatus_${idx}`);
+
+  if (overlay) overlay.style.display = hasText ? 'block' : 'none';
+  if (tagEl) tagEl.textContent = tagVal;
+  if (titEl) titEl.textContent = titleVal;
+
+  if (badge) {
+    if (hasText) {
+      badge.textContent = 'Com Legenda';
+      badge.style.background = 'rgba(0, 240, 255, 0.15)';
+      badge.style.color = 'var(--admin-cyan)';
+    } else {
+      badge.textContent = 'Apenas Foto';
+      badge.style.background = 'rgba(16, 185, 129, 0.15)';
+      badge.style.color = '#10B981';
+    }
+  }
+};
+
+window.handlePromoFileUpload = async (event, idx) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const val = validateMediaFile(file, 'imagem');
+  if (!val.ok) {
+    alert(val.error);
+    return;
+  }
+
+  showToast(`Enviando foto para o Card ${idx + 1}...`, 'info');
+
+  try {
+    let finalUrl = '';
+    let fileToUpload = file;
+    try {
+      fileToUpload = await compressImageIfNeeded(file, 2048, 0.85);
+    } catch(e) {}
+
+    if (isSupabaseConfigured) {
+      const sRes = await uploadFileSupabaseStorage({
+        file: fileToUpload,
+        folder: 'promocoes',
+        tipo: 'imagem'
+      });
+      finalUrl = sRes.url;
+    } else {
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        const cRes = await uploadToCloudinary({
+          file: fileToUpload,
+          folder: 'backstage/promocoes',
+          idToken
+        });
+        finalUrl = cRes.url;
+      } catch(cErr) {
+        // Fallback Base64 FileReader
+        finalUrl = await new Promise((res, rej) => {
+          const reader = new FileReader();
+          reader.onload = () => res(reader.result);
+          reader.onerror = rej;
+          reader.readAsDataURL(fileToUpload);
+        });
+      }
+    }
+
+    const urlInput = document.getElementById(`promoUrl_${idx}`);
+    const preview = document.getElementById(`promoPreview_${idx}`);
+    if (urlInput) urlInput.value = finalUrl;
+    if (preview) preview.src = finalUrl;
+
+    window.updatePromoCardPreviewLive(idx);
+    showToast(`Foto do Card ${idx + 1} enviada com sucesso! Clique em "Salvar" para confirmar.`, 'success');
+  } catch (err) {
+    console.error('Erro no upload da foto:', err);
+    showToast('Falha no upload da foto: ' + err.message, 'error');
+  }
+};
+
+window.handleSalvarPromocoes = async (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  const btn = document.getElementById('btnSalvarPromocoes');
+  const btnTop = document.getElementById('btnSalvarPromosTop');
+  if (btn) btn.disabled = true;
+  if (btnTop) btnTop.disabled = true;
+
+  try {
+    const updatedCards = [0, 1, 2].map(idx => {
+      const imagemUrl = document.getElementById(`promoUrl_${idx}`)?.value?.trim() || '';
+      const tag = document.getElementById(`promoTag_${idx}`)?.value?.trim() || '';
+      const titulo = document.getElementById(`promoTitulo_${idx}`)?.value?.trim() || '';
+      const descricao = document.getElementById(`promoDesc_${idx}`)?.value?.trim() || '';
+      const base = state.promocoes[idx] || DEFAULT_PROMOCOES[idx] || {};
+
+      return {
+        ...base,
+        id: `promo-${idx + 1}`,
+        posicao: idx === 0 ? 'esquerda' : (idx === 1 ? 'centro' : 'direita'),
+        label: idx === 0 ? 'Lateral Esquerda' : (idx === 1 ? 'Centro (Destaque Principal / Sábado)' : 'Lateral Direita'),
+        imagemUrl: imagemUrl || base.imagemUrl || '/assets/promos/promo-drinks.png',
+        tag,
+        titulo,
+        descricao,
+        atualizadoEm: new Date().toISOString()
+      };
+    });
+
+    state.promocoes = updatedCards;
+    localStorage.setItem('backstage_promocoes', JSON.stringify(updatedCards));
+
+    // Salva no Firestore
+    if (db) {
+      try {
+        await setDoc(doc(db, 'configuracoes', 'promocoes'), {
+          cards: updatedCards,
+          atualizadoEm: serverTimestamp()
+        }, { merge: true });
+        
+        await setDoc(doc(db, 'configuracoes', 'geral'), {
+          promocoes: updatedCards,
+          atualizadoEm: serverTimestamp()
+        }, { merge: true });
+      } catch(dbErr) {
+        console.warn('Aviso ao salvar promoções no Firestore:', dbErr);
+      }
+    }
+
+    showToast('Promoções da home salvas e publicadas com sucesso!', 'success');
+    renderApp();
+  } catch (err) {
+    console.error('Erro ao salvar promoções:', err);
+    showToast('Erro ao salvar promoções: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnTop) btnTop.disabled = false;
+  }
+};
+
+window.handleResetPromocoes = () => {
+  showConfirmModal({
+    title: 'Restaurar Promoções Padrão',
+    message: 'Deseja realmente voltar os 3 cards para o modelo padrão (Sábado no meio e drinks nas laterais sem legenda)?',
+    confirmText: 'Restaurar Agora',
+    confirmBtnClass: 'btn-admin-danger',
+    onConfirm: async () => {
+      state.promocoes = JSON.parse(JSON.stringify(DEFAULT_PROMOCOES));
+      localStorage.setItem('backstage_promocoes', JSON.stringify(state.promocoes));
+      if (db) {
+        try {
+          await setDoc(doc(db, 'configuracoes', 'promocoes'), {
+            cards: state.promocoes,
+            atualizadoEm: serverTimestamp()
+          }, { merge: true });
+        } catch(e) {}
+      }
+      showToast('Cards restaurados para o padrão oficial.', 'info');
+      renderApp();
+    }
+  });
 };
 
 // ============================================================================

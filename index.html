@@ -886,38 +886,25 @@
           </p>
         </div>
 
-        <div class="gallery-grid promo-grid-3">
-          <!-- Promoção 1: Quinta-feira -->
-          <div class="gallery-card promo-card">
-            <img src="/assets/promos/promo-quinta.jpg" alt="Promoção de Quinta-feira no Backstage Karaokê" loading="lazy">
-            <div class="promo-badge-day">Quinta-feira</div>
-            <div class="gallery-caption promo-caption">
-              <span class="caption-tag">Rodada Dupla</span>
-              <span class="caption-title">Quinta dos Drinks & Caipirinhas</span>
-              <p class="promo-desc">Caipirinha em dobro e drinks autorais selecionados até as 22h para abrir a noite com o melhor som!</p>
-            </div>
+        <div class="gallery-grid promo-grid-3" id="promoCardsContainer">
+          <!-- Card 1: Lateral Esquerda (Drinks autorais - sem descrição por padrão) -->
+          <div class="gallery-card promo-card" id="promoCard1" data-slot="0">
+            <img src="/assets/promos/promo-drinks.png" alt="Drinks e Coquetéis no Backstage Karaokê" loading="lazy">
           </div>
 
-          <!-- Promoção 2: Sexta-feira -->
-          <div class="gallery-card promo-card">
-            <img src="/assets/promos/promo-sexta.jpg" alt="Promoção de Sexta-feira no Backstage Karaokê" loading="lazy">
-            <div class="promo-badge-day hot">Sexta-feira</div>
-            <div class="gallery-caption promo-caption">
-              <span class="caption-tag">Chopp Trincando</span>
-              <span class="caption-title">Sexta do Chopp & Balde Gelado</span>
-              <p class="promo-desc">Chopp Stone House a R$ 9,99 na caneca ultracongelada e balde de Long Neck com desconto para a turma toda!</p>
-            </div>
-          </div>
-
-          <!-- Promoção 3: Sábado -->
-          <div class="gallery-card promo-card">
+          <!-- Card 2: Centro (Sábado - Destaque Principal) -->
+          <div class="gallery-card promo-card" id="promoCard2" data-slot="1">
             <img src="/assets/promos/promo-sabado.jpg" alt="Promoção de Sábado no Backstage Karaokê" loading="lazy">
-            <div class="promo-badge-day vip">Sábado</div>
             <div class="gallery-caption promo-caption">
               <span class="caption-tag">Noite Especial</span>
-              <span class="caption-title">Sábado da Galera & Combos</span>
+              <span class="caption-title">Sábado no Backstage</span>
               <p class="promo-desc">Combos especiais com petiscos, Gin Tropical e palco aberto até 3h30 da manhã para comemorar sem hora para acabar!</p>
             </div>
+          </div>
+
+          <!-- Card 3: Lateral Direita (Balde Heineken - sem descrição por padrão) -->
+          <div class="gallery-card promo-card" id="promoCard3" data-slot="2">
+            <img src="/assets/promos/promo-heineken.png" alt="Balde de Long Neck Gelada no Backstage Karaokê" loading="lazy">
           </div>
         </div>
 

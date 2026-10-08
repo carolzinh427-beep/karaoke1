@@ -93,6 +93,7 @@ function bootstrap() {
   try { initMapaSalaoPrincipal(); } catch(e) { console.warn('initMapaSalaoPrincipal error:', e); }
   try { handleInitialHashNavigation(); } catch(e) { console.warn('handleInitialHashNavigation error:', e); }
   try { initSalasGallery(); } catch(e) { console.warn('initSalasGallery error:', e); }
+  try { syncPromocoesCards(); } catch(e) { console.warn('syncPromocoesCards error:', e); }
   try { loadPublicDataFromFirestore(); } catch(e) { console.warn('loadPublicDataFromFirestore error:', e); }
 }
 
@@ -1840,6 +1841,100 @@ window.closeRoomLightbox = (e) => {
     setTimeout(() => { modal.style.display = 'none'; }, 250);
   }
 };
+
+// ============================================================================
+// 10.1 SINCRONIZAÇÃO DAS PROMOÇÕES & DESTAQUES DA HOME
+// ============================================================================
+export function syncPromocoesCards() {
+  const container = document.getElementById('promoCardsContainer');
+  if (!container) return;
+
+  // 1. Tenta carregar do localStorage imediatamente (sem delay de rede)
+  let cards = null;
+  try {
+    const raw = localStorage.getItem('backstage_promocoes');
+    if (raw) {
+      cards = JSON.parse(raw);
+    }
+  } catch(e) {}
+
+  if (cards && Array.isArray(cards) && cards.length >= 3) {
+    applyPromocoesCards(cards);
+  }
+
+  // 2. Consulta Firestore de forma assíncrona para atualizações remotas
+  if (db) {
+    getDoc(doc(db, 'configuracoes', 'promocoes'))
+      .then(snap => {
+        if (snap.exists() && snap.data()?.cards) {
+          const remoteCards = snap.data().cards;
+          localStorage.setItem('backstage_promocoes', JSON.stringify(remoteCards));
+          applyPromocoesCards(remoteCards);
+        } else {
+          // Fallback em configuracoes/geral
+          getDoc(doc(db, 'configuracoes', 'geral'))
+            .then(gSnap => {
+              if (gSnap.exists() && gSnap.data()?.promocoes) {
+                const remoteCards = gSnap.data().promocoes;
+                localStorage.setItem('backstage_promocoes', JSON.stringify(remoteCards));
+                applyPromocoesCards(remoteCards);
+              }
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(err => {
+        console.warn('Sync promocoes Firestore:', err);
+      });
+  }
+}
+
+function applyPromocoesCards(cards) {
+  const cardElements = [
+    document.getElementById('promoCard1'),
+    document.getElementById('promoCard2'),
+    document.getElementById('promoCard3')
+  ];
+
+  cards.forEach((cardData, idx) => {
+    const el = cardElements[idx];
+    if (!el || !cardData) return;
+
+    const imgEl = el.querySelector('img');
+    if (imgEl && cardData.imagemUrl) {
+      imgEl.src = cardData.imagemUrl;
+      imgEl.alt = cardData.titulo || cardData.label || 'Destaque Backstage Karaokê';
+    }
+
+    // Gerencia a legenda (caption)
+    const oldCaption = el.querySelector('.gallery-caption');
+    const hasText = Boolean(
+      (cardData.titulo && cardData.titulo.trim()) ||
+      (cardData.descricao && cardData.descricao.trim())
+    );
+
+    if (hasText) {
+      const tagHtml = cardData.tag && cardData.tag.trim() ? `<span class="caption-tag">${cardData.tag.trim()}</span>` : '';
+      const titleHtml = cardData.titulo && cardData.titulo.trim() ? `<span class="caption-title">${cardData.titulo.trim()}</span>` : '';
+      const descHtml = cardData.descricao && cardData.descricao.trim() ? `<p class="promo-desc">${cardData.descricao.trim()}</p>` : '';
+
+      if (oldCaption) {
+        oldCaption.innerHTML = `${tagHtml}${titleHtml}${descHtml}`;
+        oldCaption.style.display = 'flex';
+      } else {
+        const caption = document.createElement('div');
+        caption.className = 'gallery-caption promo-caption';
+        caption.innerHTML = `${tagHtml}${titleHtml}${descHtml}`;
+        el.appendChild(caption);
+      }
+    } else {
+      // Se não houver título nem descrição, remove a legenda para a foto ficar 100% limpa!
+      if (oldCaption) {
+        oldCaption.remove();
+      }
+    }
+  });
+}
 
 /**
  * Sincroniza dados oficiais (Supabase com fallback para Firestore) para o site público em tempo real

@@ -262,9 +262,57 @@ export async function seedDatabaseIfNeeded(db) {
       console.warn('Erro ao verificar/popular configurações:', err);
     }
 
+    // 5. Promoções e Destaques da Home
+    try {
+      const docPromos = await getDoc(doc(db, 'configuracoes', 'promocoes'));
+      if (!docPromos.exists()) {
+        console.log('Populando promoções e destaques padrão...');
+        await setDoc(doc(db, 'configuracoes', 'promocoes'), {
+          cards: DEFAULT_PROMOCOES,
+          criadoEm: new Date().toISOString()
+        });
+      }
+    } catch(err) {
+      console.warn('Erro ao verificar/popular promoções:', err);
+    }
+
     return true;
   } catch(e) {
     console.warn('Aviso no processo de seed do Firestore:', e);
     return false;
   }
 }
+
+export const DEFAULT_PROMOCOES = [
+  {
+    id: 'promo-1',
+    posicao: 'esquerda',
+    label: 'Lateral Esquerda',
+    imagemUrl: '/assets/promos/promo-drinks.png',
+    imagemPublicId: null,
+    tag: '',
+    titulo: '',
+    descricao: ''
+  },
+  {
+    id: 'promo-2',
+    posicao: 'centro',
+    label: 'Centro (Destaque Principal / Sábado)',
+    imagemUrl: '/assets/promos/promo-sabado.jpg',
+    imagemPublicId: null,
+    tag: 'Noite Especial',
+    titulo: 'Sábado no Backstage',
+    descricao: 'Combos especiais com petiscos, Gin Tropical e palco aberto até 3h30 da manhã para comemorar sem hora para acabar!'
+  },
+  {
+    id: 'promo-3',
+    posicao: 'direita',
+    label: 'Lateral Direita',
+    imagemUrl: '/assets/promos/promo-heineken.png',
+    imagemPublicId: null,
+    tag: '',
+    titulo: '',
+    descricao: ''
+  }
+];
+
