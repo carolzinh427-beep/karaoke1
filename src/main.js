@@ -2,6 +2,7 @@
  * Backstage Karaokê - Interactive Application Script
  */
 
+import { initKaraokeMap } from './mapa/KaraokeMap.js';
 import { salvarAgendamento, db } from './lib/firebase.js';
 import { collection, getDocs, doc, getDoc, query, orderBy } from 'firebase/firestore';
 import { 
@@ -848,18 +849,18 @@ window.confirmRoomFromPopup = () => {
 
 
 
-// Inicializa Mapa e Hotspots
+// Inicializa Mapa 2D Vetorial Interativo do Salão Principal
 export function initMapaSalaoPrincipal() {
-  renderHotspotsNoMapa();
-  renderListaMesasNaPagina();
-  renderListaMesasNoModal();
+  const container = document.getElementById('karaokeMapMount');
+  if (container) {
+    initKaraokeMap('karaokeMapMount');
+  }
   carregarReservasOcupadas();
 }
 
 async function carregarReservasOcupadas() {
   try {
     if (isSupabaseConfigured) {
-      // Import dinâmico ou consulta simples via supabase
       const { data, error } = await (await import('./lib/supabase.js')).getReservasSupabase();
       if (!error && Array.isArray(data)) {
         reservasOcupadas = data.filter(r => (r.status || '').toUpperCase() !== 'CANCELLED');
@@ -886,170 +887,35 @@ function isMesaReservada(mesaId, dataStr, horarioStr) {
 }
 
 function renderHotspotsNoMapa() {
-  const container = document.getElementById('mapaHotspotsContainer');
-  if (!container) return;
-
-  container.innerHTML = '';
-  MESAS_SALAO.forEach(mesa => {
-    const cord = mesa.cordMap;
-    const isSelected = mesa.id === selectedMesaId;
-    const hotspot = document.createElement('div');
-    hotspot.className = `mapa-table-hotspot ${isSelected ? 'selected' : 'available'}`;
-    hotspot.id = `hotspot_${mesa.id}`;
-    hotspot.style.top = `${cord.top}%`;
-    hotspot.style.left = `${cord.left}%`;
-    hotspot.style.width = `${cord.width}%`;
-    hotspot.style.height = `${cord.height}%`;
-    hotspot.title = `Clique para reservar: ${mesa.nomeExibicao} (${mesa.rotuloCapacidade})`;
-    hotspot.setAttribute('role', 'button');
-    hotspot.setAttribute('tabindex', '0');
-    hotspot.setAttribute('aria-label', `Reservar ${mesa.nomeExibicao}`);
-
-    hotspot.innerHTML = `
-      <div class="table-plate-overlay">
-        <span class="plate-title-text">${mesa.nomeExibicao}</span>
-        <span class="plate-action-hint" id="actionHint_${mesa.id}">
-          ${isSelected ? '✓ Selecionada' : 'Disponível • Reservar'}
-        </span>
-      </div>
-    `;
-
-    hotspot.addEventListener('click', (e) => {
-      e.stopPropagation();
-      window.selecionarMesaNoMapa(mesa.id, true);
-    });
-
-    hotspot.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        window.selecionarMesaNoMapa(mesa.id, true);
-      }
-    });
-
-    container.appendChild(hotspot);
-  });
-
-  // Alias interativo para a mesa quadrada (marcada como 22 no desenho - vincula à Mesa para 22 pessoas)
-  const squareAlias = document.createElement('div');
-  const is22Selected = selectedMesaId === 'mesa-22';
-  squareAlias.className = `mapa-table-hotspot square-alias ${is22Selected ? 'selected' : 'available'}`;
-  squareAlias.id = 'hotspot_mesa-22-square';
-  squareAlias.style.top = '58.8%';
-  squareAlias.style.left = '66.5%';
-  squareAlias.style.width = '8.1%';
-  squareAlias.style.height = '7.0%';
-  squareAlias.title = 'Clique para reservar: Mesa para 22 pessoas';
-  squareAlias.setAttribute('role', 'button');
-  squareAlias.setAttribute('tabindex', '0');
-  squareAlias.setAttribute('aria-label', 'Reservar Mesa para 22 pessoas');
-  squareAlias.innerHTML = `
-    <div class="table-plate-overlay compact">
-      <span class="plate-title-text">Mesa para 22 pessoas</span>
-      <span class="plate-action-hint" id="actionHint_mesa-22-square">
-        ${is22Selected ? '✓ Selecionada' : 'Reservar'}
-      </span>
-    </div>
-  `;
-  squareAlias.addEventListener('click', (e) => {
-    e.stopPropagation();
-    window.selecionarMesaNoMapa('mesa-22', true);
-  });
-  squareAlias.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      window.selecionarMesaNoMapa('mesa-22', true);
-    }
-  });
-  container.appendChild(squareAlias);
+  // Substituído pelo novo componente vetorial 2D (KaraokeMap)
 }
 
 function renderListaMesasNaPagina() {
-  const container = document.getElementById('mapaTablesListScroll');
-  if (!container) return;
-
-  container.innerHTML = MESAS_SALAO.map(mesa => `
-    <div class="table-selection-card ${mesa.id === selectedMesaId ? 'selected' : ''}" 
-         id="pageCard_${mesa.id}" 
-         role="button"
-         tabindex="0"
-         onclick="window.selecionarMesaNoMapa('${mesa.id}', true)">
-      <div class="table-card-info-main">
-        <strong>${mesa.nomeExibicao}</strong>
-        <span>${mesa.localizacao} ${mesa.esticada ? '• Comprida/Esticada' : mesa.comprida ? '• Comprida' : ''}</span>
-      </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <div class="table-card-cap-pill">${mesa.rotuloCapacidade}</div>
-        <button type="button" class="btn btn-primary btn-xs table-quick-book-btn" onclick="event.stopPropagation(); window.selecionarMesaNoMapa('${mesa.id}', true)">
-          Reservar
-        </button>
-      </div>
-    </div>
-  `).join('');
+  if (window.karaokeMapInstance) {
+    window.karaokeMapInstance.updateTablesList();
+  }
 }
 
 function renderListaMesasNoModal() {
-  const container = document.getElementById('modalTablesListScroll');
-  if (!container) return;
-
-  container.innerHTML = MESAS_SALAO.map(mesa => `
-    <div class="table-selection-card ${mesa.id === selectedMesaId ? 'selected' : ''}" 
-         id="modalCard_${mesa.id}" 
-         role="button"
-         tabindex="0"
-         onclick="window.selecionarMesaNoMapa('${mesa.id}', false)">
-      <div class="table-card-info-main">
-        <strong>${mesa.nomeExibicao}</strong>
-        <span>${mesa.descricao}</span>
-      </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <div class="table-card-cap-pill">${mesa.rotuloCapacidade}</div>
-        <span class="btn btn-outline btn-xs" style="pointer-events: none;">Escolher</span>
-      </div>
-    </div>
-  `).join('');
+  // Modal antigo opcional
 }
 
 function atualizarStatusMesasNoMapa() {
-  MESAS_SALAO.forEach(mesa => {
-    const hs = document.getElementById(`hotspot_${mesa.id}`);
-    const pc = document.getElementById(`pageCard_${mesa.id}`);
-    const mc = document.getElementById(`modalCard_${mesa.id}`);
-    const actionHint = document.getElementById(`actionHint_${mesa.id}`);
-    const isSelected = mesa.id === selectedMesaId;
-
-    if (hs) {
-      hs.classList.remove('available', 'selected', 'reserved');
-      hs.classList.add(isSelected ? 'selected' : 'available');
-    }
-    if (actionHint) {
-      actionHint.textContent = isSelected ? '✓ Selecionada' : 'Disponível • Reservar';
-    }
-    if (pc) {
-      pc.classList.toggle('selected', isSelected);
-    }
-    if (mc) {
-      mc.classList.toggle('selected', isSelected);
-    }
-  });
-
-  const aliasHs = document.getElementById('hotspot_mesa-22-square');
-  const aliasHint = document.getElementById('actionHint_mesa-22-square');
-  if (aliasHs) {
-    const is22 = selectedMesaId === 'mesa-22';
-    aliasHs.classList.remove('available', 'selected');
-    aliasHs.classList.add(is22 ? 'selected' : 'available');
-    if (aliasHint) {
-      aliasHint.textContent = is22 ? '✓ Selecionada' : 'Reservar';
-    }
+  if (window.karaokeMapInstance) {
+    window.karaokeMapInstance.updateTablesList();
   }
 }
 
 // ----------------------------------------------------------------------------
-// FLUXO DE 9 PASSOS
+// FLUXO DE SELEÇÃO E RESERVA DE MESA
 // ----------------------------------------------------------------------------
 
 // 1. Cliente clica na mesa desejada no mapa
 window.selecionarMesaNoMapa = (mesaId, isFromPageMap = false) => {
+  if (window.karaokeMapInstance) {
+    window.karaokeMapInstance.handleTableClick(mesaId);
+    return;
+  }
   const mesa = getMesaById(mesaId);
   if (!mesa) return;
 

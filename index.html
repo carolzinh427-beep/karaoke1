@@ -865,19 +865,9 @@
 
         <!-- Grade com o Mapa Gráfico Interativo e Lista Sincronizada -->
         <div class="mapa-layout-grid">
-          <!-- Coluna 1: Imagem Oficial da Planta com Hotspots Clicáveis -->
-          <div class="mapa-visual-container">
-            <img src="/assets/brand/mapa-salao-principal.jpg" 
-                 alt="Mapa e Planta do Salão Principal do Backstage Karaokê com Lotação Máxima de 184 pessoas" 
-                 class="mapa-img-element"
-                 width="800" 
-                 height="1000"
-                 loading="eager">
-
-            <!-- Camada de Hotspots Interativos das Mesas -->
-            <div class="mapa-hotspot-layer" id="mapaHotspotsContainer">
-              <!-- Renderizado dinamicamente via Script / Inicializado no carregamento -->
-            </div>
+          <!-- Coluna 1: Planta 2D Vetorial Interativa (SVG & CSS Puro) -->
+          <div class="karaoke-map-container" id="karaokeMapMount">
+            <!-- Renderizado dinamicamente pelo componente KaraokeMap -->
           </div>
 
           <!-- Coluna 2: Informações e Lista de Mesas (Ordem do Mapa / Capacidades) -->

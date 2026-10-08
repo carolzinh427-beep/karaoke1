@@ -1,0 +1,749 @@
+/**
+ * ==============================================================================
+ * BACKSTAGE KARAOKÊ — ESTILOS DO MAPA 2D INTERATIVO & MODAL DE RESERVA
+ * ==============================================================================
+ */
+
+/* 1. CONTAINER E VIEWPORT DO MAPA */
+.kmap-wrapper {
+  display: flex;
+  flex-direction: column;
+  background: #04060E;
+  border: 1.5px solid rgba(0, 240, 255, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 240, 255, 0.12);
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+}
+
+/* 2. BARRA DE FERRAMENTAS / TOOLBAR */
+.kmap-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 20px;
+  background: rgba(10, 16, 35, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 20;
+}
+
+.kmap-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.kmap-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #00F0FF;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.kmap-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+  animation: kmapPulseDot 1.8s infinite;
+}
+
+@keyframes kmapPulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.kmap-capacity-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted, #94A3B8);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.kmap-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kmap-filter-group {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.kmap-filter-btn {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kmap-filter-btn:hover {
+  color: #FFFFFF;
+}
+
+.kmap-filter-btn.active {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00F0FF;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+}
+
+.kmap-zoom-controls {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.kmap-zoom-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #FFFFFF;
+  font-size: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kmap-zoom-btn:hover {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: #00F0FF;
+  color: #00F0FF;
+}
+
+/* 3. VIEWPORT DO MAPA (PAN & ZOOM) */
+.kmap-viewport {
+  position: relative;
+  width: 100%;
+  height: 680px;
+  background: #04060E;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.kmap-pan-layer {
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+  transition: transform 0.08s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kmap-svg {
+  width: 100%;
+  height: 100%;
+  max-width: 1000px;
+  max-height: 1200px;
+  display: block;
+}
+
+/* Dica de navegação touch para celular */
+.kmap-touch-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(4, 8, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: #94A3B8;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+/* 4. ESTILOS INTERATIVOS DAS MESAS NO SVG */
+.map-table-item {
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), filter 0.28s ease;
+  transform-origin: center center;
+}
+
+.map-table-item .table-surface {
+  transition: stroke 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease;
+}
+
+.map-table-item .table-chair {
+  transition: fill 0.25s ease, stroke 0.25s ease;
+}
+
+/* Estado DISPONÍVEL - Hover */
+.map-table-item.disponivel:hover {
+  transform: translateY(-3px) scale(1.04);
+}
+
+.map-table-item.disponivel:hover .table-surface {
+  stroke: #00F0FF !important;
+  stroke-width: 2.5 !important;
+  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.8));
+}
+
+.map-table-item.disponivel:hover .table-chair {
+  stroke: #00F0FF;
+  fill: #1B294B;
+}
+
+.map-table-item.disponivel:hover .table-cap-indicator rect,
+.map-table-item.disponivel:hover .table-cap-indicator circle {
+  border-color: #00F0FF;
+  stroke: #00F0FF;
+}
+
+/* Estado SELECIONADA - Efeito Neon Âmbar / Dourado + Elevação */
+.map-table-item.selecionada {
+  transform: translateY(-5px) scale(1.06);
+}
+
+.map-table-item.selecionada .table-surface {
+  stroke: #F59E0B !important;
+  stroke-width: 3.2 !important;
+  filter: drop-shadow(0 0 24px #F59E0B) drop-shadow(0 8px 16px rgba(0,0,0,0.9));
+  animation: kmapPulseSelected 1.6s infinite ease-in-out;
+}
+
+.map-table-item.selecionada .table-chair {
+  stroke: #F59E0B;
+  fill: #3B2A05;
+}
+
+.map-table-item.selecionada .table-cap-indicator rect,
+.map-table-item.selecionada .table-cap-indicator circle {
+  stroke: #F59E0B;
+  fill: #1E1504;
+}
+
+.map-table-item.selecionada .map-table-cap-text {
+  fill: #FDE68A !important;
+  font-weight: 900;
+}
+
+@keyframes kmapPulseSelected {
+  0%, 100% { filter: drop-shadow(0 0 16px #F59E0B) drop-shadow(0 8px 16px rgba(0,0,0,0.8)); }
+  50% { filter: drop-shadow(0 0 28px #F59E0B) drop-shadow(0 0 10px #FFF); }
+}
+
+/* Estado RESERVADA - Aparência desabilitada */
+.map-table-item.reservada {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
+
+.map-table-item.reservada .table-surface {
+  stroke: #EF4444;
+  fill: #171015;
+}
+
+/* Estado INDISPONÍVEL - Aparência desabilitada */
+.map-table-item.indisponivel {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+/* 5. TIPOGRAFIA DOS RÓTULOS ARQUITETÔNICOS NO SVG */
+.map-label-stage-title {
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 900;
+  fill: #FFFFFF;
+  letter-spacing: 2px;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.8);
+}
+
+.map-label-stage-sub {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  fill: #C084FC;
+  letter-spacing: 3px;
+}
+
+.map-label-dj-title {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  fill: #00F0FF;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.7);
+}
+
+.map-label-xadrez-title {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  fill: #F59E0B;
+  letter-spacing: 2.5px;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.map-label-bar-letter {
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 900;
+  fill: #00F0FF;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+}
+
+.map-label-sofa {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  fill: #475569;
+  letter-spacing: 3px;
+}
+
+.map-label-entrance {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  fill: #00F0FF;
+  letter-spacing: 2px;
+}
+
+.map-label-led {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  fill: #38BDF8;
+  letter-spacing: 2px;
+  opacity: 0.8;
+}
+
+.map-table-cap-text {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  fill: #FFFFFF;
+}
+
+/* 6. TOOLTIP FLUTUANTE */
+.kmap-floating-tooltip {
+  position: absolute;
+  background: rgba(6, 12, 26, 0.96);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 0 15px rgba(0, 240, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  color: #FFFFFF;
+  pointer-events: none;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+}
+
+.ktooltip-status {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.5px;
+}
+.ktooltip-status.disponivel { color: #10B981; }
+.ktooltip-status.selecionada { color: #F59E0B; }
+.ktooltip-status.reservada { color: #EF4444; }
+.ktooltip-status.indisponivel { color: #94A3B8; }
+
+/* 7. PAINEL INFERIOR DA MESA SELECIONADA */
+.kmap-footer-panel {
+  padding: 16px 20px;
+  background: rgba(8, 14, 30, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.kmap-selected-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.kselected-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kselected-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94A3B8;
+}
+
+.kselected-badge.active {
+  color: #F59E0B;
+}
+
+.kselected-title {
+  font-size: 1.15rem;
+  color: #FFFFFF;
+}
+
+.kselected-desc {
+  font-size: 0.82rem;
+  color: #94A3B8;
+  max-width: 600px;
+}
+
+.kselected-cta-btn {
+  white-space: nowrap;
+}
+
+/* 8. MODAL DE RESERVA (RESERVATION MODAL) */
+.kmodal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(2, 4, 10, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.kmodal-backdrop.kmodal-open {
+  opacity: 1;
+}
+
+.kmodal-dialog {
+  background: #090E1F;
+  border: 1.5px solid rgba(0, 240, 255, 0.4);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 240, 255, 0.2);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
+  padding: 28px 28px 32px;
+  position: relative;
+  transform: translateY(20px) scale(0.96);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.kmodal-backdrop.kmodal-open .kmodal-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.kmodal-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #FFFFFF;
+  font-size: 1.4rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kmodal-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #EF4444;
+  color: #EF4444;
+}
+
+.kmodal-header {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.kmodal-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #00F0FF;
+  text-transform: uppercase;
+}
+
+.kmodal-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 4px 0 10px;
+}
+
+.kmodal-table-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kmodal-badge-name {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #F59E0B;
+  color: #F59E0B;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.kmodal-badge-cap {
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: #00F0FF;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* 9. FORMULÁRIO DO MODAL */
+.kmodal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kmodal-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.kmodal-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #E2E8F0;
+}
+
+.kmodal-input,
+.kmodal-select {
+  width: 100%;
+  background: rgba(14, 22, 45, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.kmodal-input:focus,
+.kmodal-select:focus {
+  outline: none;
+  border-color: #00F0FF;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.3);
+  background: rgba(18, 30, 60, 0.95);
+}
+
+.kmodal-select option {
+  background: #090E1F;
+  color: #FFFFFF;
+}
+
+.kmodal-hint {
+  font-size: 0.72rem;
+  color: #94A3B8;
+}
+
+.kmodal-alert {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.kmodal-actions {
+  margin-top: 10px;
+}
+
+.kmodal-submit-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #00F0FF, #0284C7);
+  color: #000000;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 240, 255, 0.4);
+  transition: all 0.25s ease;
+  letter-spacing: 0.3px;
+}
+
+.kmodal-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 240, 255, 0.65);
+  filter: brightness(1.08);
+}
+
+.kmodal-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.kmodal-submit-btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.kmodal-submit-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #00F0FF;
+  color: #00F0FF;
+}
+
+/* 10. TELA DE SUCESSO / CONFIRMAÇÃO VISUAL */
+.kmodal-success-box {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.kmodal-success-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.2);
+  border: 2px solid #10B981;
+  color: #10B981;
+  font-size: 2rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.4);
+}
+
+.kmodal-success-title {
+  font-size: 1.35rem;
+  color: #FFFFFF;
+  margin: 0 0 8px;
+}
+
+.kmodal-success-desc {
+  font-size: 0.88rem;
+  color: #94A3B8;
+  margin: 0 0 18px;
+}
+
+.kmodal-summary-card {
+  background: rgba(14, 22, 45, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.ksummary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+}
+
+.ksummary-label {
+  color: #94A3B8;
+}
+
+.ksummary-val {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.ksummary-val.highlight {
+  color: #F59E0B;
+}
+
+/* 11. RESPONSIVIDADE (MOBILE & TABLET) */
+@media (max-width: 768px) {
+  .kmap-viewport {
+    height: 520px;
+  }
+
+  .kmap-toolbar {
+    padding: 12px 14px;
+  }
+
+  .kmap-toolbar-left,
+  .kmap-toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .kmap-footer-panel {
+    padding: 14px;
+  }
+
+  .kmodal-dialog {
+    padding: 22px 18px 24px;
+  }
+
+  .kmodal-title {
+    font-size: 1.35rem;
+  }
+}
