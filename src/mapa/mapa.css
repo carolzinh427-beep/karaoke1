@@ -139,21 +139,23 @@
   color: #00F0FF;
 }
 
-/* 3. VIEWPORT DO MAPA (PAN & ZOOM) */
+/* 3. VIEWPORT DO MAPA (ESTRUTURA FIXA E CENTRADA) */
 .kmap-viewport {
   position: relative;
   width: 100%;
   height: 680px;
   background: #04060E;
   overflow: hidden;
-  cursor: grab;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .kmap-pan-layer {
   width: 100%;
   height: 100%;
   transform-origin: center center;
-  transition: transform 0.08s ease-out;
+  transition: transform 0.15s ease-out;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,47 +186,61 @@
   z-index: 10;
 }
 
-/* 4. ESTILOS INTERATIVOS DAS MESAS NO SVG */
+/* ELEMENTOS ARQUITETÔNICOS FIXOS (NÃO INTERATIVOS) */
+.map-element,
+.map-stage,
+.map-dj-booth,
+.map-bar,
+.map-sofa,
+.map-led-floor,
+.map-entrance,
+.xadrez-room-perimeter,
+.kmap-floor-grid {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 4. ESTILOS INTERATIVOS DAS MESAS NO SVG (APENAS MESAS/CADEIRAS INTERATIVAS) */
+.kmap-tables-layer {
+  pointer-events: all;
+}
+
 .map-table-item {
   cursor: pointer;
   outline: none;
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), filter 0.28s ease;
-  transform-origin: center center;
+  pointer-events: all;
+  transition: filter 0.22s ease;
 }
 
 .map-table-item .table-surface {
-  transition: stroke 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease, fill 0.2s ease;
 }
 
 .map-table-item .table-chair {
-  transition: fill 0.25s ease, stroke 0.25s ease;
+  transition: fill 0.2s ease, stroke 0.2s ease;
 }
 
-/* Estado DISPONÍVEL - Hover */
-.map-table-item.disponivel:hover {
-  transform: translateY(-3px) scale(1.04);
-}
-
+/* Estado DISPONÍVEL - Hover estável e suave (sem salto geométrico / sem travar) */
 .map-table-item.disponivel:hover .table-surface {
   stroke: #00F0FF !important;
-  stroke-width: 2.5 !important;
-  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.8));
+  stroke-width: 2.6 !important;
+  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.85));
 }
 
 .map-table-item.disponivel:hover .table-chair {
-  stroke: #00F0FF;
-  fill: #1B294B;
+  stroke: #00F0FF !important;
+  fill: #1B294B !important;
 }
 
 .map-table-item.disponivel:hover .table-cap-indicator rect,
 .map-table-item.disponivel:hover .table-cap-indicator circle {
   border-color: #00F0FF;
-  stroke: #00F0FF;
+  stroke: #00F0FF !important;
 }
 
-/* Estado SELECIONADA - Efeito Neon Âmbar / Dourado + Elevação */
+/* Estado SELECIONADA - Efeito Neon Âmbar / Dourado */
 .map-table-item.selecionada {
-  transform: translateY(-5px) scale(1.06);
+  filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
 }
 
 .map-table-item.selecionada .table-surface {

@@ -44,13 +44,22 @@ export function renderTable(table) {
        aria-label="${name} - Capacidade para ${capacity} pessoas (${status})"
        transform="translate(0, 0)">
       
+      <!-- HITBOX TRANSPARENTE ESTÁVEL (PREVINE JITTER/TRAVAMENTO NO HOVER) -->
+      <rect class="table-hitbox" 
+            x="${centerX - halfW - 22}" 
+            y="${centerY - halfH - 18}" 
+            width="${width + 44}" 
+            height="${height + 36}" 
+            fill="transparent" 
+            pointer-events="all" />
+
       <!-- CADEIRAS / ASSENTOS AO REDOR -->
-      <g class="table-chairs-group">
+      <g class="table-chairs-group" pointer-events="none">
         ${chairsSvg}
       </g>
 
       <!-- TAMPO DA MESA COM PROFUNDIDADE E BRILHO -->
-      <g class="tabletop-group">
+      <g class="tabletop-group" pointer-events="none">
         ${tabletopSvg}
       </g>
     </g>

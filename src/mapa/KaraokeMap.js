@@ -98,9 +98,9 @@ export class KaraokeMap {
           <!-- Tooltip flutuante de hover sobre mesas -->
           <div class="kmap-floating-tooltip" id="kmapTooltip" style="display: none;"></div>
 
-          <!-- Dica de navegação no celular -->
+          <!-- Dica indicativa suave -->
           <div class="kmap-touch-hint">
-            <span>Arraste para navegar • Use + e − para zoom</span>
+            <span>Toque em qualquer mesa para reservar</span>
           </div>
         </div>
 
@@ -152,6 +152,36 @@ export class KaraokeMap {
           <filter id="neonGlowPurple" x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="4.5" result="coloredBlur"/>
             <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <!-- Brilho Neon Rosa (LED Floor) -->
+          <filter id="neonGlowPink" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="5.5" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <!-- Brilho Neon Verde (LED Floor) -->
+          <filter id="neonGlowGreen" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="5.5" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <!-- Brilho Neon Azul (LED Floor) -->
+          <filter id="neonGlowBlue" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="5.5" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
@@ -247,6 +277,7 @@ export class KaraokeMap {
     });
 
     // Hover / Tooltip
+    // Hover / Tooltip seguro sem jitter
     if (viewport && tooltip) {
       viewport.addEventListener('mousemove', (e) => {
         const tableItem = e.target.closest('.map-table-item');
@@ -260,8 +291,8 @@ export class KaraokeMap {
             `;
             tooltip.style.display = 'block';
             const rect = viewport.getBoundingClientRect();
-            const posX = e.clientX - rect.left + 15;
-            const posY = e.clientY - rect.top + 15;
+            const posX = Math.max(90, Math.min(rect.width - 90, e.clientX - rect.left));
+            const posY = Math.max(45, e.clientY - rect.top - 12);
             tooltip.style.left = `${posX}px`;
             tooltip.style.top = `${posY}px`;
           }
@@ -275,13 +306,13 @@ export class KaraokeMap {
       });
     }
 
-    // Controles de Zoom
+    // Controles de Zoom (mantêm a estrutura fixa no centro)
     const zoomInBtn = document.getElementById('kmapZoomIn');
     const zoomOutBtn = document.getElementById('kmapZoomOut');
     const zoomResetBtn = document.getElementById('kmapZoomReset');
 
-    if (zoomInBtn) zoomInBtn.addEventListener('click', () => this.setZoom(this.zoom + 0.2));
-    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => this.setZoom(this.zoom - 0.2));
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => this.setZoom(this.zoom + 0.15));
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => this.setZoom(this.zoom - 0.15));
     if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => this.resetZoom());
 
     // Botão de CTA da mesa selecionada
@@ -307,59 +338,12 @@ export class KaraokeMap {
     if (filterDisp) {
       filterDisp.addEventListener('click', () => this.applyFilter('disponiveis'));
     }
-
-    // Pan / Drag no mouse e touch
-    this.setupPan(viewport, panLayer);
-  }
-
-  setupPan(viewport, panLayer) {
-    if (!viewport || !panLayer) return;
-
-    const startDrag = (clientX, clientY) => {
-      this.isPanning = true;
-      this.startX = clientX - this.panX;
-      this.startY = clientY - this.panY;
-      viewport.style.cursor = 'grabbing';
-    };
-
-    const moveDrag = (clientX, clientY) => {
-      if (!this.isPanning) return;
-      this.panX = clientX - this.startX;
-      this.panY = clientY - this.startY;
-      this.applyTransform();
-    };
-
-    const endDrag = () => {
-      this.isPanning = false;
-      viewport.style.cursor = '';
-    };
-
-    // Eventos de Mouse
-    viewport.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.map-table-item') || e.target.closest('button')) return;
-      startDrag(e.clientX, e.clientY);
-    });
-    window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
-    window.addEventListener('mouseup', endDrag);
-
-    // Eventos de Touch no Celular
-    viewport.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1 && !e.target.closest('.map-table-item')) {
-        startDrag(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: true });
-
-    viewport.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 1 && this.isPanning) {
-        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: true });
-
-    viewport.addEventListener('touchend', endDrag);
   }
 
   setZoom(val) {
-    this.zoom = Math.max(0.7, Math.min(2.5, val));
+    this.zoom = Math.max(0.8, Math.min(1.8, val));
+    this.panX = 0;
+    this.panY = 0;
     this.applyTransform();
   }
 
@@ -373,7 +357,7 @@ export class KaraokeMap {
   applyTransform() {
     const panLayer = document.getElementById('kmapPanLayer');
     if (panLayer) {
-      panLayer.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+      panLayer.style.transform = `scale(${this.zoom})`;
     }
   }
 
