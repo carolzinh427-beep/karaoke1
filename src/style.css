@@ -6028,24 +6028,27 @@ img, video {
 .mapa-layout-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
-  align-items: start;
+  gap: 16px;
+  align-items: stretch;
   justify-content: center;
   margin: 0 auto;
 }
 
 @media (min-width: 860px) {
   .mapa-layout-grid {
-    grid-template-columns: 345px 420px;
-    gap: 14px;
-    align-items: start;
+    grid-template-columns: 350px 440px;
+    gap: 16px;
+    align-items: stretch;
     justify-content: center;
   }
 }
 
 .karaoke-map-container {
   width: 100%;
-  max-width: 345px;
+  max-width: 350px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   margin: 0 auto;
 }
 
@@ -6217,32 +6220,37 @@ img, video {
 }
 
 /* Painel Lateral com Lista Sincronizada das Mesas (Compacto & Sem Espaço Vazio) */
+/* Painel Lateral com Lista Sincronizada das Mesas (Alinhado Perfeitamente ao Mapa) */
 .mapa-tables-list-panel {
   background: rgba(10, 16, 35, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 14px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 10px;
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
+  height: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
 }
 
 .mapa-entry-rates {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .mapa-entry-card {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 4px 6px;
+  padding: 6px 8px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -6251,7 +6259,7 @@ img, video {
 }
 
 .mapa-entry-card .entry-method {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -6260,17 +6268,19 @@ img, video {
 
 .mapa-entry-card .entry-price {
   font-family: var(--font-display, sans-serif);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 800;
   line-height: 1.1;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .tables-list-scroll {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 195px;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 280px;
+  max-height: 360px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -6279,13 +6289,13 @@ img, video {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 8px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  gap: 8px;
+  gap: 10px;
 }
 
 .table-selection-card:hover {
@@ -6301,23 +6311,36 @@ img, video {
 }
 
 .table-selection-card.reserved {
-  opacity: 0.55;
-  cursor: not-allowed;
+  background: rgba(239, 68, 68, 0.06);
   border-color: rgba(239, 68, 68, 0.3);
+  opacity: 0.9;
+  cursor: not-allowed;
 }
 
 .table-card-info-main strong {
   display: block;
-  font-size: 0.77rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #FFFFFF;
   line-height: 1.2;
 }
 
 .table-card-info-main span {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
   line-height: 1.2;
+}
+
+.table-btn-unavailable {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #F87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.45) !important;
+  cursor: not-allowed !important;
+  opacity: 0.95 !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.3px;
 }
 
 .table-card-cap-pill {
@@ -6344,13 +6367,15 @@ img, video {
 }
 
 .mapa-indicativa-box {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 0.72rem;
-  line-height: 1.35;
+  padding: 8px 12px;
+  font-size: 0.74rem;
+  line-height: 1.4;
   color: #FCA5A5;
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 /* Cards de Opções de Pagamento com Tarifas por Pessoa */

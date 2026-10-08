@@ -15,8 +15,9 @@
   overflow: hidden;
   position: relative;
   user-select: none;
-  max-width: 345px;
+  max-width: 350px;
   width: 100%;
+  height: 100%;
   margin: 0 auto;
 }
 
@@ -146,7 +147,9 @@
 .kmap-viewport {
   position: relative;
   width: 100%;
-  height: 395px;
+  height: 440px;
+  min-height: 440px;
+  flex: 1 1 auto;
   background: #04060E;
   overflow: hidden;
   cursor: default;
@@ -262,23 +265,55 @@
   50% { filter: drop-shadow(0 0 28px #F59E0B) drop-shadow(0 0 10px #FFF); }
 }
 
-/* Estado RESERVADA - Aparência desabilitada */
-.map-table-item.reservada {
-  opacity: 0.45;
-  cursor: not-allowed;
-  filter: grayscale(0.4);
-}
-
-.map-table-item.reservada .table-surface {
-  stroke: #EF4444;
-  fill: #171015;
-}
-
-/* Estado INDISPONÍVEL - Aparência desabilitada */
+/* Estado RESERVADA e INDISPONÍVEL - Mesa destacada em VERMELHO vibrante de acordo com a legenda */
+.map-table-item.reservada,
 .map-table-item.indisponivel {
-  opacity: 0.35;
-  cursor: not-allowed;
-  filter: grayscale(0.8);
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.75)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8)) !important;
+}
+
+.map-table-item.reservada .table-surface,
+.map-table-item.indisponivel .table-surface {
+  stroke: #EF4444 !important;
+  stroke-width: 2.8 !important;
+  fill: #450A0A !important;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.85)) !important;
+}
+
+.map-table-item.reservada .table-chair,
+.map-table-item.indisponivel .table-chair {
+  stroke: #EF4444 !important;
+  fill: #260505 !important;
+}
+
+.map-table-item.reservada .table-cap-indicator rect,
+.map-table-item.reservada .table-cap-indicator circle,
+.map-table-item.indisponivel .table-cap-indicator rect,
+.map-table-item.indisponivel .table-cap-indicator circle {
+  stroke: #EF4444 !important;
+  fill: #1A0303 !important;
+}
+
+.map-table-item.reservada .map-table-cap-text,
+.map-table-item.indisponivel .map-table-cap-text {
+  fill: #FCA5A5 !important;
+  font-weight: 900 !important;
+}
+
+.map-table-item.reservada line[stroke="#00F0FF"],
+.map-table-item.indisponivel line[stroke="#00F0FF"] {
+  stroke: #EF4444 !important;
+}
+
+.map-table-item.reservada rect[fill="#F59E0B"],
+.map-table-item.indisponivel rect[fill="#F59E0B"] {
+  fill: #EF4444 !important;
+}
+
+.map-table-item.reservada:hover,
+.map-table-item.indisponivel:hover {
+  transform: none !important;
 }
 
 /* 5. TIPOGRAFIA DOS RÓTULOS ARQUITETÔNICOS NO SVG */

@@ -362,8 +362,9 @@ export class KaraokeMap {
     table.status = newStatus;
     const el = document.getElementById(`tableItem_${tableId}`);
     if (el) {
-      el.className = `map-table-item ${newStatus} ${this.selectedTableId === tableId ? 'selecionada' : ''}`;
+      el.setAttribute('class', `map-table-item ${newStatus} ${this.selectedTableId === tableId ? 'selecionada' : ''}`);
       el.setAttribute('data-status', newStatus);
+      el.setAttribute('tabindex', (newStatus === 'reservada' || newStatus === 'indisponivel') ? '-1' : '0');
     }
 
     this.updateTablesList();
@@ -395,7 +396,7 @@ export class KaraokeMap {
   }
 
   updateTablesList() {
-    // Sincroniza com lista auxiliar se houver no layout da página
+    // Sincroniza com lista lateral no layout da página
     const listContainer = document.getElementById('mapaTablesListScroll');
     if (!listContainer) return;
 
@@ -403,25 +404,36 @@ export class KaraokeMap {
       ? this.tables.filter(t => t.status === 'disponivel') 
       : this.tables;
 
-    listContainer.innerHTML = filtered.map(t => `
-      <div class="table-selection-card ${t.id === this.selectedTableId ? 'selected' : ''} ${t.status}"
-           role="button"
-           tabindex="0"
-           onclick="if(window.karaokeMapInstance) window.karaokeMapInstance.handleTableClick('${t.id}')">
-        <div class="table-card-info-main">
-          <strong>${t.name} (Até ${t.capacity} pessoas)</strong>
-          <span>${t.location}</span>
+    listContainer.innerHTML = filtered.map(t => {
+      const isReserved = t.status === 'reservada' || t.status === 'indisponivel';
+      const isSelected = t.id === this.selectedTableId;
+
+      return `
+        <div class="table-selection-card ${isSelected ? 'selected' : ''} ${isReserved ? 'reserved' : ''}"
+             role="button"
+             tabindex="${isReserved ? '-1' : '0'}"
+             onclick="if(window.karaokeMapInstance) window.karaokeMapInstance.handleTableClick('${t.id}')">
+          <div class="table-card-info-main">
+            <strong>${t.name} (Até ${t.capacity} pessoas)</strong>
+            <span>${t.location}</span>
+          </div>
+          <div class="table-card-actions-wrap" style="display: flex; align-items: center; gap: 8px;">
+            ${isReserved ? `
+              <button type="button" class="btn btn-xs table-quick-book-btn table-btn-unavailable" 
+                      disabled 
+                      title="Mesa indisponível/já reservada">
+                Indisponível
+              </button>
+            ` : `
+              <button type="button" class="btn btn-primary btn-xs table-quick-book-btn" 
+                      onclick="event.stopPropagation(); if(window.karaokeMapInstance) window.karaokeMapInstance.handleTableClick('${t.id}')">
+                ${isSelected ? '✓ Escolhida' : 'Reservar'}
+              </button>
+            `}
+          </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <div class="table-card-cap-pill ${t.status}">${this.formatStatus(t.status)}</div>
-          <button type="button" class="btn btn-primary btn-xs table-quick-book-btn" 
-                  onclick="event.stopPropagation(); if(window.karaokeMapInstance) window.karaokeMapInstance.handleTableClick('${t.id}')"
-                  ${t.status === 'reservada' || t.status === 'indisponivel' ? 'disabled' : ''}>
-            ${t.id === this.selectedTableId ? '✓ Escolhida' : 'Reservar'}
-          </button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   formatStatus(st) {

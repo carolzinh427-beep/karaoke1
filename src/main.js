@@ -860,30 +860,86 @@ export function initMapaSalaoPrincipal() {
 }
 
 async function carregarReservasOcupadas() {
+  const todasReservas = [];
+
+  // 1. Carrega do Supabase
   try {
     if (isSupabaseConfigured) {
       const { data, error } = await (await import('./lib/supabase.js')).getReservasSupabase();
       if (!error && Array.isArray(data)) {
-        reservasOcupadas = data.filter(r => (r.status || '').toUpperCase() !== 'CANCELLED');
-        atualizarStatusMesasNoMapa();
+        todasReservas.push(...data);
       }
     }
   } catch (e) {
-    console.warn('Consulta reservas ocupadas:', e);
+    console.warn('Consulta reservas ocupadas Supabase:', e);
   }
+
+  // 2. Carrega do Firestore (reservas e agendamentos)
+  try {
+    if (db) {
+      const snapRes = await getDocs(collection(db, 'reservas'));
+      snapRes.forEach(docSnap => {
+        todasReservas.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      const snapAg = await getDocs(collection(db, 'agendamentos'));
+      snapAg.forEach(docSnap => {
+        todasReservas.push({ id: docSnap.id, ...docSnap.data() });
+      });
+    }
+  } catch (e) {
+    console.warn('Consulta reservas ocupadas Firestore:', e);
+  }
+
+  // Deduplicação e filtragem de ativas
+  const seenIds = new Set();
+  reservasOcupadas = todasReservas.filter(r => {
+    const key = r.id || `${r.data}_${r.salaOuMesa || r.sala}_${r.whatsapp}`;
+    if (seenIds.has(key)) return false;
+    seenIds.add(key);
+    const st = (r.status || '').toUpperCase();
+    return st !== 'CANCELLED' && st !== 'CANCELADO';
+  });
+
+  atualizarStatusMesasNoMapa();
 }
 
 function isMesaReservada(mesaId, dataStr, horarioStr) {
-  if (!dataStr || !horarioStr) return false;
+  if (!reservasOcupadas || !reservasOcupadas.length) return false;
+
+  const numOnly = mesaId.replace(/\D/g, '');
+  const targetId = `mesa-${numOnly}`.toLowerCase();
+  const targetName = `mesa ${numOnly}`.toLowerCase();
+
   return reservasOcupadas.some(r => {
-    const rData = r.data || '';
-    const rHora = r.horario || '';
-    const rMesa = r.salaOuMesa || r.sala || '';
-    const matchData = rData.includes(dataStr) || (selectedReservaData && rData.includes(selectedReservaData.formattedDisplay));
-    const matchHora = rHora === horarioStr;
-    const matchMesa = rMesa.toLowerCase().includes(mesaId.toLowerCase()) || 
-                      (getMesaById(mesaId) && rMesa.toLowerCase().includes(getMesaById(mesaId).nomeExibicao.toLowerCase()));
-    return matchData && matchHora && matchMesa;
+    const rMesa = (r.salaOuMesa || r.sala || r.mesaId || '').toLowerCase();
+    const rMesaId = (r.mesaId || '').toLowerCase();
+    const rMesaNum = String(r.mesaNumero || '');
+
+    const matchesMesa = 
+      rMesa.includes(targetId) ||
+      rMesa.includes(targetName) ||
+      rMesaId === targetId ||
+      rMesaNum === numOnly;
+
+    if (!matchesMesa) return false;
+
+    // Se data for especificada, valida data
+    if (dataStr) {
+      const rData = r.data || r.dataReserva || '';
+      if (rData && !rData.includes(dataStr) && !(selectedReservaData && rData.includes(selectedReservaData.formattedDisplay))) {
+        return false;
+      }
+    }
+
+    // Se horário for especificado, valida horário
+    if (horarioStr) {
+      const rHora = r.horario || '';
+      if (rHora && rHora !== horarioStr) {
+        return false;
+      }
+    }
+
+    return true;
   });
 }
 
@@ -903,9 +959,29 @@ function renderListaMesasNoModal() {
 
 function atualizarStatusMesasNoMapa() {
   if (window.karaokeMapInstance) {
-    window.karaokeMapInstance.updateTablesList();
+    const mapInst = window.karaokeMapInstance;
+    const dateToCheck = selectedReservaData ? selectedReservaData.dateStr : null;
+
+    mapInst.tables.forEach(t => {
+      const reserved = isMesaReservada(t.id, dateToCheck, null);
+      if (reserved) {
+        mapInst.setTableStatus(t.id, 'reservada');
+      } else if (t.status === 'reservada') {
+        mapInst.setTableStatus(t.id, 'disponivel');
+      }
+    });
+
+    mapInst.updateTablesList();
   }
 }
+
+// Sincronização em tempo real quando uma mesa for reservada
+window.addEventListener('mesaReservadaConfirmada', (e) => {
+  if (e.detail) {
+    reservasOcupadas.push(e.detail);
+    atualizarStatusMesasNoMapa();
+  }
+});
 
 // ----------------------------------------------------------------------------
 // FLUXO DE SELEÇÃO E RESERVA DE MESA
@@ -1139,6 +1215,7 @@ window.modalCalNextMonth = () => {
 
 window.selecionarDataModal = (dateStr, formattedDisplay) => {
   selectedReservaData = { dateStr, formattedDisplay };
+  atualizarStatusMesasNoMapa();
 
   const dataPill = document.getElementById('modalBadgeDataDisplay');
   const dataPill2 = document.getElementById('modalBadgeDataEscolhida2');
