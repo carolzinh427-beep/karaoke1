@@ -518,11 +518,6 @@
              PASSO 1: MOSTRAR PRIMEIRO O CALENDÁRIO NO SITE
              ==================================================================== -->
         <div class="booking-step-panel active" id="bookingStep1">
-          <div class="booking-step-intro text-center">
-            <h3 class="step-panel-title">1. Escolha a Data no Calendário</h3>
-            <p class="step-panel-desc">Toque no dia desejado para iniciar sua reserva de sala privada</p>
-          </div>
-
           <div class="calendar-card-single-wrap">
             <div class="calendar-card" id="bookingCalendar">
               <div class="calendar-top-bar">
@@ -556,30 +551,6 @@
                 <div class="legend-pill"><span class="legend-circle closed-circle"></span> Dom e Seg (Fechado)</div>
               </div>
             </div>
-
-            <!-- Banner que surge assim que a pessoa clica na data -->
-            <div class="booking-date-confirm-bar" id="dateConfirmBar" style="display: none;">
-              <div class="date-confirm-info">
-                <div class="date-confirm-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="date-confirm-title" id="selectedDateDisplayTitle">Data Selecionada:</div>
-                  <div class="date-confirm-val" id="selectedDateDisplayText">Terça-feira, 06/10/2026</div>
-                  <div class="date-confirm-promo" id="selectedDatePromoNotice" style="display: none;">
-                    🎁 <strong>Promoção ativa:</strong> Ganhe R$ 200 em consumação nesta data!
-                  </div>
-                </div>
-              </div>
-              <button type="button" class="btn btn-primary btn-md" onclick="goToBookingStep(2)">
-                <span>Avançar para Escolher a Sala →</span>
-              </button>
-            </div>
           </div>
         </div>
 
@@ -593,13 +564,6 @@
               <span>Alterar Data (<span id="step2DateSummary">Definida</span>)</span>
             </button>
             <div class="step-panel-current-tag">Passo 2 de 3</div>
-          </div>
-
-          <div class="booking-step-intro text-center">
-            <h3 class="step-panel-title">Qual Sala Você Quer Reservar?</h3>
-            <p class="step-panel-desc">
-              Toque na sala desejada para ver a mensagem e confirmar sua escolha:
-            </p>
           </div>
 
           <!-- Cards das 3 Salas (Red, Green, Blue) -->
@@ -880,9 +844,9 @@
     <section class="gallery-section" id="galeria">
       <div class="container">
         <div class="section-header" style="margin-bottom: 20px;">
-          <h2 class="section-title">Promoções da Semana</h2>
+          <h2 class="section-title">Viva o Backstage</h2>
           <p class="section-subtitle">
-            Aproveite nossas promoções exclusivas para curtir quinta, sexta e sábado no karaokê mais animado de Brasília!
+            Viva os drinks, promoções e momentos inesquecíveis no karaokê mais animado de Brasília!
           </p>
         </div>
 
