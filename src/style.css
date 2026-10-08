@@ -144,6 +144,11 @@ img, video {
   display: block;
 }
 
+/* Utility Classes */
+.text-center {
+  text-align: center !important;
+}
+
 /* Container */
 .container {
   width: 100%;
@@ -4688,7 +4693,9 @@ img, video {
 }
 
 .booking-step-intro {
-  margin-bottom: 24px;
+  margin: 0 auto 24px auto;
+  max-width: 580px;
+  text-align: center;
 }
 
 .step-panel-title {
@@ -4699,6 +4706,7 @@ img, video {
   color: #FFFFFF;
   margin-bottom: 6px;
   letter-spacing: 0.02em;
+  text-align: center;
 }
 
 .step-panel-desc {
@@ -4706,6 +4714,7 @@ img, video {
   color: var(--text-secondary);
   max-width: 560px;
   margin: 0 auto;
+  text-align: center;
 }
 
 .step-panel-top-nav {
