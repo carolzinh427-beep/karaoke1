@@ -675,10 +675,10 @@ img, video {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 13px 28px;
+  padding: 13px 26px;
   border-radius: 999px;
   font-family: var(--font-heading);
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -686,6 +686,7 @@ img, video {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
 }
 
 .hero-cta-sala {
@@ -712,17 +713,48 @@ img, video {
   color: #050813 !important;
 }
 
-@media (max-width: 576px) {
+.hero-cta-conheca {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #FFFFFF !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.hero-cta-conheca:hover {
+  transform: translateY(-3px) scale(1.03);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #FFFFFF;
+  box-shadow: 0 12px 30px rgba(255, 255, 255, 0.25);
+  color: #FFFFFF !important;
+}
+
+@media (max-width: 768px) {
   .hero-action-buttons {
-    margin-top: 16px;
+    margin-top: 18px;
     gap: 10px;
     width: 100%;
+    max-width: 500px;
   }
   .hero-cta-btn {
     padding: 11px 18px;
+    font-size: 0.88rem;
+    flex: 1 1 auto;
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-action-buttons {
+    flex-direction: column;
+    max-width: 290px;
+    gap: 8px;
+  }
+  .hero-cta-btn {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 20px;
     font-size: 0.90rem;
-    flex: 1 1 calc(50% - 10px);
-    max-width: 200px;
   }
 }
 
@@ -5905,6 +5937,10 @@ img, video {
   scroll-margin-top: 80px;
 }
 
+.salao-mapa-section .container {
+  max-width: 820px;
+}
+
 .mapa-header-title-box {
   display: flex;
   align-items: center;
@@ -5983,15 +6019,18 @@ img, video {
 .mapa-layout-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 14px;
   align-items: start;
+  justify-content: center;
+  margin: 0 auto;
 }
 
 @media (min-width: 860px) {
   .mapa-layout-grid {
-    grid-template-columns: 345px 1fr;
-    gap: 16px;
+    grid-template-columns: 345px 420px;
+    gap: 14px;
     align-items: start;
+    justify-content: center;
   }
 }
 
@@ -6177,6 +6216,9 @@ img, video {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 .mapa-entry-rates {
@@ -6234,6 +6276,7 @@ img, video {
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
+  gap: 8px;
 }
 
 .table-selection-card:hover {
