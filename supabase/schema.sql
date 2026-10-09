@@ -291,6 +291,14 @@ CREATE TABLE IF NOT EXISTS public.configuracoes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Migrações idempotentes de colunas caso a tabela configuracoes já exista
+ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS contato_email TEXT DEFAULT 'contato@barbackstagekaraoke.com.br';
+ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS pdf_public_id TEXT DEFAULT NULL;
+ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS pdf_url TEXT DEFAULT '/cardapio-oficial.pdf';
+ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS endereco TEXT DEFAULT 'CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF';
+ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS maps_url TEXT DEFAULT 'https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6';
+ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS horarios JSONB DEFAULT '{}'::jsonb;
+
 DROP TRIGGER IF EXISTS trigger_configuracoes_updated_at ON public.configuracoes;
 CREATE TRIGGER trigger_configuracoes_updated_at
     BEFORE UPDATE ON public.configuracoes
@@ -349,11 +357,13 @@ DROP POLICY IF EXISTS "Bloqueios leitura pública" ON public.bloqueios;
 CREATE POLICY "Bloqueios leitura pública" ON public.bloqueios FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Bloqueios escrita painel" ON public.bloqueios FOR ALL USING (true) WITH CHECK (true);
 
--- Políticas para Configurações
+-- Políticas para Configurações (Leitura pública irrestrita; Edição pelo painel administrativo)
+GRANT SELECT, INSERT, UPDATE ON public.configuracoes TO anon, authenticated, service_role;
+
 DROP POLICY IF EXISTS "Configurações leitura pública" ON public.configuracoes;
-CREATE POLICY "Configurações leitura pública" ON public.configuracoes FOR SELECT USING (true);
+CREATE POLICY "Configurações leitura pública" ON public.configuracoes FOR SELECT TO public USING (true);
 DROP POLICY IF EXISTS "Configurações escrita painel" ON public.configuracoes;
-CREATE POLICY "Configurações escrita painel" ON public.configuracoes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Configurações escrita painel" ON public.configuracoes FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- Políticas para Ambientes
 ALTER TABLE public.ambientes ENABLE ROW LEVEL SECURITY;
@@ -398,9 +408,9 @@ ON CONFLICT (id) DO UPDATE SET
 -- Inserção das 3 Salas Oficiais
 INSERT INTO public.salas (id, nome, slug, capacidade, preco_total, sinal, restante, descricao, imagem, ativo, ordem)
 VALUES
-    ('sala-red', 'Sala Red', 'sala-red', 30, 800.00, 400.00, 400.00, 'Ambiente intimista e vibrante com iluminação vermelha cênica.', '/assets/brand/hero-bg.webp', true, 1),
-    ('sala-green', 'Sala Green', 'sala-green', 40, 900.00, 450.00, 450.00, 'Recomendado entre 30 e 35 pessoas para maior conforto.', '/assets/drinks/aperol-spritz.webp', true, 2),
-    ('sala-blue', 'Sala Blue', 'sala-blue', 50, 1000.00, 500.00, 500.00, 'Nossa maior sala vip com capacidade estendida e sistema premium.', '/assets/brand/microfone-profissional.jpg', true, 3)
+    ('sala-red', 'Sala Red', 'sala-red', 30, 800.00, 800.00, 0.00, 'Ambiente intimista e vibrante com iluminação vermelha cênica.', '/assets/brand/hero-bg.webp', true, 1),
+    ('sala-green', 'Sala Green', 'sala-green', 40, 900.00, 900.00, 0.00, 'Recomendado entre 30 e 35 pessoas para maior conforto.', '/assets/drinks/aperol-spritz.webp', true, 2),
+    ('sala-blue', 'Sala Blue', 'sala-blue', 50, 1000.00, 1000.00, 0.00, 'Nossa maior sala vip com capacidade estendida e sistema premium.', '/assets/brand/microfone-profissional.jpg', true, 3)
 ON CONFLICT (id) DO UPDATE SET
     nome = EXCLUDED.nome,
     capacidade = EXCLUDED.capacidade,
@@ -554,12 +564,13 @@ ON CONFLICT (id) DO UPDATE SET
     descricao = EXCLUDED.descricao;
 
 -- Inserção das Configurações Gerais
-INSERT INTO public.configuracoes (id, whatsapp, instagram, maps_url, endereco, pdf_url, horarios)
+INSERT INTO public.configuracoes (id, whatsapp, instagram, maps_url, contato_email, endereco, pdf_url, horarios)
 VALUES (
     'geral',
     '556181426321',
     '@backstagekaraoke',
     'https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6',
+    'contato@barbackstagekaraoke.com.br',
     'CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF',
     '/cardapio-oficial.pdf',
     '{
@@ -576,6 +587,7 @@ ON CONFLICT (id) DO UPDATE SET
     whatsapp = EXCLUDED.whatsapp,
     instagram = EXCLUDED.instagram,
     maps_url = EXCLUDED.maps_url,
+    contato_email = EXCLUDED.contato_email,
     endereco = EXCLUDED.endereco;
 
 -- ==============================================================================

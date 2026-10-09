@@ -67,8 +67,40 @@ export default async function handler(req, res) {
 
   try {
     const cobranca = await consultarCobrancaAsaas(paymentId);
+    const isPago = cobranca.status === 'RECEIVED' || cobranca.status === 'CONFIRMED';
+
+    // Se o Asaas confirmou recebimento, atualiza com autoridade no Supabase via SERVICE_ROLE_KEY
+    if (isPago) {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (supabaseUrl && supabaseServiceKey) {
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/reservas?transacao_id=eq.${encodeURIComponent(paymentId)}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': supabaseServiceKey,
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              status: 'CONFIRMED',
+              status_pagamento: 'aprovado',
+              valor_pago: Number(cobranca.value || 0),
+              atualizado_em: new Date().toISOString()
+            })
+          });
+        } catch (dbErr) {
+          console.warn('[Asaas Status] Aviso ao sincronizar com Supabase:', dbErr.message);
+        }
+      }
+    }
+
     return res.status(200).json({
+      sucesso: true,
       id: cobranca.id,
+      pago: isPago,
       status: cobranca.status,
       valor: cobranca.value,
       metodo: cobranca.billingType,
@@ -78,8 +110,11 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     return res.status(err.status || 500).json({
+      sucesso: false,
+      pago: false,
       error: err.message || 'Falha ao consultar cobrança no Asaas.',
       details: err.details || null
     });
   }
 }
+

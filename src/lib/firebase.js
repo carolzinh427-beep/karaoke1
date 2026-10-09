@@ -64,7 +64,8 @@ export async function salvarAgendamento(dados) {
     if (db) {
       const payload = {
         ...dados,
-        status: dados.status || 'CONFIRMED',
+        status: dados.status || 'PENDING',
+        statusPagamento: dados.statusPagamento || 'aguardando',
         origem: dados.origem || 'site_cliente',
         criadoEm: serverTimestamp(),
         dataCriacao: new Date().toISOString()

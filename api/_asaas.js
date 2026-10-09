@@ -171,11 +171,22 @@ export async function consultarCobrancaAsaas(paymentId) {
 
 /**
  * Valida integridade e autenticidade da requisição de Webhook recebida do Asaas
+ * Em ambiente de Produção, a presença e exatidão de ASAAS_WEBHOOK_SECRET são mandatórias.
  */
 export function validarWebhookAsaas(req) {
   const config = getAsaasConfig();
+  const isProd = config.environment === 'production';
+
+  // Em Produção, falha de forma segura se ASAAS_WEBHOOK_SECRET estiver vazio
   if (!config.webhookSecret) {
-    // Se não há secret configurado, aceita em modo padrão
+    if (isProd) {
+      return {
+        valido: false,
+        erro: 'Segurança de Produção: ASAAS_WEBHOOK_SECRET não configurado no servidor. Webhook rejeitado.'
+      };
+    }
+    // Em sandbox/dev, emite aviso explicativo no servidor
+    console.warn('[Asaas Webhook] Aviso: ASAAS_WEBHOOK_SECRET não configurado em ambiente de desenvolvimento/sandbox.');
     return { valido: true };
   }
 
@@ -183,7 +194,7 @@ export function validarWebhookAsaas(req) {
                         req.headers['authorization'] || 
                         req.headers['x-asaas-token'] || '';
 
-  if (tokenRecebido.trim() !== config.webhookSecret.trim()) {
+  if (!tokenRecebido || tokenRecebido.trim() !== config.webhookSecret.trim()) {
     return {
       valido: false,
       erro: 'Token de autenticação do Webhook Asaas inválido ou ausente.'
@@ -192,3 +203,103 @@ export function validarWebhookAsaas(req) {
 
   return { valido: true };
 }
+
+/**
+ * ==============================================================================
+ * PREÇOS E REGRAS OFICIAIS DE COBRANÇA (BACKEND SEGURO)
+ * ==============================================================================
+ * Regras estritas:
+ * 1. Salas Privadas (Red R$ 800, Green R$ 900, Blue R$ 1.000):
+ *    - Pagamento 100% integral no ato da reserva.
+ *    - Sem sinal de 50%, sem saldo na recepção.
+ *    - Preço fixo total da sala, NUNCA multiplicado por quantidade de convidados.
+ *    - Mesmo valor independente da forma de pagamento (Pix, Débito ou Crédito).
+ * 2. Mesas do Salão Principal:
+ *    - Cobrança por pessoa: Pix R$ 20, Débito R$ 20, Crédito R$ 25.
+ * ==============================================================================
+ */
+
+export const PRECOS_SALAS_OFICIAIS = {
+  'sala red': 800,
+  'sala green': 900,
+  'sala blue': 1000
+};
+
+export const TARIFAS_SALAO_OFICIAIS = {
+  pix: 20,
+  debito: 20,
+  credito: 25
+};
+
+/**
+ * Calcula o preço oficial no servidor de forma autoritativa.
+ * O servidor NUNCA confia em valores enviados pelo cliente/navegador.
+ */
+export function calcularPrecoOficialServidor({
+  tipoReserva = '',
+  salaNome = '',
+  mesaId = '',
+  ambiente = '',
+  pessoas = 1,
+  metodo = 'pix'
+} = {}) {
+  const cleanMetodo = (metodo || 'pix').toLowerCase();
+  const metodoNormalizado = (cleanMetodo === 'credito' || cleanMetodo === 'credit_card' || cleanMetodo === 'cartao_credito')
+    ? 'credito'
+    : (cleanMetodo === 'debito' || cleanMetodo === 'debit_card')
+      ? 'debito'
+      : 'pix';
+
+  const salaLower = (salaNome || '').toLowerCase().trim();
+  const ambienteLower = (ambiente || '').toLowerCase().trim();
+  const isTipoSala = (tipoReserva || '').toLowerCase() === 'sala';
+
+  const isSalaPrivada = isTipoSala ||
+    salaLower.includes('red') || salaLower.includes('green') || salaLower.includes('blue') ||
+    ambienteLower.includes('sala red') || ambienteLower.includes('sala green') || ambienteLower.includes('sala blue');
+
+  if (isSalaPrivada) {
+    let valor = 800;
+    let nomeNormalizado = 'Sala Red';
+
+    if (salaLower.includes('blue') || ambienteLower.includes('blue')) {
+      valor = PRECOS_SALAS_OFICIAIS['sala blue']; // 1000
+      nomeNormalizado = 'Sala Blue';
+    } else if (salaLower.includes('green') || ambienteLower.includes('green')) {
+      valor = PRECOS_SALAS_OFICIAIS['sala green']; // 900
+      nomeNormalizado = 'Sala Green';
+    } else {
+      valor = PRECOS_SALAS_OFICIAIS['sala red']; // 800
+      nomeNormalizado = 'Sala Red';
+    }
+
+    const qtdConvidados = Math.max(1, parseInt(pessoas, 10) || 1);
+
+    return {
+      tipo: 'sala',
+      nome: nomeNormalizado,
+      pessoas: qtdConvidados,
+      valor,
+      metodo: metodoNormalizado,
+      isFixoIntegral: true,
+      descricao: `Reserva ${nomeNormalizado} (${qtdConvidados} convidados) - Pagamento Integral: R$ ${valor.toFixed(2)}`
+    };
+  }
+
+  // Mesas do Salão Principal (cobrança individual por pessoa)
+  const qtdPessoas = Math.max(1, parseInt(pessoas, 10) || 1);
+  const tarifaPorPessoa = TARIFAS_SALAO_OFICIAIS[metodoNormalizado];
+  const valorTotal = qtdPessoas * tarifaPorPessoa;
+
+  return {
+    tipo: 'mesa',
+    nome: mesaId || 'Mesa Salão Principal',
+    pessoas: qtdPessoas,
+    tarifaPorPessoa,
+    valor: valorTotal,
+    metodo: metodoNormalizado,
+    isFixoIntegral: false,
+    descricao: `Reserva Mesa Salão - ${qtdPessoas} pessoa(s) a R$ ${tarifaPorPessoa.toFixed(2)}/pessoa (${metodoNormalizado.toUpperCase()})`
+  };
+}
+

@@ -44,8 +44,9 @@ export const REGRAS_AMBIENTES = {
       'O titular da reserva declara expressamente ser o pai, mãe ou tutor legal com autoridade sobre os menores presentes no seu grupo.',
       'Não coletamos nem armazenamos dados pessoais de crianças no sistema, nos termos do art. 14 da LGPD (minimização e melhor interesse da criança).',
       'A capacidade máxima de ocupação estipulada para cada sala (Red: 30 pessoas; Green: 40 pessoas; Blue: 50 pessoas) deve ser rigorosamente respeitada por normas do Corpo de Bombeiros e segurança.',
-      'A reserva é confirmada mediante pagamento do sinal de 50%. O sinal garante a disponibilidade exclusiva do espaço. Em caso de cancelamento pelo cliente fora das hipóteses legais, o valor do sinal poderá ser retido conforme os termos da contratação.',
-      'O saldo remanescente de 50% é quitado conforme as condições informadas no momento da reserva.',
+      'A locação de salas privadas é realizada mediante pagamento único integral da sala completa no ato da reserva (Sala Red: R$ 800,00; Sala Green: R$ 900,00; Sala Blue: R$ 1.000,00). Não existe sinal de 50% nem saldo para pagar na recepção.',
+      'Em caso de cancelamento de sala privada, 50% do valor total corresponde à parcela que poderá não ser reembolsada, observadas a legislação aplicável e as circunstâncias do caso.',
+      'Nas salas privadas, o valor contratado contempla o uso exclusivo da sala inteira, sem cobrança por pessoa e sem acréscimo de taxas adicionais.',
       'Danos e avarias causados aos equipamentos de som, microfones, TVs e tablets das salas serão de responsabilidade do titular contratante.'
     ]
   },
@@ -89,15 +90,15 @@ export const TERMOS_COMPRA_RESERVA = `
 
 ---
 
-### 2. RESERVA E PAGAMENTO DE SINAL
+### 2. FORMA DE PAGAMENTO E VALORES
 
-2.1. Para determinadas reservas, especialmente salas privativas, poderá ser exigido pagamento antecipado correspondente a 50% (cinquenta por cento) do valor total da reserva, a título de sinal/arras, conforme as condições apresentadas no momento da contratação.
+2.1. Para a reserva de salas privativas, o valor é fixo e integral para a sala completa, contratado em modalidade de PAGAMENTO ÚNICO INTEGRAL via Pix, Débito ou Cartão de Crédito, sem cobrança por pessoa e sem acréscimo de taxas.
 
-2.2. O pagamento do sinal é utilizado para garantir a disponibilidade exclusiva do espaço, data e horário escolhidos pelo cliente.
+2.2. Nas salas privadas, não há cobrança por pessoa: o valor anunciado e contratado contempla a locação da sala inteira, respeitado o limite de capacidade estabelecido para o espaço.
 
-2.3. Após a confirmação da reserva, o estabelecimento deixa de disponibilizar aquele espaço e horário para novas reservas, assumindo compromissos de organização, preparação e disponibilidade relacionados à contratação.
+2.3. Exclusivamente para as mesas do Salão Principal, o valor da entrada é cobrado individualmente por pessoa (R$ 20 via Pix/Débito e R$ 25 via Crédito), garantindo a exclusividade da mesa para o grupo.
 
-2.4. O saldo remanescente de 50% (cinquenta por cento), quando aplicável, deverá ser pago conforme as condições informadas no momento da reserva.
+2.4. O pagamento integral garante a disponibilidade exclusiva do espaço, data e horário escolhidos pelo cliente.
 
 ---
 
@@ -105,13 +106,13 @@ export const TERMOS_COMPRA_RESERVA = `
 
 3.1. As solicitações de cancelamento deverão ser realizadas pelos canais oficiais disponibilizados pelo Backstage Karaokê.
 
-3.2. Nas contratações realizadas fora do estabelecimento comercial, inclusive por meio do site, será respeitado o direito de arrependimento previsto na legislação aplicável, quando cabível.
+3.2. Nas contratações realizadas fora do estabelecimento comercial, inclusive por meio do site, é assegurado o direito ao reembolso conforme a legislação e as regras vigentes do estabelecimento.
 
-3.3. Fora das hipóteses de cancelamento e reembolso previstas em lei, quando o cancelamento ocorrer por iniciativa do cliente após a confirmação da reserva, o valor correspondente ao sinal de 50% poderá ser retido, observadas as condições da contratação e a legislação aplicável.
+3.3. Para a reserva de salas privadas, o pagamento é efetuado pelo valor integral da sala no momento da contratação (Sala Red R$ 800,00, Sala Green R$ 900,00, Sala Blue R$ 1.000,00). Não existe cobrança de sinal parcial nem saldo restante para acerto na recepção.
 
-3.4. A retenção do sinal decorre do fato de que, após a confirmação da reserva, o estabelecimento mantém aquele espaço e horário exclusivamente destinados ao cliente, deixando de disponibilizá-los a terceiros, além dos custos e compromissos relacionados à preparação do atendimento.
+3.4. Em caso de cancelamento de reserva de sala privada solicitado pelo cliente, 50% (cinquenta por cento) do valor total corresponde à parcela que poderá não ser reembolsada, observadas a legislação aplicável e as circunstâncias do caso, destinada a cobrir a retenção por exclusividade e custos de reserva da agenda do estabelecimento. O cliente manifesta seu aceite explícito a esta política antes de efetuar o pagamento.
 
-3.5. Nesses casos, eventual restituição será parcial, limitada aos valores efetivamente reembolsáveis de acordo com estas condições e com a legislação aplicável, não significando necessariamente a devolução integral do valor inicialmente pago.
+3.5. Para as reservas de mesas no Salão Principal, cancelamentos comunicados com antecedência observarão a legislação aplicável e as normas vigentes de proteção ao consumidor.
 
 3.6. O não comparecimento do cliente (no-show), sem cancelamento prévio, será tratado conforme as mesmas regras de cancelamento aplicáveis à modalidade contratada.
 

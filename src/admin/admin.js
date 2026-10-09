@@ -42,6 +42,10 @@ import {
   signOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  verifyBeforeUpdateEmail,
+  updateEmail,
 } from 'firebase/auth';
 import {
   collection,
@@ -63,6 +67,23 @@ import {
   validateMediaFile,
   LIMITS,
 } from '../lib/cloudinary.js';
+
+// ============================================================================
+// 0. SINCRONIZAÇÃO EM TEMPO REAL MULTI-ABA E MULTI-DISPOSITIVO
+// ============================================================================
+export function notifyRealtimeUpdate(type, data) {
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('backstage_realtime');
+      bc.postMessage({ type, data, timestamp: Date.now() });
+      bc.close();
+    }
+  } catch(e) {}
+
+  try {
+    window.dispatchEvent(new CustomEvent('backstageRealtimeSync', { detail: { type, data } }));
+  } catch(e) {}
+}
 
 // ============================================================================
 // 1. ESTADO GLOBAL E ROTEAMENTO
@@ -522,11 +543,46 @@ async function fetchGaleria() {
 
 // 5.6 Configurações
 async function fetchConfiguracoes() {
+  // 1. Tenta carregar do localStorage imediatamente para garantir resposta instantânea
+  try {
+    const local = localStorage.getItem('backstage_configuracoes');
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (parsed && typeof parsed === 'object') {
+        state.configuracoes = { ...DEFAULT_CONFIGURACOES, ...parsed };
+      }
+    }
+  } catch(e) {}
+
+  // 2. Consulta API oficial do backend (que busca no Supabase com Service Role Key)
+  try {
+    const res = await fetch('/api/admin-configuracoes');
+    if (res.ok) {
+      const apiData = await res.json();
+      if (apiData?.sucesso && apiData?.configuracoes) {
+        state.configuracoes = {
+          ...DEFAULT_CONFIGURACOES,
+          ...state.configuracoes,
+          ...apiData.configuracoes
+        };
+        try {
+          localStorage.setItem('backstage_configuracoes', JSON.stringify(state.configuracoes));
+        } catch(e) {}
+        return state.configuracoes;
+      }
+    }
+  } catch (apiErr) {
+    console.warn('Aviso consulta /api/admin-configuracoes:', apiErr.message);
+  }
+
   if (isSupabaseConfigured) {
     try {
       const data = await getConfiguracoesSupabase();
       if (data) {
-        state.configuracoes = data;
+        state.configuracoes = { ...state.configuracoes, ...data };
+        try {
+          localStorage.setItem('backstage_configuracoes', JSON.stringify(state.configuracoes));
+        } catch(e) {}
         return state.configuracoes;
       }
     } catch (supaErr) {
@@ -538,15 +594,22 @@ async function fetchConfiguracoes() {
     const docRef = doc(db, 'configuracoes', 'geral');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      state.configuracoes = docSnap.data();
+      state.configuracoes = { ...state.configuracoes, ...docSnap.data() };
+      try {
+        localStorage.setItem('backstage_configuracoes', JSON.stringify(state.configuracoes));
+      } catch(e) {}
     } else {
       await seedDatabaseIfNeeded(db);
-      state.configuracoes = { ...DEFAULT_CONFIGURACOES };
+      if (!state.configuracoes || !state.configuracoes.whatsapp) {
+        state.configuracoes = { ...DEFAULT_CONFIGURACOES };
+      }
     }
     return state.configuracoes;
   } catch (err) {
     console.warn('Erro ao carregar configurações:', err);
-    state.configuracoes = { ...DEFAULT_CONFIGURACOES };
+    if (!state.configuracoes || !state.configuracoes.whatsapp) {
+      state.configuracoes = { ...DEFAULT_CONFIGURACOES };
+    }
     return state.configuracoes;
   }
 }
@@ -1062,7 +1125,7 @@ function renderReservaRow(r) {
       <td>
         ${isPaid ? `
           <span style="font-size: 0.75rem; color: var(--admin-green); font-weight: 700;">
-            ✓ Sinal Pago ${r.valorPago ? `(R$ ${Number(r.valorPago).toFixed(0)})` : ''}
+            ✓ Pago ${r.valorPago ? `(R$ ${Number(r.valorPago).toFixed(2)})` : ''}
           </span>
         ` : `
           <span style="font-size: 0.75rem; color: var(--admin-yellow); font-weight: 700;">Aguardando</span>
@@ -2039,9 +2102,27 @@ function renderConfiguracoesView() {
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="confEmail">E-mail de Contato / Administrador</label>
-            <input type="email" id="confEmail" class="form-input" value="${conf.contatoEmail || 'MPLACERDA921@GMAIL.COM'}" required>
+            <label class="form-label" for="confEmail">E-mail de Contato Oficial do Backstage</label>
+            <input type="email" id="confEmail" class="form-input" value="${conf.contatoEmail || 'contato@barbackstagekaraoke.com.br'}" required>
+            <div style="font-size: 0.76rem; color: var(--admin-text-muted); margin-top: 4px;">
+              Exibido no rodapé do site, faturas e comunicações oficiais do Backstage.
+            </div>
           </div>
+        </div>
+
+        <!-- Box de Acesso e Login do Administrador -->
+        <div style="background: rgba(0, 240, 255, 0.05); border: 1.5px dashed rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 16px 20px; margin: 20px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <div style="font-size: 0.95rem; font-weight: 800; color: var(--admin-cyan); margin-bottom: 3px;">
+              Conta de Acesso ao Painel Administrativo (Firebase Auth)
+            </div>
+            <div style="font-size: 0.84rem; color: #CBD5E1;">
+              E-mail de login atual: <strong style="color: #FFF; font-family: monospace;">${state.user?.email || 'Desconhecido'}</strong>
+            </div>
+          </div>
+          <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.handleAlterarEmailLogin()" style="border-color: var(--admin-cyan); color: var(--admin-cyan);">
+            Alterar E-mail de Login do Admin 🔑
+          </button>
         </div>
 
         <div class="form-group">
@@ -2625,8 +2706,10 @@ window.handleSalvarBloqueio = async (e) => {
     }
 
     state.bloqueios.push({ id: blockId || String(Date.now()), ...payload });
+    try { localStorage.setItem('backstage_bloqueios', JSON.stringify(state.bloqueios)); } catch(e) {}
+    notifyRealtimeUpdate('BLOQUEIOS_UPDATE', state.bloqueios);
 
-    showToast('Data bloqueada.', 'success');
+    showToast('Data bloqueada com sucesso.', 'success');
     renderApp();
   } catch (err) {
     console.error('Erro ao salvar bloqueio:', err);
@@ -2657,6 +2740,9 @@ window.removerBloqueio = (id) => {
         }
 
         state.bloqueios = state.bloqueios.filter(b => b.id !== id);
+        try { localStorage.setItem('backstage_bloqueios', JSON.stringify(state.bloqueios)); } catch(e) {}
+        notifyRealtimeUpdate('BLOQUEIOS_UPDATE', state.bloqueios);
+
         showToast('Bloqueio removido com sucesso.', 'info');
         renderApp();
       } catch (err) {
@@ -2686,6 +2772,9 @@ window.toggleAtivoSala = async (id, novoAtivo) => {
     }
 
     if (s) s.ativo = novoAtivo;
+    try { localStorage.setItem('backstage_salas', JSON.stringify(state.salas)); } catch(e) {}
+    notifyRealtimeUpdate('SALAS_UPDATE', state.salas);
+
     showToast(`Sala ${novoAtivo ? 'ativada' : 'desativada'} com sucesso.`, 'info');
     renderApp();
   } catch (err) {
@@ -2766,8 +2855,8 @@ window.saveSala = async (e) => {
       slug: salaId,
       capacidade,
       precoTotal,
-      sinal: precoTotal / 2,
-      restante: precoTotal / 2,
+      sinal: precoTotal,
+      restante: 0,
       descricao,
       ativo,
       atualizadoEm: serverTimestamp()
@@ -2838,7 +2927,10 @@ window.saveSala = async (e) => {
       state.salas.push(payload);
     }
 
-    showToast('Sala salva com sucesso no banco de dados.', 'success');
+    try { localStorage.setItem('backstage_salas', JSON.stringify(state.salas)); } catch(e) {}
+    notifyRealtimeUpdate('SALAS_UPDATE', state.salas);
+
+    showToast('Sala salva com sucesso no banco de dados!', 'success');
     window.closeSalaModal();
     renderApp();
   } catch (err) {
@@ -3104,6 +3196,9 @@ window.saveCardapioItem = async (e) => {
       showToast(`Item "${nome}" adicionado com sucesso.`, 'success');
     }
 
+    try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch(e) {}
+    notifyRealtimeUpdate('CARDAPIO_UPDATE', state.cardapio);
+
     window.closeCardapioItemModal();
     if (document.getElementById('cardapioTableContainer')) {
       updateCardapioItemsOnly();
@@ -3182,6 +3277,9 @@ window.toggleAtivoItemCardapio = async (id, novoAtivo) => {
     }
 
     if (item) item.ativo = novoAtivo;
+    try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch(e) {}
+    notifyRealtimeUpdate('CARDAPIO_UPDATE', state.cardapio);
+
     showToast(novoAtivo ? 'Item reativado no cardápio.' : 'Item pausado no cardápio.', 'info');
     updateCardapioItemsOnly();
   } catch (err) {
@@ -3213,6 +3311,9 @@ window.excluirItemCardapio = (id) => {
         }
 
         state.cardapio = state.cardapio.filter(it => it.id !== id);
+        try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch(e) {}
+        notifyRealtimeUpdate('CARDAPIO_UPDATE', state.cardapio);
+
         showToast('Item excluído com sucesso.', 'info');
         updateCardapioItemsOnly();
       } catch (err) {
@@ -3900,6 +4001,9 @@ window.submitMediaUpload = async (e) => {
       showToast(finalTipo === 'video' ? `Vídeo enviado com sucesso ao ${storageDestName}!` : `Foto enviada com sucesso ao ${storageDestName}!`, 'success');
     }
 
+    try { localStorage.setItem('backstage_galeria', JSON.stringify(state.galeria)); } catch(e) {}
+    notifyRealtimeUpdate('GALERIA_UPDATE', state.galeria);
+
     window.closeMediaUploadModal();
     renderApp();
   } catch (err) {
@@ -3937,6 +4041,8 @@ window.excluirItemGaleria = (id, fileUrl, publicId, resourceType = 'image') => {
         }
 
         state.galeria = state.galeria.filter(g => g.id !== id);
+        try { localStorage.setItem('backstage_galeria', JSON.stringify(state.galeria)); } catch(e) {}
+        notifyRealtimeUpdate('GALERIA_UPDATE', state.galeria);
 
         // 3. Remove arquivo do armazenamento (Supabase Storage ou Cloudinary)
         if (publicId || fileUrl) {
@@ -3973,6 +4079,13 @@ window.excluirItemGaleria = (id, fileUrl, publicId, resourceType = 'image') => {
 // 8.8 Ações de Configurações
 window.handleSalvarConfiguracoes = async (e) => {
   e.preventDefault();
+
+  // 1. Verificação de permissão de administrador
+  if (!state.user || !state.user.email) {
+    showToast('Acesso negado: faça login como administrador para salvar as configurações.', 'error');
+    return;
+  }
+
   const whatsapp = document.getElementById('confWpp')?.value?.trim();
   const instagram = document.getElementById('confInsta')?.value?.trim();
   const mapsUrl = document.getElementById('confMaps')?.value?.trim();
@@ -3985,51 +4098,221 @@ window.handleSalvarConfiguracoes = async (e) => {
   const sexta = document.getElementById('confHorarioSexta')?.value?.trim();
   const sabado = document.getElementById('confHorarioSabado')?.value?.trim();
 
-  try {
-    const btn = document.getElementById('btnSalvarConfig');
-    if (btn) btn.disabled = true;
+  // 2. Validação rigorosa dos campos no frontend
+  const wppLimpo = (whatsapp || '').replace(/\D/g, '');
+  if (!wppLimpo || wppLimpo.length < 10) {
+    showToast('Por favor, informe um WhatsApp válido com DDD (mínimo 10 dígitos).', 'error');
+    return;
+  }
 
+  if (!contatoEmail || !contatoEmail.includes('@') || !contatoEmail.includes('.')) {
+    showToast('Por favor, informe um e-mail de contato válido.', 'error');
+    return;
+  }
+
+  if (!endereco || endereco.length < 5) {
+    showToast('Por favor, informe o endereço completo do estabelecimento.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnSalvarConfig');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Salvando Configurações... ⏳';
+  }
+
+  try {
     const payload = {
-      whatsapp,
-      instagram,
-      mapsUrl,
-      contatoEmail,
+      whatsapp: wppLimpo,
+      instagram: instagram || '@backstagekaraoke',
+      mapsUrl: mapsUrl || 'https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6',
+      contatoEmail: contatoEmail.toLowerCase(),
       endereco,
+      pdfUrl: state.configuracoes?.pdfUrl || '/cardapio-oficial.pdf',
+      pdfPublicId: state.configuracoes?.pdfPublicId || null,
       horarios: {
-        terca,
-        quarta,
-        quinta,
-        sexta,
-        sabado,
+        terca: terca || '19:00 → 02:30 (madrugada de quarta)',
+        quarta: quarta || '19:00 → 03:30 (madrugada de quinta)',
+        quinta: quinta || '19:00 → 03:30 (madrugada de sexta)',
+        sexta: sexta || '18:30 → 04:00 (madrugada de sábado)',
+        sabado: sabado || '18:30 → 04:00 (madrugada de domingo)',
         domingo: 'FECHADO',
         segunda: 'FECHADO'
       },
-      atualizadoEm: serverTimestamp()
+      atualizadoEm: new Date().toISOString()
     };
 
+    // 3. Obtenção do ID Token do Firebase para autenticar a chamada ao backend
+    let idToken = null;
+    try {
+      if (auth?.currentUser) {
+        idToken = await auth.currentUser.getIdToken(false);
+      }
+    } catch(tokErr) {
+      console.warn('Aviso ao obter ID Token:', tokErr);
+    }
+
+    // 4. Chamada ao backend serverless (/api/admin-configuracoes) com privilégios Supabase
+    let backendSalvo = false;
+    let backendErro = null;
+
+    try {
+      const apiRes = await fetch('/api/admin-configuracoes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
+        },
+        body: JSON.stringify({
+          whatsapp: payload.whatsapp,
+          instagram: payload.instagram,
+          mapsUrl: payload.mapsUrl,
+          contatoEmail: payload.contatoEmail,
+          endereco: payload.endereco,
+          pdfUrl: payload.pdfUrl,
+          pdfPublicId: payload.pdfPublicId,
+          horarios: payload.horarios
+        })
+      });
+
+      const apiData = await apiRes.json().catch(() => ({}));
+      if (apiRes.ok && apiData.sucesso) {
+        backendSalvo = true;
+      } else if (!apiRes.ok) {
+        backendErro = apiData.error || `Erro HTTP ${apiRes.status} no servidor`;
+      }
+    } catch (apiErr) {
+      backendErro = apiErr.message;
+    }
+
+    // 5. Salva no Supabase via cliente direto JS se configurado
+    let supaSalvo = false;
+    let supaErro = null;
     if (isSupabaseConfigured) {
       try {
         await saveConfiguracoesSupabase(payload);
+        supaSalvo = true;
       } catch (supaErr) {
-        console.warn('Aviso Supabase salvar configurações:', supaErr);
+        supaErro = supaErr.message;
+        console.warn('Aviso Supabase direto:', supaErr);
       }
     }
 
-    if (db) {
+    // 6. Salva no Firestore com payload sanitizado (sem undefined)
+    let firestoreSalvo = false;
+    let firestoreErro = null;
+    if (db && auth?.currentUser) {
       try {
-        await setDoc(doc(db, 'configuracoes', 'geral'), payload, { merge: true });
-      } catch(e) {}
+        const firestorePayload = JSON.parse(JSON.stringify(payload));
+        await setDoc(doc(db, 'configuracoes', 'geral'), {
+          ...firestorePayload,
+          atualizadoEm: serverTimestamp()
+        }, { merge: true });
+        firestoreSalvo = true;
+      } catch(dbErr) {
+        firestoreErro = dbErr.message;
+        console.warn('Aviso Firestore salvar configurações:', dbErr);
+      }
     }
+
+    // 7. Verificação estrita de gravação (NÃO exibe sucesso se a gravação falhou)
+    const salvouEmBanco = backendSalvo || supaSalvo || firestoreSalvo;
+    if (!salvouEmBanco) {
+      const motivo = backendErro || supaErro || firestoreErro || 'Nenhum serviço de banco de dados confirmou a gravação.';
+      showToast(`Erro: As configurações NÃO puderam ser salvas no banco de dados. Motivo: ${motivo}`, 'error');
+      return;
+    }
+
+    // 8. Grava no localStorage para cache local
+    try {
+      localStorage.setItem('backstage_configuracoes', JSON.stringify(payload));
+    } catch(e) {}
 
     state.configuracoes = { ...state.configuracoes, ...payload };
 
-    showToast('Configurações salvas com sucesso.', 'success');
+    // 9. Notifica todas as abas e o site em tempo real
+    notifyRealtimeUpdate('CONFIGURACOES_UPDATE', payload);
+
+    showToast('Configurações e e-mail salvos com sucesso no banco de dados! ✓', 'success');
     renderApp();
   } catch (err) {
     console.error('Erro ao salvar configs:', err);
-    showToast('Erro ao salvar configurações no banco de dados.', 'error');
+    showToast('Erro ao salvar configurações no banco de dados: ' + err.message, 'error');
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Configurações';
+    }
+  }
+};
+
+window.handleAlterarEmailLogin = async () => {
+  if (!auth || !auth.currentUser) {
+    showToast('Nenhum usuário autenticado no Firebase Auth.', 'error');
+    return;
+  }
+
+  const emailAtual = auth.currentUser.email || '';
+  const novoEmail = prompt(
+    `E-mail de login atual: ${emailAtual}\n\nDigite o NOVO e-mail com o qual você deseja fazer login no painel:`,
+    emailAtual
+  );
+
+  if (!novoEmail) return;
+  const emailLimpo = novoEmail.trim().toLowerCase();
+  if (emailLimpo === emailAtual.toLowerCase()) {
+    showToast('O e-mail informado é idêntico ao atual.', 'info');
+    return;
+  }
+
+  const senhaAtual = prompt(
+    `Por motivos de segurança do Firebase, confirme sua SENHA ATUAL de administrador para alterar o e-mail para:\n"${emailLimpo}":`
+  );
+
+  if (!senhaAtual) return;
+
+  try {
+    showToast('Reautenticando no Firebase para autorizar alteração...', 'info');
+    
+    // Reautentica
+    const cred = EmailAuthProvider.credential(emailAtual, senhaAtual);
+    await reauthenticateWithCredential(auth.currentUser, cred);
+
+    // Atualiza no Firebase Auth
+    if (typeof verifyBeforeUpdateEmail === 'function') {
+      await verifyBeforeUpdateEmail(auth.currentUser, emailLimpo);
+      showToast(
+        `Link de confirmação enviado para "${emailLimpo}". Acesse sua caixa de entrada e clique no link para ativar o novo e-mail.`,
+        'success'
+      );
+    } else {
+      await updateEmail(auth.currentUser, emailLimpo);
+      showToast(`E-mail de login alterado com sucesso para "${emailLimpo}"!`, 'success');
+    }
+
+    // Atualiza também nas configurações e no banco de dados
+    const confInput = document.getElementById('confEmail');
+    if (confInput) confInput.value = emailLimpo;
+    if (state.user) state.user.email = emailLimpo;
+
+    // Dispara salvamento em cascata no banco
+    if (document.querySelector('form[onsubmit*="handleSalvarConfiguracoes"]')) {
+      const fakeEvt = { preventDefault: () => {} };
+      await window.handleSalvarConfiguracoes(fakeEvt);
+    }
+
+    renderApp();
+  } catch (authErr) {
+    console.error('Erro ao alterar e-mail de login:', authErr);
+    if (authErr.code === 'auth/wrong-password' || authErr.code === 'auth/invalid-credential') {
+      showToast('Senha atual incorreta. A alteração não foi realizada.', 'error');
+    } else if (authErr.code === 'auth/email-already-in-use') {
+      showToast('Este e-mail já está em uso por outra conta no Firebase.', 'error');
+    } else if (authErr.code === 'auth/requires-recent-login') {
+      showToast('Sessão expirada. Saia do painel e entre novamente para alterar.', 'error');
+    } else {
+      showToast('Erro ao atualizar e-mail: ' + (authErr.message || authErr.code), 'error');
+    }
   }
 };
 
@@ -4211,6 +4494,7 @@ window.handleSalvarPromocoes = async (e) => {
 
     state.promocoes = updatedCards;
     localStorage.setItem('backstage_promocoes', JSON.stringify(updatedCards));
+    notifyRealtimeUpdate('PROMOCOES_UPDATE', updatedCards);
 
     // Salva no Firestore
     if (db) {
@@ -4249,6 +4533,7 @@ window.handleResetPromocoes = () => {
     onConfirm: async () => {
       state.promocoes = JSON.parse(JSON.stringify(DEFAULT_PROMOCOES));
       localStorage.setItem('backstage_promocoes', JSON.stringify(state.promocoes));
+      notifyRealtimeUpdate('PROMOCOES_UPDATE', state.promocoes);
       if (db) {
         try {
           await setDoc(doc(db, 'configuracoes', 'promocoes'), {

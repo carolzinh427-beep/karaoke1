@@ -329,6 +329,11 @@ export class KaraokeMap {
       return;
     }
 
+    // Garante que qualquer seleção de sala anterior seja cancelada
+    if (typeof window !== 'undefined') {
+      window.selectedBookingRoom = null;
+    }
+
     // Seleciona a mesa
     this.selectTable(tableId);
 

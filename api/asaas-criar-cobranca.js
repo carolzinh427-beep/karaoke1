@@ -11,7 +11,8 @@ import {
   getAsaasConfig,
   obterOuCriarClienteAsaas,
   criarCobrancaAsaas,
-  obterPixQrCodeAsaas
+  obterPixQrCodeAsaas,
+  calcularPrecoOficialServidor
 } from './_asaas.js';
 
 export default async function handler(req, res) {
@@ -32,9 +33,51 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método não permitido. Utilize POST.' });
   }
 
+  const {
+    nome,
+    email,
+    telefone,
+    cpfCnpj,
+    metodo = 'pix',
+    tipoReserva,
+    salaNome,
+    mesaId,
+    ambiente,
+    pessoas,
+    valor,
+    codigoReserva,
+    descricao
+  } = req.body || {};
+
+  // 1. Calcula o valor oficial de forma autoritativa no servidor (NUNCA confia no navegador)
+  const calculoOficial = calcularPrecoOficialServidor({
+    tipoReserva,
+    salaNome,
+    mesaId,
+    ambiente,
+    pessoas,
+    metodo
+  });
+
+  const valorOficial = calculoOficial.valor;
+
+  // 2. Proteção de Segurança: detecta e rejeita imediatamente tentativa de alterar o preço pelo navegador
+  if (valor !== undefined && valor !== null && valor !== '') {
+    const valorEnviadoNum = Number(valor);
+    if (isNaN(valorEnviadoNum) || Math.abs(valorEnviadoNum - valorOficial) > 0.01) {
+      console.warn(`[Segurança Asaas] Tentativa de alteração de preço pelo navegador bloqueada! Esperado: R$ ${valorOficial.toFixed(2)}, Recebido: R$ ${Number(valor).toFixed(2)}`);
+      return res.status(400).json({
+        sucesso: false,
+        error: `Tentativa de alteração de preço pelo navegador detectada. O valor oficial para esta reserva é R$ ${valorOficial.toFixed(2)}, mas foi recebido R$ ${Number(valor).toFixed(2)}.`,
+        valorEsperado: valorOficial,
+        valorRecebido: valorEnviadoNum
+      });
+    }
+  }
+
   const config = getAsaasConfig();
 
-  // Se a chave ainda não estiver configurada no .env.local
+  // 3. Se a chave ainda não estiver configurada no .env.local
   if (!config.isConfigured) {
     return res.status(503).json({
       configurado: false,
@@ -44,23 +87,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const {
-    nome,
-    email,
-    telefone,
-    cpfCnpj,
-    metodo = 'pix',
-    valor,
-    codigoReserva,
-    descricao
-  } = req.body || {};
-
-  if (!valor || Number(valor) <= 0) {
-    return res.status(400).json({ error: 'Valor da cobrança é obrigatório e deve ser maior que zero.' });
-  }
-
   try {
-    // 1. Cadastra ou recupera cliente no Asaas
+    // 3. Cadastra ou recupera cliente no Asaas
     const cliente = await obterOuCriarClienteAsaas({
       nome: nome || 'Cliente Backstage',
       email: email || undefined,
@@ -68,7 +96,7 @@ export default async function handler(req, res) {
       cpfCnpj: cpfCnpj || undefined
     });
 
-    // 2. Mapeia método para o Asaas
+    // 4. Mapeia método para o Asaas
     let billingType = 'PIX';
     const m = (metodo || '').toLowerCase();
     if (m === 'credito' || m === 'credit_card' || m === 'cartao_credito') {
@@ -77,12 +105,12 @@ export default async function handler(req, res) {
       billingType = 'DEBIT_CARD';
     }
 
-    // 3. Cria a cobrança
-    const desc = descricao || `Reserva Backstage Karaokê - Código: ${codigoReserva || 'S/N'}`;
+    // 5. Cria a cobrança oficial no Asaas utilizando estritamente o valor calculado no backend
+    const desc = descricao || calculoOficial.descricao || `Reserva Backstage Karaokê - Código: ${codigoReserva || 'S/N'}`;
     const cobranca = await criarCobrancaAsaas({
       customerId: cliente.id,
       billingType,
-      valor: Number(valor),
+      valor: valorOficial,
       description: desc,
       externalReference: codigoReserva
     });

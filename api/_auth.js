@@ -57,7 +57,44 @@ export async function verifyAdminToken(req) {
     }
 
     const userEmail = user.email.toLowerCase().trim();
-    if (userEmail !== ADMIN_EMAIL) {
+
+    // Lista de administradores autorizados (variável de ambiente + superadmin padrão)
+    const allowedEmails = new Set(
+      (process.env.ADMIN_EMAIL || 'MPLACERDA921@GMAIL.COM')
+        .split(/[,;\s]+/)
+        .map(e => e.trim().toLowerCase())
+        .filter(Boolean)
+    );
+    allowedEmails.add('mplacerda921@gmail.com');
+
+    let isAuthorized = allowedEmails.has(userEmail);
+
+    // Se ainda não autorizado, verifica se corresponde ao e-mail salvo na tabela configuracoes
+    if (!isAuthorized) {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      if (supabaseUrl && supabaseKey) {
+        try {
+          const confRes = await fetch(`${supabaseUrl}/rest/v1/configuracoes?id=eq.geral&select=contato_email`, {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`
+            }
+          });
+          if (confRes.ok) {
+            const confData = await confRes.json();
+            const dbEmail = (confData[0]?.contato_email || '').toLowerCase().trim();
+            if (dbEmail && dbEmail === userEmail) {
+              isAuthorized = true;
+            }
+          }
+        } catch (dbErr) {
+          console.warn('Aviso checagem admin email no Supabase:', dbErr.message);
+        }
+      }
+    }
+
+    if (!isAuthorized) {
       return {
         ok: false,
         status: 403,

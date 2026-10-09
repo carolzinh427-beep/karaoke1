@@ -111,8 +111,8 @@ export async function saveSalaSupabase(sala) {
     slug: sala.slug || sala.id,
     capacidade: sala.capacidade || 30,
     preco_total: sala.precoTotal || 0,
-    sinal: sala.sinal || (sala.precoTotal ? sala.precoTotal / 2 : 0),
-    restante: sala.restante || (sala.precoTotal ? sala.precoTotal / 2 : 0),
+    sinal: sala.sinal !== undefined ? sala.sinal : (sala.precoTotal || 0),
+    restante: sala.restante !== undefined ? sala.restante : 0,
     descricao: sala.descricao || '',
     ativo: sala.ativo !== false,
     ordem: sala.ordem || 1,
@@ -383,8 +383,8 @@ export async function criarReservaComCompliance(dados) {
     sala_ou_mesa: dados.salaOuMesa || dados.sala || '',
     sala: dados.sala,
     pessoas: dados.pessoas || 1,
-    status: dados.status || 'CONFIRMED',
-    status_pagamento: dados.statusPagamento || 'aprovado',
+    status: dados.status || 'PENDING',
+    status_pagamento: dados.statusPagamento || 'aguardando',
     transacao_id: dados.transacaoId || null,
     qr_code_token: dados.qrCodeToken || null,
     valor_total: dados.valorTotal || null,
@@ -650,7 +650,7 @@ export async function getConfiguracoesSupabase() {
     instagram: data.instagram,
     mapsUrl: data.maps_url,
     endereco: data.endereco,
-    contatoEmail: data.contato_email,
+    contatoEmail: data.contato_email || undefined,
     pdfUrl: data.pdf_url,
     pdfPublicId: data.pdf_public_id,
     horarios: data.horarios || {},
@@ -677,9 +677,23 @@ export async function saveConfiguracoesSupabase(config) {
     .from('configuracoes')
     .upsert(payload)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    // Se a coluna contato_email ou pdf_public_id ainda não existir no schema remoto
+    if (error.message?.includes('contato_email') || error.code === '42703') {
+      console.warn('Aviso: coluna contato_email não encontrada no Supabase. Gravando demais campos...');
+      const { contato_email, ...payloadSemEmail } = payload;
+      const retry = await supabase
+        .from('configuracoes')
+        .upsert(payloadSemEmail)
+        .select()
+        .maybeSingle();
+      if (retry.error) throw retry.error;
+      return retry.data;
+    }
+    throw error;
+  }
   return data;
 }
 

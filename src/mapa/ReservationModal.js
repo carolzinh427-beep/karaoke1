@@ -261,108 +261,34 @@ export class ReservationModal {
     if (!whatsapp || whatsapp.length < 14) return this.showAlert('Por favor, informe um WhatsApp válido com DDD.');
     if (!email || !email.includes('@')) return this.showAlert('Por favor, informe um e-mail válido.');
 
-    const submitBtn = document.getElementById('kmodalSubmitBtn');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<span>Salvando no banco de dados...</span>`;
+    const qtdPessoas = parseInt(pessoas, 10);
+
+    // Fecha o modal do mapa e transiciona para o checkout oficial com pagamento
+    this.close();
+
+    if (typeof window !== 'undefined' && window.iniciarPagamentoReservaMesa) {
+      window.iniciarPagamentoReservaMesa({
+        mesaId: this.currentTable.id,
+        mesaNome: this.currentTable.name,
+        data,
+        horario,
+        pessoas: qtdPessoas,
+        nome,
+        whatsapp,
+        email
+      });
     }
 
-    const payload = {
-      nome,
-      whatsapp,
-      email,
-      data,
-      horario,
-      pessoas: parseInt(pessoas, 10),
-      ambienteId: 'salao-principal',
-      sala: 'salao-principal',
-      salaOuMesa: `${this.currentTable.name} (Salão Principal)`,
-      mesaId: this.currentTable.id,
-      mesaNumero: this.currentTable.number,
-      status: 'CONFIRMED',
-      statusPagamento: 'aprovado',
-      termosAceitos: true,
-      termosVersao: '2026.1',
-      origem: 'mapa_salao_principal',
-      dataReserva: data,
-      tipo: 'mesa'
-    };
-
-    try {
-      // 1. Grava no banco de dados (Supabase & Firestore)
-      const saveResult = await salvarAgendamento(payload);
-      console.log('Reserva de mesa gravada no banco de dados:', saveResult);
-
-      // 2. Imediatamente atualiza o status da mesa para "reservada" no mapa e na lista
-      if (window.karaokeMapInstance) {
-        window.karaokeMapInstance.setTableStatus(this.currentTable.id, 'reservada');
-      }
-
-      // 3. Notifica o restante da aplicação
-      window.dispatchEvent(new CustomEvent('mesaReservadaConfirmada', { detail: payload }));
-
-      // Formata exibição da data DD/MM/AAAA
-      const [ano, mes, dia] = data.split('-');
-      const dataFormatada = `${dia}/${mes}/${ano}`;
-
-      // Mostra tela de validação de sucesso com aviso de armazenamento no banco
-      const summaryCard = document.getElementById('kmodalSummaryCard');
-      if (summaryCard) {
-        summaryCard.innerHTML = `
-          <div class="ksummary-row">
-            <span class="ksummary-label">Mesa Reservada:</span>
-            <span class="ksummary-val highlight">${this.currentTable.name} (Até ${this.currentTable.capacity} pessoas)</span>
-          </div>
-          <div class="ksummary-row">
-            <span class="ksummary-label">Localização:</span>
-            <span class="ksummary-val">${this.currentTable.location}</span>
-          </div>
-          <div class="ksummary-row">
-            <span class="ksummary-label">Data e Horário:</span>
-            <span class="ksummary-val">📅 ${dataFormatada} às ⏰ ${horario}</span>
-          </div>
-          <div class="ksummary-row">
-            <span class="ksummary-label">Quantidade de Pessoas:</span>
-            <span class="ksummary-val">👥 ${pessoas} pessoas</span>
-          </div>
-          <div class="ksummary-row">
-            <span class="ksummary-label">Titular da Reserva:</span>
-            <span class="ksummary-val">${nome}</span>
-          </div>
-          <div class="ksummary-row">
-            <span class="ksummary-label">Contato:</span>
-            <span class="ksummary-val">📱 ${whatsapp} • ✉️ ${email}</span>
-          </div>
-          <div class="ksummary-row" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.15);">
-            <span class="ksummary-label">Banco de Dados:</span>
-            <span class="ksummary-val" style="color: #10B981; font-weight: 800;">✓ Registrado com Sucesso</span>
-          </div>
-        `;
-      }
-
-      const successTitle = document.querySelector('#kmodalSuccessView .kmodal-success-title');
-      if (successTitle) successTitle.textContent = 'Mesa Reservada com Sucesso!';
-
-      const successDesc = document.querySelector('#kmodalSuccessView .kmodal-success-desc');
-      if (successDesc) successDesc.textContent = 'Sua reserva foi armazenada no banco de dados e a mesa agora está marcada como indisponível no mapa.';
-
-      document.getElementById('kmodalFormView').style.display = 'none';
-      document.getElementById('kmodalSuccessView').style.display = 'block';
-
-      if (this.onContinue) {
-        this.onContinue({ ...payload, table: this.currentTable });
-      }
-    } catch (err) {
-      console.error('Erro ao salvar reserva de mesa:', err);
-      this.showAlert('Houve um problema ao salvar no banco de dados. Por favor tente novamente.');
-    } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `
-          <span>Continuar</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        `;
-      }
+    if (this.onContinue) {
+      this.onContinue({
+        table: this.currentTable,
+        data,
+        horario,
+        pessoas: qtdPessoas,
+        nome,
+        whatsapp,
+        email
+      });
     }
   }
 

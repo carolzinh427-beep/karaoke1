@@ -40,6 +40,10 @@ export const TARIFAS_SALAO = {
  * @param {string} params.metodo - 'pix' | 'debito' | 'credito'
  * @param {Object} params.comprador - { nome, email, whatsapp }
  * @param {string} params.ambiente - 'Salão Principal' | etc
+ * @param {string} [params.tipoReserva] - 'sala' | 'mesa'
+ * @param {string} [params.salaNome]
+ * @param {string} [params.mesaId]
+ * @param {number} [params.pessoas]
  * @returns {Promise<Object>}
  */
 export async function createPaymentSession({
@@ -48,7 +52,11 @@ export async function createPaymentSession({
   valor,
   metodo = PAYMENT_METHODS.PIX,
   comprador,
-  ambiente = 'Salão Principal'
+  ambiente = 'Salão Principal',
+  tipoReserva,
+  salaNome,
+  mesaId,
+  pessoas
 }) {
   const cleanPhone = (comprador?.whatsapp || '').replace(/\D/g, '');
   const cleanMetodo = (metodo === 'cartao_credito' ? 'credito' : metodo).toLowerCase();
@@ -69,6 +77,11 @@ export async function createPaymentSession({
         email: comprador?.email,
         telefone: cleanPhone,
         metodo: cleanMetodo,
+        tipoReserva,
+        salaNome,
+        mesaId,
+        pessoas,
+        ambiente,
         valor: Number(valor),
         codigoReserva,
         descricao: `Reserva Backstage Karaokê (${ambiente}) - ${codigoReserva}`
@@ -101,9 +114,17 @@ export async function createPaymentSession({
           ambienteAsaas: data.ambiente
         };
       }
+    } else {
+      const errData = await res.json().catch(() => null);
+      if (errData?.error) {
+        throw new Error(errData.error);
+      }
     }
   } catch (apiErr) {
-    console.info('Aviso: backend Asaas em modo offline/desconectado:', apiErr.message);
+    console.warn('Aviso ao gerar cobrança no servidor Asaas:', apiErr.message);
+    if (apiErr.message.includes('Tentativa de alteração de preço') || apiErr.message.includes('bloqueada')) {
+      throw apiErr;
+    }
   }
 
   // 2. Fallback resiliente caso ASAAS_API_KEY ainda não tenha sido inserida
@@ -135,7 +156,7 @@ export async function createPaymentSession({
 }
 
 /**
- * Consulta o status atual de uma cobrança no Asaas
+ * Consulta o status atual de uma cobrança no Asaas via backend seguro
  */
 export async function checkPaymentStatus(transacaoId) {
   try {
@@ -143,28 +164,34 @@ export async function checkPaymentStatus(transacaoId) {
       const res = await fetch(`/api/asaas-status?id=${encodeURIComponent(transacaoId)}`);
       if (res.ok) {
         const data = await res.json();
+        const isPago = Boolean(data.pago || data.status === 'RECEIVED' || data.status === 'CONFIRMED');
         return {
           transacaoId: data.id || transacaoId,
           gateway: 'asaas',
           status: data.status,
+          pago: isPago,
+          valor: data.valor,
+          dataPagamento: data.dataPagamento,
           atualizadoEm: new Date().toISOString()
         };
       }
     }
   } catch (e) {
-    console.warn('Falha ao consultar status Asaas:', e.message);
+    console.warn('Falha ao consultar status Asaas no servidor:', e.message);
   }
 
   return {
     transacaoId,
     gateway: 'asaas',
     status: PAYMENT_STATUS.PENDING,
+    pago: false,
     atualizadoEm: new Date().toISOString()
   };
 }
 
 /**
- * Confirma o recebimento do pagamento (processamento do webhook ou confirmação imediata)
+ * Valida a confirmação de recebimento do pagamento exclusivamente junto ao servidor Asaas
+ * NUNCA confirma automaticamente sem atestado do servidor.
  */
 export async function processPaymentConfirmation({
   reservaId,
@@ -173,14 +200,32 @@ export async function processPaymentConfirmation({
 }) {
   const cleanMetodo = (metodo === 'cartao_credito' ? 'credito' : metodo).toLowerCase();
 
+  // Consulta real obrigatória no servidor Asaas
+  const statusCheck = await checkPaymentStatus(transacaoId);
+
+  if (statusCheck && statusCheck.pago) {
+    return {
+      success: true,
+      pago: true,
+      gateway: 'asaas',
+      transacaoId,
+      reservaId,
+      metodo: cleanMetodo,
+      status: PAYMENT_STATUS.APPROVED,
+      pagoEm: statusCheck.dataPagamento || new Date().toISOString(),
+      mensagem: 'Pagamento aprovado e confirmado oficialmente pelo Asaas!'
+    };
+  }
+
   return {
-    success: true,
+    success: false,
+    pago: false,
     gateway: 'asaas',
-    transacaoId: transacaoId || ('asaas_conf_' + Date.now().toString(36)),
+    transacaoId,
     reservaId,
     metodo: cleanMetodo,
-    status: PAYMENT_STATUS.APPROVED,
-    pagoEm: new Date().toISOString(),
-    mensagem: 'Pagamento aprovado com sucesso via Asaas!'
+    status: statusCheck?.status || PAYMENT_STATUS.PENDING,
+    mensagem: 'Pagamento pendente. Aguardando compensação pela instituição financeira.'
   };
 }
+

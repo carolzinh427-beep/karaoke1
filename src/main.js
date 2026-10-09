@@ -4,8 +4,9 @@
 
 import { initKaraokeMap } from './mapa/KaraokeMap.js';
 import { salvarAgendamento, db } from './lib/firebase.js';
-import { collection, getDocs, doc, getDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { 
+  supabase,
   isSupabaseConfigured,
   getConfiguracoesSupabase,
   getBloqueiosSupabase,
@@ -31,6 +32,7 @@ import {
 import {
   createPaymentSession,
   processPaymentConfirmation,
+  checkPaymentStatus,
   PAYMENT_METHODS
 } from './lib/payment.js';
 import {
@@ -76,6 +78,18 @@ let modalCalMonth = new Date().getMonth();
 let reservasOcupadas = [];
 let activeConfirmedReservation = null;
 
+// Estado de Sessão e Monitoramento de Pagamento Asaas (Anti-Falso Positivo)
+let currentPaymentSession = null;
+let currentReservaPendente = null;
+let paymentPollingTimer = null;
+
+function pararMonitoramentoPagamento() {
+  if (paymentPollingTimer) {
+    clearInterval(paymentPollingTimer);
+    paymentPollingTimer = null;
+  }
+}
+
 export function createWhatsAppUrl(message) {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
 }
@@ -95,6 +109,7 @@ function bootstrap() {
   try { initSalasGallery(); } catch(e) { console.warn('initSalasGallery error:', e); }
   try { syncPromocoesCards(); } catch(e) { console.warn('syncPromocoesCards error:', e); }
   try { loadPublicDataFromFirestore(); } catch(e) { console.warn('loadPublicDataFromFirestore error:', e); }
+  try { initRealtimeListeners(); } catch(e) { console.warn('initRealtimeListeners error:', e); }
 }
 
 
@@ -479,8 +494,8 @@ const ROOM_DATA = {
     capacidadeNum: 50,
     precoTotal: 'R$ 1.000,00',
     precoTotalNum: 1000,
-    sinal: 'R$ 500,00',
-    sinalNum: 500
+    sinal: 'Pagamento Único',
+    sinalNum: 1000
   },
   'Sala Red': {
     name: 'Sala Red',
@@ -494,8 +509,8 @@ const ROOM_DATA = {
     capacidadeNum: 30,
     precoTotal: 'R$ 800,00',
     precoTotalNum: 800,
-    sinal: 'R$ 400,00',
-    sinalNum: 400
+    sinal: 'Pagamento Único',
+    sinalNum: 800
   },
   'Sala Green': {
     name: 'Sala Green',
@@ -509,10 +524,40 @@ const ROOM_DATA = {
     capacidadeNum: 40,
     precoTotal: 'R$ 900,00',
     precoTotalNum: 900,
-    sinal: 'R$ 450,00',
-    sinalNum: 450
+    sinal: 'Pagamento Único',
+    sinalNum: 900
   }
 };
+
+/**
+ * Calcula a precificação de salas privativas:
+ * - Pagamento único integral da sala completa (sem cobrança por pessoa e sem acréscimo de taxas)
+ * - Valor nominal normal para todos os métodos (Pix, Débito e Crédito)
+ * - Reembolso garantido
+ */
+export function calcularPrecoSalaPrivada(roomName, metodo = 'pix') {
+  const room = ROOM_DATA[roomName] || ROOM_DATA['Sala Red'];
+  const valorBase = room ? room.precoTotalNum : 800;
+  const cleanMetodo = (metodo || 'pix').toLowerCase();
+  const isCredito = (cleanMetodo === 'credito' || cleanMetodo === 'credit_card' || cleanMetodo === 'cartao_credito');
+  
+  // Salas possuem valor único integral da sala inteira (sem taxa de 3,99% e sem cobrança por pessoa)
+  const valorCobrado = valorBase;
+
+  return {
+    room,
+    nome: room ? room.name : 'Sala Privada',
+    metodo: cleanMetodo,
+    isCredito,
+    valorBase,
+    valorCobrado,
+    taxaPercentual: 0,
+    taxaValor: 0,
+    formatadoBase: `R$ ${valorBase.toFixed(2).replace('.', ',')}`,
+    formatadoCobrado: `R$ ${valorCobrado.toFixed(2).replace('.', ',')}`
+  };
+}
+
 
 function initBookingSystem() {
   const calContainer = document.getElementById('bookingCalendar');
@@ -771,6 +816,7 @@ window.openRoomPersonalityModal = (roomName) => {
   if (!room) return;
 
   pendingRoomSelection = roomName;
+  selectedBookingRoom = roomName;
 
   const modal = document.getElementById('roomPersonalityModal');
   const dialog = document.getElementById('roomPersonalityDialog');
@@ -786,7 +832,7 @@ window.openRoomPersonalityModal = (roomName) => {
   if (phraseEl) phraseEl.textContent = room.phrase;
   if (capEl) capEl.textContent = room.capacidade;
   if (totalEl) totalEl.textContent = room.precoTotal;
-  if (signalEl) signalEl.textContent = room.sinal;
+  if (signalEl) signalEl.textContent = 'Pagamento Único';
   if (confirmBtnText) confirmBtnText.textContent = `Sim, Quero a ${room.name}! Continuar →`;
 
   // Estilização neon com a cor da sala
@@ -830,7 +876,7 @@ window.confirmRoomFromPopup = () => {
     }
     if (summaryCap && room) summaryCap.textContent = room.capacidade;
     if (summaryTotal && room) summaryTotal.textContent = room.precoTotal;
-    if (summarySignal && room) summarySignal.textContent = `Sinal de 50%: ${room.sinal} • No dia: ${room.sinal}`;
+    if (summarySignal && room) summarySignal.textContent = 'Pagamento Único • Reembolso garantido';
     if (pessoasInput && room) {
       pessoasInput.max = room.capacidadeNum;
       pessoasInput.placeholder = `Ex: ${Math.round(room.capacidadeNum * 0.7)} convidados (máx: ${room.capacidadeNum})`;
@@ -988,6 +1034,7 @@ window.addEventListener('mesaReservadaConfirmada', (e) => {
 
 // 1. Cliente clica na mesa desejada no mapa
 window.selecionarMesaNoMapa = (mesaId, isFromPageMap = false) => {
+  selectedBookingRoom = null; // Garante que a seleção de mesa limpa qualquer sala privada
   if (window.karaokeMapInstance) {
     window.karaokeMapInstance.handleTableClick(mesaId);
     return;
@@ -1037,6 +1084,7 @@ window.selecionarMesaNoMapa = (mesaId, isFromPageMap = false) => {
 
 window.iniciarFluxoReservaSite = (e) => {
   if (e && e.preventDefault) e.preventDefault();
+  selectedBookingRoom = null;
   window.abrirModalNoPasso(1);
 };
 
@@ -1047,6 +1095,7 @@ window.abrirModalNoPasso = (passo = 1) => {
   document.body.style.overflow = 'hidden';
 
   if (passo === 1) {
+    selectedBookingRoom = null;
     window.voltarParaPassoMesa();
   } else if (passo === 2) {
     window.avancarParaPassoData();
@@ -1054,6 +1103,7 @@ window.abrirModalNoPasso = (passo = 1) => {
 };
 
 window.closeBookingDataModal = () => {
+  pararMonitoramentoPagamento();
   const modal = document.getElementById('bookingDataModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1375,75 +1425,194 @@ window.validarEAvancarParaResumo = () => {
 // 6 & 7. Mostra o resumo da reserva e o valor & Cliente escolhe o pagamento
 // ----------------------------------------------------------------------------
 window.voltarParaPassoDados = () => {
+  if (selectedBookingRoom) {
+    window.closeBookingDataModal();
+    const step3 = document.getElementById('bookingStep3') || document.getElementById('reservar');
+    if (step3) {
+      step3.style.display = 'block';
+      step3.scrollIntoView({ behavior: 'smooth' });
+    }
+    return;
+  }
   alternarSecaoFluxo('chkSectionDados', 4);
 };
 
 window.mostrarResumoEPagamento = () => {
   alternarSecaoFluxo('chkSectionResumo', 6);
 
-  const mesa = getMesaById(selectedMesaId);
-  const nome = document.getElementById('modalBookingNome')?.value?.trim() || 'Cliente';
-  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
+  const isSalaPrivada = Boolean(selectedBookingRoom);
+  const room = isSalaPrivada ? (ROOM_DATA[selectedBookingRoom] || ROOM_DATA['Sala Red']) : null;
+  const mesa = isSalaPrivada ? null : getMesaById(selectedMesaId);
+  const nome = document.getElementById('modalBookingNome')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingNome')?.value?.trim() : '') || 'Cliente';
+  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || (isSalaPrivada ? document.getElementById('bookingPessoas')?.value : '') || '4', 10);
+
+  // Stepper: oculta no fluxo de sala privada e exibe no fluxo de mesas
+  const stepper = document.getElementById('checkoutFlowStepper');
+  if (stepper) {
+    stepper.style.display = isSalaPrivada ? 'none' : 'flex';
+  }
 
   // Preenche dados do Passo 6 (Resumo)
+  const tituloSecao = document.getElementById('chkResumoTitulo');
+  const subtituloSecao = document.getElementById('chkResumoSubtitulo');
+  const resumoTipoLabel = document.getElementById('resumoTipoItemLabel');
   const resumoMesa = document.getElementById('resumoMesaNome');
   const resumoDataHora = document.getElementById('resumoDataHora');
   const resumoTitular = document.getElementById('resumoTitularNome');
   const resumoQtd = document.getElementById('resumoQtdPessoas');
+  const resumoQtdLabel = document.getElementById('resumoQtdLabel');
+  const btnVoltar = document.getElementById('btnVoltarDoResumo');
+  const boxMesa = document.getElementById('boxPagamentoMesa');
+  const boxSala = document.getElementById('boxPagamentoSala');
 
-  if (resumoMesa) resumoMesa.textContent = mesa ? `${mesa.nomeExibicao} (${mesa.rotuloCapacidade})` : 'Mesa Salão';
-  if (resumoDataHora) resumoDataHora.textContent = `${selectedReservaData ? selectedReservaData.formattedDisplay : 'Data'} às ${selectedCheckoutHorario || selectedReservaHorario}`;
-  if (resumoTitular) resumoTitular.textContent = nome;
-  if (resumoQtd) resumoQtd.textContent = `${pessoas} pessoa(s)`;
+  if (isSalaPrivada) {
+    // Salas Privadas: Isola e esconde totalmente qualquer parte de entrada/por pessoa
+    if (boxMesa) boxMesa.style.display = 'none';
+    if (boxSala) boxSala.style.display = 'block';
+
+    const boxCancel = document.getElementById('boxPoliticaCancelamentoResumo');
+    if (boxCancel) boxCancel.style.display = 'block';
+    const chkCancel = document.getElementById('chkPoliticaCancelamentoAceita');
+    if (chkCancel) chkCancel.checked = false; // Exige aceite explícito do usuário
+
+    if (tituloSecao) tituloSecao.textContent = 'Resumo da Sala Privada & Pagamento';
+    if (subtituloSecao) subtituloSecao.textContent = 'O valor da sala privativa é fixo e integral para o espaço completo (não cobramos por pessoa nas salas):';
+    if (resumoTipoLabel) resumoTipoLabel.textContent = 'Sala Escolhida:';
+    if (resumoMesa) {
+      resumoMesa.textContent = room ? `${room.name} (${room.capacidade})` : 'Sala Privada';
+      resumoMesa.style.color = room ? room.themeColor : '#10B981';
+    }
+    const dataTxt = selectedBookingDate ? selectedBookingDate.formattedDisplay : 'Data a definir';
+    const horaTxt = selectedBookingHorario || '19:00';
+    if (resumoDataHora) resumoDataHora.textContent = `${dataTxt} às ${horaTxt}`;
+    if (resumoTitular) resumoTitular.textContent = nome;
+    if (resumoQtdLabel) resumoQtdLabel.textContent = 'Quantidade de Convidados:';
+    if (resumoQtd) resumoQtd.textContent = `${pessoas} convidados (Máx: ${room ? room.capacidadeNum : 40})`;
+    if (btnVoltar) btnVoltar.textContent = '← Voltar para Reserva da Sala';
+  } else {
+    // Mesas do Salão: Entrada cobrada por pessoa
+    if (boxMesa) boxMesa.style.display = 'block';
+    if (boxSala) boxSala.style.display = 'none';
+
+    const boxCancel = document.getElementById('boxPoliticaCancelamentoResumo');
+    if (boxCancel) boxCancel.style.display = 'none';
+
+    if (tituloSecao) tituloSecao.textContent = '5. Resumo da Reserva & Forma de Pagamento';
+    if (subtituloSecao) subtituloSecao.textContent = 'Revise os dados da reserva e escolha sua forma de pagamento por pessoa:';
+    if (resumoTipoLabel) resumoTipoLabel.textContent = 'Mesa Escolhida:';
+    if (resumoMesa) {
+      resumoMesa.textContent = mesa ? `${mesa.nomeExibicao} (${mesa.rotuloCapacidade})` : 'Mesa Salão';
+      resumoMesa.style.color = '#F59E0B';
+    }
+    if (resumoDataHora) resumoDataHora.textContent = `${selectedReservaData ? selectedReservaData.formattedDisplay : 'Data'} às ${selectedCheckoutHorario || selectedReservaHorario}`;
+    if (resumoTitular) resumoTitular.textContent = nome;
+    if (resumoQtdLabel) resumoQtdLabel.textContent = 'Quantidade:';
+    if (resumoQtd) resumoQtd.textContent = `${pessoas} pessoa(s)`;
+    if (btnVoltar) btnVoltar.textContent = '← Voltar para Seus Dados';
+  }
 
   // Atualiza valores conforme o método ativo (Passo 7)
   window.selecionarMetodoTarifa(selectedMetodoTarifa);
 };
 
-// 7. Cliente escolhe o pagamento (Pix R$20, Débito R$20, Crédito R$25)
+// 7. Cliente escolhe o pagamento
+// - Salas privadas: valor único da sala inteira (Pix, Débito e Crédito sem taxa de 3,99% e sem valor por pessoa).
+// - Reserva de mesa: apenas valores individuais por pessoa (R$ 20 Pix/Débito, R$ 25 Crédito).
 window.selecionarMetodoTarifa = (metodo = 'pix') => {
   selectedMetodoTarifa = metodo;
-  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
-  const calculo = calcularValorReserva(pessoas, metodo);
+  const isSalaPrivada = Boolean(selectedBookingRoom);
 
-  // Atualiza destaques dos cards
-  const cardPix = document.getElementById('payCardPix');
-  const cardDebito = document.getElementById('payCardDebito');
-  const cardCredito = document.getElementById('payCardCredito');
+  const boxMesa = document.getElementById('boxPagamentoMesa');
+  const boxSala = document.getElementById('boxPagamentoSala');
 
-  if (cardPix) cardPix.classList.toggle('selected', metodo === 'pix');
-  if (cardDebito) cardDebito.classList.toggle('selected', metodo === 'debito');
-  if (cardCredito) cardCredito.classList.toggle('selected', metodo === 'credito');
+  // Toggle visual nos cards de Mesa
+  const cardPixMesa = document.getElementById('payCardPixMesa');
+  const cardDebitoMesa = document.getElementById('payCardDebitoMesa');
+  const cardCreditoMesa = document.getElementById('payCardCreditoMesa');
+  if (cardPixMesa) cardPixMesa.classList.toggle('selected', metodo === 'pix');
+  if (cardDebitoMesa) cardDebitoMesa.classList.toggle('selected', metodo === 'debito');
+  if (cardCreditoMesa) cardCreditoMesa.classList.toggle('selected', metodo === 'credito');
 
-  // Atualiza valor total e fórmula
+  // Toggle visual nos cards de Sala
+  const cardPixSala = document.getElementById('payCardPixSala');
+  const cardDebitoSala = document.getElementById('payCardDebitoSala');
+  const cardCreditoSala = document.getElementById('payCardCreditoSala');
+  if (cardPixSala) cardPixSala.classList.toggle('selected', metodo === 'pix');
+  if (cardDebitoSala) cardDebitoSala.classList.toggle('selected', metodo === 'debito');
+  if (cardCreditoSala) cardCreditoSala.classList.toggle('selected', metodo === 'credito');
+
   const totalEl = document.getElementById('resumoValorTotalCalculado');
   const formulaEl = document.getElementById('resumoCalculoFormula');
   const nomeMetodo = metodo === 'pix' ? 'Pix' : metodo === 'debito' ? 'Débito' : 'Crédito';
 
-  if (totalEl) totalEl.textContent = calculo.formatadoTotal;
-  if (formulaEl) formulaEl.textContent = `${pessoas} pessoa(s) × ${calculo.formatadoUnitario} (${nomeMetodo})`;
+  if (isSalaPrivada) {
+    // Garante que o bloco de mesas permaneça 100% oculto
+    if (boxMesa) boxMesa.style.display = 'none';
+    if (boxSala) boxSala.style.display = 'block';
+
+    // Cálculo específico para Sala Privada: valor fixo integral da sala inteira (SEM taxa e SEM cobrança por pessoa!)
+    const calc = calcularPrecoSalaPrivada(selectedBookingRoom, metodo);
+    const precoFormatado = calc.formatadoCobrado;
+
+    const ratePixSala = document.getElementById('payCardPixSalaRate');
+    const rateDebitoSala = document.getElementById('payCardDebitoSalaRate');
+    const rateCreditoSala = document.getElementById('payCardCreditoSalaRate');
+
+    if (ratePixSala) ratePixSala.textContent = precoFormatado;
+    if (rateDebitoSala) rateDebitoSala.textContent = precoFormatado;
+    if (rateCreditoSala) rateCreditoSala.textContent = precoFormatado;
+
+    // Atualiza valor total e fórmula (preço fixo integral da sala escolhida)
+    if (totalEl) totalEl.textContent = precoFormatado;
+    if (formulaEl) {
+      formulaEl.textContent = `${calc.nome} • Preço fixo total da sala: ${precoFormatado} (Pagamento integral da sala completa, sem cobrança por pessoa)`;
+    }
+  } else {
+    // Garante que o bloco de salas permaneça 100% oculto
+    if (boxMesa) boxMesa.style.display = 'block';
+    if (boxSala) boxSala.style.display = 'none';
+
+    // Cálculo específico para Mesa do Salão (apenas valores individuais, sem taxa de 3,99%)
+    const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
+    const calculo = calcularValorReserva(pessoas, metodo);
+
+    const ratePixMesa = document.getElementById('payCardPixMesaRate');
+    const rateDebitoMesa = document.getElementById('payCardDebitoMesaRate');
+    const rateCreditoMesa = document.getElementById('payCardCreditoMesaRate');
+
+    if (ratePixMesa) ratePixMesa.innerHTML = `R$ 20<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span>`;
+    if (rateDebitoMesa) rateDebitoMesa.innerHTML = `R$ 20<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span>`;
+    if (rateCreditoMesa) rateCreditoMesa.innerHTML = `R$ 25<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span>`;
+
+    if (totalEl) totalEl.textContent = calculo.formatadoTotal;
+    if (formulaEl) formulaEl.textContent = `${pessoas} pessoa(s) × ${calculo.formatadoUnitario} (${nomeMetodo})`;
+  }
 };
 
 // ----------------------------------------------------------------------------
 // 8. Prossegue para o pagamento (Preparado para Asaas)
 // ----------------------------------------------------------------------------
 window.voltarParaPassoResumo = () => {
+  pararMonitoramentoPagamento();
   alternarSecaoFluxo('chkSectionResumo', 6);
 };
 
-window.avancarParaPassoPagar = () => {
+window.avancarParaPassoPagar = async () => {
+  const isSalaPrivada = Boolean(selectedBookingRoom);
+
   const chkTermos = document.getElementById('chkReservaTermosAceitos');
   if (chkTermos && !chkTermos.checked) {
     alert('É obrigatório concordar com os termos de compra e reserva para prosseguir.');
     return;
   }
 
-  alternarSecaoFluxo('chkSectionPagar', 8);
+  const chkCancelamento = document.getElementById('chkPoliticaCancelamentoAceita');
+  if (isSalaPrivada && chkCancelamento && !chkCancelamento.checked) {
+    alert('É obrigatório dar o aceite explícito na Política de Cancelamento (ciência de que 50% do valor da reserva corresponde à parcela que poderá não ser reembolsada em caso de cancelamento) para prosseguir com a reserva.');
+    return;
+  }
 
-  const isSalaPrivada = Boolean(selectedBookingRoom);
-  const valorSinalNum = isSalaPrivada ? (selectedBookingRoom === 'Sala Red' ? 400 : (selectedBookingRoom === 'Sala Green' ? 450 : 500)) : null;
-  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
-  const calculo = isSalaPrivada ? null : calcularValorReserva(pessoas, selectedMetodoTarifa);
+  alternarSecaoFluxo('chkSectionPagar', 8);
 
   const pagarValor = document.getElementById('pagarValorDisplay');
   const pagarMetodo = document.getElementById('pagarMetodoDisplay');
@@ -1452,8 +1621,21 @@ window.avancarParaPassoPagar = () => {
 
   const nomeMetodo = selectedMetodoTarifa === 'pix' ? 'Pix' : selectedMetodoTarifa === 'debito' ? 'Cartão de Débito' : 'Cartão de Crédito';
 
-  if (pagarValor) pagarValor.textContent = isSalaPrivada ? `R$ ${valorSinalNum},00` : calculo.formatadoTotal;
-  if (pagarMetodo) pagarMetodo.textContent = isSalaPrivada ? `Sinal de 50% via ${nomeMetodo}` : `Pagamento via ${nomeMetodo} (R$ ${calculo.valorUnitario}/pessoa)`;
+  let valorCobrado = 0;
+  if (isSalaPrivada) {
+    const calc = calcularPrecoSalaPrivada(selectedBookingRoom, selectedMetodoTarifa);
+    valorCobrado = calc.valorCobrado;
+    if (pagarValor) pagarValor.textContent = calc.formatadoCobrado;
+    if (pagarMetodo) {
+      pagarMetodo.textContent = `Pagamento Integral da Sala via ${nomeMetodo} (Preço fixo total: ${calc.formatadoCobrado})`;
+    }
+  } else {
+    const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
+    const calculo = calcularValorReserva(pessoas, selectedMetodoTarifa);
+    valorCobrado = calculo.valorTotal;
+    if (pagarValor) pagarValor.textContent = calculo.formatadoTotal;
+    if (pagarMetodo) pagarMetodo.textContent = `Pagamento via ${nomeMetodo} (R$ ${calculo.valorUnitario}/pessoa)`;
+  }
 
   if (selectedMetodoTarifa === 'pix') {
     if (pixBox) pixBox.style.display = 'block';
@@ -1462,68 +1644,51 @@ window.avancarParaPassoPagar = () => {
     if (pixBox) pixBox.style.display = 'none';
     if (cartaoBox) cartaoBox.style.display = 'block';
   }
-};
 
-window.copiarPixCodigo = () => {
-  const input = document.getElementById('chkPixInput');
-  if (input) {
-    navigator.clipboard?.writeText(input.value);
-    const btn = document.getElementById('btnCopiarPix');
-    if (btn) {
-      const orig = btn.textContent;
-      btn.textContent = 'Chave Copiada! ✓';
-      setTimeout(() => { btn.textContent = orig; }, 2200);
-    }
-  }
-};
-
-// ----------------------------------------------------------------------------
-// 9. Após pagamento confirmado, mostra a confirmação da reserva
-// ----------------------------------------------------------------------------
-window.confirmarPagamentoEFinalizar = async () => {
-  const btn = document.getElementById('btnFinalizarPagamento');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Processando e Emitindo Reserva...';
-  }
-
-  const nome = document.getElementById('modalBookingNome')?.value?.trim();
-  const whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim();
-  const email = document.getElementById('modalBookingEmail')?.value?.trim();
-  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
-  const mesa = getMesaById(selectedMesaId);
-  const calculo = calcularValorReserva(pessoas, selectedMetodoTarifa);
-
-  const isSalaPrivada = Boolean(selectedBookingRoom);
-  const room = isSalaPrivada ? (ROOM_DATA[selectedBookingRoom] || ROOM_DATA['Sala Red']) : null;
-  const valorSinalNum = isSalaPrivada ? (selectedBookingRoom === 'Sala Red' ? 400 : (selectedBookingRoom === 'Sala Green' ? 450 : 500)) : calculo.valorTotal;
-  const valorTotalNum = isSalaPrivada ? (valorSinalNum * 2) : calculo.valorTotal;
+  // Prepara dados cadastrais da reserva
+  const nome = document.getElementById('modalBookingNome')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingNome')?.value?.trim() : '') || 'Cliente';
+  const whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingWhatsapp')?.value?.trim() : '') || '';
+  const email = document.getElementById('modalBookingEmail')?.value?.trim() || 'cliente@backstagekaraoke.com.br';
+  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || (isSalaPrivada ? document.getElementById('bookingPessoas')?.value : '') || '4', 10);
+  const mesa = isSalaPrivada ? null : getMesaById(selectedMesaId);
   const mesaNome = isSalaPrivada ? selectedBookingRoom : (mesa ? mesa.nomeExibicao : 'Mesa Salão');
   const ambienteNome = isSalaPrivada ? selectedBookingRoom : 'Salão Principal';
   const ambienteId = isSalaPrivada ? 'salas-privadas' : 'salao-principal';
   const dataReserva = isSalaPrivada ? (selectedBookingDate ? selectedBookingDate.formattedDisplay : 'Hoje') : (selectedReservaData ? selectedReservaData.formattedDisplay : 'Hoje');
 
-  // Gera código único BK-2026-XXXX e tokens
   const codigoReserva = generateReservationCode();
   const qrToken = generateQrCodeToken();
   const qrSvg = generateQrCodeSvg(codigoReserva, 180);
 
-  // Sessão de pagamento segura integrada com Asaas (sem salvar cartão no Supabase)
-  const sessionPagamento = await createPaymentSession({
-    codigoReserva,
-    valor: valorSinalNum,
-    metodo: selectedMetodoTarifa,
-    comprador: { nome, email, whatsapp },
-    ambiente: ambienteNome
-  });
+  // Exibe feedback de geração de cobrança
+  const inputPix = document.getElementById('chkPixInput');
+  const liveStatus = document.getElementById('pagarStatusLiveTexto');
+  if (inputPix) inputPix.value = 'Conectando ao gateway Asaas...';
+  if (liveStatus) liveStatus.textContent = 'Gerando cobrança oficial no Asaas...';
 
-  const confirmacaoPagamento = await processPaymentConfirmation({
-    codigoReserva,
-    transacaoId: sessionPagamento.transacaoId,
-    metodo: selectedMetodoTarifa
-  });
+  // Cria a sessão de pagamento no servidor com validação autoritativa de preços
+  pararMonitoramentoPagamento();
+  try {
+    currentPaymentSession = await createPaymentSession({
+      codigoReserva,
+      valor: valorCobrado,
+      metodo: selectedMetodoTarifa,
+      comprador: { nome, email, whatsapp },
+      ambiente: ambienteNome,
+      tipoReserva: isSalaPrivada ? 'sala' : 'mesa',
+      salaNome: isSalaPrivada ? selectedBookingRoom : undefined,
+      mesaId: isSalaPrivada ? undefined : selectedMesaId,
+      pessoas
+    });
+  } catch (err) {
+    console.error('Erro ao gerar sessão Asaas:', err);
+    alert(err.message || 'Falha ao processar cobrança. Por favor, tente novamente.');
+    alternarSecaoFluxo('chkSectionResumo', 6);
+    return;
+  }
 
-  const reservaData = {
+  // Registra pré-reserva com status PENDING no Supabase
+  currentReservaPendente = {
     codigoReserva,
     nome,
     whatsapp,
@@ -1534,28 +1699,167 @@ window.confirmarPagamentoEFinalizar = async () => {
     salaOuMesa: mesaNome,
     sala: mesaNome,
     pessoas,
-    status: 'CONFIRMED',
-    statusPagamento: 'aprovado',
-    transacaoId: confirmacaoPagamento.transacaoId,
+    status: 'PENDING',
+    statusPagamento: 'aguardando',
+    transacaoId: currentPaymentSession?.transacaoId || null,
     qrCodeToken: qrToken,
-    valorTotal: valorTotalNum,
-    valorSinal: valorSinalNum,
-    valorPago: valorSinalNum,
+    valorTotal: valorCobrado,
+    valorSinal: null,
+    valorPago: 0,
     metodoPagamento: selectedMetodoTarifa,
     gateway: 'asaas',
-    origem: isSalaPrivada ? 'agendamento_salas' : 'site_cliente'
+    origem: isSalaPrivada ? 'agendamento_salas' : 'site_cliente',
+    qrSvg
   };
 
-  // Salva no Supabase (com conformidade total e RLS seguro)
   try {
     if (isSupabaseConfigured) {
-      await criarReservaComCompliance(reservaData);
+      await criarReservaComCompliance(currentReservaPendente);
     }
-  } catch (err) {
-    console.warn('Aviso Supabase salvar reserva:', err);
+  } catch (dbErr) {
+    console.warn('Aviso pré-reserva Supabase:', dbErr);
   }
 
-  // Salva no Firestore
+  // Injeta dados Pix se disponíveis
+  if (currentPaymentSession) {
+    if (inputPix && currentPaymentSession.pixCopiaECola) {
+      inputPix.value = currentPaymentSession.pixCopiaECola;
+    }
+
+    const qrWrap = document.getElementById('pagarPixQrWrap');
+    const qrImg = document.getElementById('pagarPixQrImg');
+    if (qrWrap && qrImg) {
+      if (currentPaymentSession.pixQrCodeBase64) {
+        qrImg.src = `data:image/png;base64,${currentPaymentSession.pixQrCodeBase64}`;
+        qrWrap.style.display = 'block';
+      } else {
+        qrWrap.style.display = 'none';
+      }
+    }
+
+    // Link para checkout Asaas em cartão
+    const linkWrap = document.getElementById('pagarCartaoLinkWrap');
+    const linkBtn = document.getElementById('pagarCartaoLinkBtn');
+    if (linkWrap && linkBtn) {
+      if (currentPaymentSession.checkoutUrl) {
+        linkBtn.href = currentPaymentSession.checkoutUrl;
+        linkWrap.style.display = 'block';
+      } else {
+        linkWrap.style.display = 'none';
+      }
+    }
+
+    // Inicia monitoramento automático do pagamento junto ao servidor
+    iniciarMonitoramentoPagamento(currentPaymentSession.transacaoId, currentReservaPendente);
+  }
+};
+
+window.copiarPixCodigo = () => {
+  const input = document.getElementById('chkPixInput');
+  if (input && input.value) {
+    navigator.clipboard?.writeText(input.value);
+    const btn = document.getElementById('btnCopiarPix');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = 'Chave Copiada! ✓';
+      setTimeout(() => { btn.textContent = orig; }, 2200);
+    }
+  }
+};
+
+// Monitoramento automático periódico do pagamento junto ao servidor
+function iniciarMonitoramentoPagamento(transacaoId, reservaPendente) {
+  pararMonitoramentoPagamento();
+  if (!transacaoId) return;
+
+  const liveStatus = document.getElementById('pagarStatusLiveTexto');
+  if (liveStatus) {
+    liveStatus.textContent = 'Aguardando pagamento no Asaas... (Verificação automática ativa)';
+  }
+
+  paymentPollingTimer = setInterval(async () => {
+    try {
+      const statusCheck = await checkPaymentStatus(transacaoId);
+      if (statusCheck && statusCheck.pago) {
+        pararMonitoramentoPagamento();
+        await finalizarReservaAprovada(reservaPendente, statusCheck);
+      }
+    } catch (e) {
+      // Falha silenciosa no polling contínuo
+    }
+  }, 5000);
+}
+
+// ----------------------------------------------------------------------------
+// 9. Verificação manual ou automática do status real do pagamento
+// A reserva SÓ é aprovada após confirmação real do Asaas no servidor.
+// ----------------------------------------------------------------------------
+window.verificarPagamentoManual = async () => {
+  const btn = document.getElementById('btnFinalizarPagamento');
+  const txt = document.getElementById('btnFinalizarPagamentoTexto');
+
+  if (!currentPaymentSession?.transacaoId) {
+    alert('Nenhuma cobrança ativa identificada. Por favor, reinicie a reserva.');
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (txt) txt.textContent = 'Consultando Servidor Asaas... ⏳';
+
+  try {
+    const statusCheck = await checkPaymentStatus(currentPaymentSession.transacaoId);
+
+    if (statusCheck && statusCheck.pago) {
+      pararMonitoramentoPagamento();
+      await finalizarReservaAprovada(currentReservaPendente, statusCheck);
+    } else {
+      const statusLabel = statusCheck?.status || 'PENDING';
+      alert(`O Asaas ainda não identificou a confirmação do pagamento (Status: ${statusLabel}).\n\nSe você já realizou o pagamento no app do seu banco, aguarde alguns instantes pela compensação financeira e clique novamente em verificar.`);
+      const liveStatus = document.getElementById('pagarStatusLiveTexto');
+      if (liveStatus) {
+        liveStatus.textContent = `Aguardando compensação no Asaas... (Status: ${statusLabel})`;
+      }
+    }
+  } catch (err) {
+    console.error('Erro na consulta manual do Asaas:', err);
+    alert('Falha ao consultar status junto ao servidor. Tente novamente em alguns segundos.');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (txt) txt.textContent = 'Já Paguei, Verificar no Asaas 🔄';
+  }
+};
+
+// Retrocompatibilidade
+window.confirmarPagamentoEFinalizar = window.verificarPagamentoManual;
+
+// Conclusão oficial e emissão do voucher apenas quando comprovado pagamento real
+async function finalizarReservaAprovada(reservaPendente, statusCheck) {
+  pararMonitoramentoPagamento();
+
+  const reservaData = {
+    ...reservaPendente,
+    status: 'CONFIRMED',
+    statusPagamento: 'aprovado',
+    valorPago: statusCheck?.valor || reservaPendente.valorTotal,
+    transacaoId: statusCheck?.transacaoId || reservaPendente.transacaoId
+  };
+
+  // Atualiza no Supabase para CONFIRMED e aprovado
+  try {
+    if (isSupabaseConfigured && supabase) {
+      await supabase.from('reservas').update({
+        status: 'CONFIRMED',
+        status_pagamento: 'aprovado',
+        valor_pago: reservaData.valorPago,
+        transacao_id: reservaData.transacaoId,
+        atualizado_em: new Date().toISOString()
+      }).eq('codigo_reserva', reservaPendente.codigoReserva);
+    }
+  } catch (err) {
+    console.warn('Aviso Supabase atualização aprovada:', err);
+  }
+
+  // Atualiza no Firestore
   try {
     await salvarAgendamento({
       ...reservaData,
@@ -1565,18 +1869,16 @@ window.confirmarPagamentoEFinalizar = async () => {
     console.warn('Fallback Firestore agendamento:', fireErr);
   }
 
-  // Se for mesa, marca imediatamente como reservada
+  // Se for mesa, marca no mapa
+  const isSalaPrivada = Boolean(selectedBookingRoom);
   if (!isSalaPrivada) {
     reservasOcupadas.push(reservaData);
     atualizarStatusMesasNoMapa();
   }
 
-  activeConfirmedReservation = {
-    ...reservaData,
-    qrSvg
-  };
+  activeConfirmedReservation = reservaData;
 
-  // 9. Mostra a confirmação da reserva
+  // 9. Mostra a confirmação da reserva (Passo 9)
   alternarSecaoFluxo('chkSectionConfirmacao', 9);
 
   const codeEl = document.getElementById('voucherReservationCode');
@@ -1584,22 +1886,20 @@ window.confirmarPagamentoEFinalizar = async () => {
   const emailEl = document.getElementById('voucherSentEmail');
   const briefEl = document.getElementById('voucherDetailsBrief');
 
-  if (codeEl) codeEl.textContent = codigoReserva;
-  if (qrContainer) qrContainer.innerHTML = qrSvg;
-  if (emailEl) emailEl.textContent = email;
+  if (codeEl) codeEl.textContent = reservaData.codigoReserva;
+  if (qrContainer) qrContainer.innerHTML = reservaData.qrSvg;
+  if (emailEl) emailEl.textContent = reservaData.email;
   if (briefEl) {
+    const valorFmt = `R$ ${Number(reservaData.valorPago || reservaData.valorTotal).toFixed(2).replace('.', ',')}`;
+    const infoCapacidade = isSalaPrivada ? `Locação Exclusiva da Sala Completa (${reservaData.pessoas} convidados)` : `👥 ${reservaData.pessoas} pessoa(s)`;
     briefEl.innerHTML = `
-      <strong>${nome}</strong> • <strong>${mesaNome}</strong><br>
-      📅 ${reservaData.data} às ${reservaData.horario} • 👥 ${pessoas} pessoas<br>
-      <span style="color: #10B981; font-weight: 700;">✓ Pago: ${calculo.formatadoTotal} (${selectedMetodoTarifa.toUpperCase()})</span>
+      <strong>${reservaData.nome}</strong> • <strong>${reservaData.salaOuMesa}</strong><br>
+      📅 ${reservaData.data} às ${reservaData.horario} • ${infoCapacidade}<br>
+      <span style="color: #10B981; font-weight: 700;">✓ Pago: ${valorFmt} (${reservaData.metodoPagamento.toUpperCase()})</span>
     `;
   }
+}
 
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = 'Confirmar Pagamento e Emitir Reserva ✓';
-  }
-};
 
 window.compartilharVoucherWhatsApp = () => {
   if (!activeConfirmedReservation) return;
@@ -1743,6 +2043,20 @@ window.handleBookingSubmit = (e) => {
   if (!pessoas || pessoas < 1) return alert('Por favor, informe a quantidade de convidados.');
   if (chkTermos && !chkTermos.checked) return alert('É necessário concordar com os termos de responsabilidade para prosseguir.');
 
+  const chkCancel = document.getElementById('bookingCancelamentoCheck');
+  if (chkCancel && !chkCancel.checked) {
+    alert('É obrigatório dar o aceite explícito na Política de Cancelamento (ciência de que 50% do valor corresponde à parcela que poderá não ser reembolsada) para prosseguir.');
+    return;
+  }
+
+  // Garante que a sala selecionada está configurada
+  if (!selectedBookingRoom && pendingRoomSelection) {
+    selectedBookingRoom = pendingRoomSelection;
+  }
+  if (!selectedBookingRoom) {
+    selectedBookingRoom = 'Sala Red';
+  }
+
   // Sincroniza com os campos do modal de pagamento Asaas
   const mNome = document.getElementById('modalBookingNome');
   const mZap = document.getElementById('modalBookingWhatsapp');
@@ -1756,25 +2070,52 @@ window.handleBookingSubmit = (e) => {
   if (modal) {
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    window.mostrarResumoEPagamento();
+  }
+};
 
-    alternarSecaoFluxo('chkSectionResumo', 6);
+// Integração Oficial do Mapa do Salão com o Checkout de Mesas
+window.iniciarPagamentoReservaMesa = ({
+  mesaId,
+  mesaNome,
+  data,
+  horario,
+  pessoas,
+  nome,
+  whatsapp,
+  email
+}) => {
+  selectedBookingRoom = null;
+  pendingRoomSelection = null;
+  selectedMesaId = mesaId;
+  selectedCheckoutHorario = horario || '19:00';
+  selectedReservaHorario = horario || '19:00';
 
-    const room = ROOM_DATA[selectedBookingRoom] || ROOM_DATA['Sala Red'];
-    const valorSinalNum = selectedBookingRoom === 'Sala Red' ? 400 : (selectedBookingRoom === 'Sala Green' ? 450 : 500);
+  if (data) {
+    const parts = data.split('-');
+    const dtObj = parts.length === 3 ? new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)) : new Date();
+    selectedReservaData = {
+      date: dtObj,
+      isoDate: data,
+      formattedDisplay: dtObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    };
+  }
 
-    const resumoMesa = document.getElementById('resumoMesaNome');
-    const resumoDataHora = document.getElementById('resumoDataHora');
-    const resumoTitular = document.getElementById('resumoTitularNome');
-    const resumoQtd = document.getElementById('resumoQtdPessoas');
-    const totalEl = document.getElementById('resumoValorTotalCalculado');
-    const formulaEl = document.getElementById('resumoCalculoFormula');
+  const mNome = document.getElementById('modalBookingNome');
+  const mZap = document.getElementById('modalBookingWhatsapp');
+  const mEmail = document.getElementById('modalBookingEmail');
+  const mPessoas = document.getElementById('modalBookingPessoas');
 
-    if (resumoMesa) resumoMesa.textContent = room ? `${room.name} (${room.capacidade})` : 'Sala Privada';
-    if (resumoDataHora) resumoDataHora.textContent = `${selectedBookingDate ? selectedBookingDate.formattedDisplay : 'Data a definir'} às 19:00`;
-    if (resumoTitular) resumoTitular.textContent = nome;
-    if (resumoQtd) resumoQtd.textContent = `${pessoas} convidado(s)`;
-    if (totalEl) totalEl.textContent = `R$ ${valorSinalNum},00`;
-    if (formulaEl) formulaEl.textContent = `Sinal de 50% da ${room ? room.name : 'Sala'} (${selectedMetodoTarifa === 'pix' ? 'Pix' : 'Cartão'})`;
+  if (mNome) mNome.value = nome || '';
+  if (mZap) mZap.value = whatsapp || '';
+  if (mEmail) mEmail.value = email || '';
+  if (mPessoas) mPessoas.value = pessoas || 4;
+
+  const modal = document.getElementById('bookingDataModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    window.mostrarResumoEPagamento();
   }
 };
 
@@ -2068,192 +2409,372 @@ function applyPromocoesCards(cards) {
 }
 
 /**
- * Sincroniza dados oficiais (Supabase com fallback para Firestore) para o site público em tempo real
+ * Aplica configurações gerais ao DOM do site público em tempo real
+ */
+export function applyConfiguracoesToDOM(conf) {
+  if (!conf || typeof conf !== 'object') return;
+
+  // 1. WhatsApp Oficial
+  if (conf.whatsapp) {
+    const cleanPhone = String(conf.whatsapp).replace(/\D/g, '');
+    if (cleanPhone) {
+      WHATSAPP_PHONE = cleanPhone;
+      document.querySelectorAll('a[href*="wa.me/"]').forEach(link => {
+        const oldUrl = link.href;
+        const textMatch = oldUrl.match(/text=([^&]+)/);
+        const textParam = textMatch ? textMatch[1] : '';
+        link.href = `https://wa.me/${cleanPhone}${textParam ? '?text=' + textParam : ''}`;
+      });
+    }
+  }
+
+  // 2. E-mail de Contato Oficial (Atualiza em tempo real)
+  if (conf.contatoEmail) {
+    const emailVal = conf.contatoEmail.trim();
+    const mailLink = document.getElementById('footerContactEmail');
+    const mailText = document.getElementById('footerContactEmailText');
+    if (mailLink) mailLink.href = `mailto:${emailVal}`;
+    if (mailText) mailText.textContent = emailVal;
+
+    document.querySelectorAll('a[href^="mailto:"]').forEach(link => {
+      link.href = `mailto:${emailVal}`;
+    });
+  }
+
+  // 3. Instagram
+  if (conf.instagram) {
+    const rawInsta = conf.instagram.trim();
+    const cleanInsta = rawInsta.replace('@', '');
+    const instaLink = document.getElementById('footerInstagramLink');
+    const instaText = document.getElementById('footerInstagramText');
+    if (instaLink) instaLink.href = `https://www.instagram.com/${cleanInsta}`;
+    if (instaText) instaText.textContent = `@${cleanInsta}`;
+
+    document.querySelectorAll('a[href*="instagram.com"]').forEach(link => {
+      link.href = `https://www.instagram.com/${cleanInsta}`;
+    });
+  }
+
+  // 4. Endereço
+  if (conf.endereco) {
+    const enderecoEl = document.getElementById('footerEndereco');
+    if (enderecoEl) {
+      enderecoEl.textContent = `${conf.endereco} • Proibido menores de 18 no Salão Principal`;
+    }
+  }
+
+  // 5. Link Google Maps
+  if (conf.mapsUrl) {
+    document.querySelectorAll('a[href*="maps.app.goo.gl"], a[href*="google.com/maps"]').forEach(link => {
+      link.href = conf.mapsUrl;
+    });
+  }
+
+  // 6. PDF do Cardápio
+  if (conf.pdfUrl) {
+    document.querySelectorAll('a[href*="cardapio-oficial.pdf"], #verCardapioPdfMainBtn').forEach(link => {
+      link.href = conf.pdfUrl;
+    });
+  }
+}
+
+/**
+ * Aplica dados atualizados das salas ao DOM e ao estado global de reservas
+ */
+export function applySalasToDOM(salas) {
+  if (!salas || !Array.isArray(salas) || salas.length === 0) return;
+
+  salas.forEach(s => {
+    const preco = Number(s.precoTotal || 800);
+    const precoFmt = `R$ ${preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    const cap = s.capacidade || 30;
+
+    // Atualiza estado global dinâmico ROOM_DATA
+    if (ROOM_DATA[s.nome]) {
+      ROOM_DATA[s.nome].precoTotal = precoFmt;
+      ROOM_DATA[s.nome].precoTotalNum = preco;
+      ROOM_DATA[s.nome].capacidade = `Até ${cap} pessoas`;
+      ROOM_DATA[s.nome].capacidadeNum = cap;
+      if (s.descricao) ROOM_DATA[s.nome].descricao = s.descricao;
+      if (typeof s.ativo !== 'undefined') ROOM_DATA[s.nome].ativo = s.ativo;
+    }
+
+    // Busca os cards no DOM por data-room ou classes de tema
+    const themeClass = s.nome === 'Sala Red' ? '.room-theme-red' : (s.nome === 'Sala Green' ? '.room-theme-green' : '.room-theme-blue');
+    const cards = document.querySelectorAll(
+      `.step-room-card[data-room="${s.nome}"], .room-pick-card[data-room="${s.nome}"], .step-room-card${themeClass}`
+    );
+
+    cards.forEach(card => {
+      card.setAttribute('data-capacity', cap);
+      card.setAttribute('data-price', preco);
+      card.setAttribute('data-signal', preco);
+
+      const capPill = card.querySelector('.room-card-capacity-pill, .room-cap-badge');
+      if (capPill) capPill.textContent = `Até ${cap} pessoas`;
+
+      const priceEl = card.querySelector('.room-card-total-price, .total-val');
+      if (priceEl) priceEl.textContent = precoFmt;
+
+      const descEl = card.querySelector('.room-card-desc, .room-pick-desc');
+      if (descEl && s.descricao) descEl.textContent = s.descricao;
+
+      if (s.ativo === false) {
+        card.style.opacity = '0.45';
+        card.style.pointerEvents = 'none';
+      } else {
+        card.style.opacity = '1';
+        card.style.pointerEvents = 'auto';
+      }
+    });
+
+    // Se o modal de resumo ou personalidades estiver aberto para esta sala, atualiza em tempo real
+    if (selectedBookingRoom === s.nome) {
+      const summaryCap = document.getElementById('summaryCapVal');
+      const summaryTotal = document.getElementById('summaryTotalVal');
+      if (summaryCap) summaryCap.textContent = `Até ${cap} pessoas`;
+      if (summaryTotal) summaryTotal.textContent = precoFmt;
+    }
+  });
+}
+
+/**
+ * Aplica itens do cardápio oficial ao DOM de cardapio.html em tempo real
+ */
+export function applyCardapioToDOM(items) {
+  if (!items || !Array.isArray(items) || items.length === 0) return;
+  if (!document.querySelector('.cardapio-page-view') && !document.getElementById('cardapio')) return;
+
+  items.forEach(it => {
+    const allItemRows = document.querySelectorAll('.menu-item-row');
+    let matchedRow = null;
+    allItemRows.forEach(row => {
+      const nameEl = row.querySelector('.item-name');
+      if (nameEl && nameEl.textContent.trim().toLowerCase() === (it.nome || '').trim().toLowerCase()) {
+        matchedRow = row;
+      }
+    });
+
+    if (matchedRow) {
+      if (it.ativo === false) {
+        matchedRow.style.display = 'none';
+      } else {
+        matchedRow.style.display = 'flex';
+        if (it.preco) {
+          const priceEl = matchedRow.querySelector('.item-price');
+          if (priceEl) priceEl.textContent = `R$ ${Number(it.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+        }
+        if (it.descricao) {
+          const descEl = matchedRow.querySelector('.item-desc');
+          if (descEl) descEl.textContent = it.descricao;
+        }
+      }
+    } else if (it.ativo !== false && it.nome) {
+      const targetPanel = document.getElementById(`cat-${it.categoriaId || 'petiscos'}`);
+      const grid = targetPanel ? targetPanel.querySelector('.menu-items-grid') : null;
+      if (grid) {
+        const newRow = document.createElement('div');
+        newRow.className = 'menu-item-row';
+        newRow.innerHTML = `
+          <div class="item-left">
+            <div class="item-name">${it.nome}</div>
+            <div class="item-desc">${it.descricao || ''}</div>
+          </div>
+          <div class="item-price">R$ ${(Number(it.preco) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+        `;
+        grid.appendChild(newRow);
+      }
+    }
+  });
+}
+
+/**
+ * Aplica bloqueios de calendário ao sistema de disponibilidade
+ */
+export function applyBloqueiosToDOM(bloqueios) {
+  if (!bloqueios || !Array.isArray(bloqueios)) return;
+  activeBlockedDates = bloqueios;
+  try {
+    renderCalendar();
+  } catch(e) {}
+}
+
+/**
+ * Sincroniza dados oficiais (LocalStorage -> Supabase -> Firestore) para o site público
  */
 async function loadPublicDataFromFirestore() {
+  // 1. Carregamento imediato a partir do localStorage (resposta zero latency)
+  try {
+    const localConf = localStorage.getItem('backstage_configuracoes');
+    if (localConf) applyConfiguracoesToDOM(JSON.parse(localConf));
+
+    const localSalas = localStorage.getItem('backstage_salas');
+    if (localSalas) applySalasToDOM(JSON.parse(localSalas));
+
+    const localCardapio = localStorage.getItem('backstage_cardapio');
+    if (localCardapio) applyCardapioToDOM(JSON.parse(localCardapio));
+
+    const localBloqueios = localStorage.getItem('backstage_bloqueios');
+    if (localBloqueios) applyBloqueiosToDOM(JSON.parse(localBloqueios));
+  } catch(e) {}
+
   if (!db && !isSupabaseConfigured) return;
 
   try {
-    // 1. Configurações Gerais (WhatsApp Oficial e PDF do Cardápio)
+    // 2. Configurações Gerais
     try {
       let conf = null;
       if (isSupabaseConfigured) {
-        try {
-          conf = await getConfiguracoesSupabase();
-        } catch (e) {
-          console.warn('Sync configs Supabase:', e);
-        }
+        try { conf = await getConfiguracoesSupabase(); } catch (e) {}
       }
       if (!conf && db) {
         const confSnap = await getDoc(doc(db, 'configuracoes', 'geral'));
-        if (confSnap.exists()) {
-          conf = confSnap.data();
-        }
+        if (confSnap.exists()) conf = confSnap.data();
       }
+      if (conf) applyConfiguracoesToDOM(conf);
+    } catch(e) {}
 
-      if (conf) {
-        if (conf.whatsapp) {
-          const cleanPhone = conf.whatsapp.replace(/\D/g, '');
-          if (cleanPhone) {
-            WHATSAPP_PHONE = cleanPhone;
-            document.querySelectorAll('a[href*="wa.me/"]').forEach(link => {
-              const oldUrl = link.href;
-              const textMatch = oldUrl.match(/text=([^&]+)/);
-              const textParam = textMatch ? textMatch[1] : '';
-              link.href = `https://wa.me/${cleanPhone}${textParam ? '?text=' + textParam : ''}`;
-            });
-          }
-        }
-        if (conf.pdfUrl) {
-          document.querySelectorAll('a[href*="cardapio-oficial.pdf"], #verCardapioPdfMainBtn').forEach(link => {
-            link.href = conf.pdfUrl;
-          });
-        }
-      }
-    } catch(e) {
-      console.warn('Sync configs público:', e);
-    }
-
-    // 2. Bloqueios de Calendário (Disponibilidade)
+    // 3. Bloqueios de Calendário
     try {
       let bloqueios = [];
       if (isSupabaseConfigured) {
-        try {
-          bloqueios = await getBloqueiosSupabase();
-        } catch (e) {
-          console.warn('Sync bloqueios Supabase:', e);
-        }
+        try { bloqueios = await getBloqueiosSupabase(); } catch (e) {}
       }
       if ((!bloqueios || bloqueios.length === 0) && db) {
         const bSnap = await getDocs(collection(db, 'bloqueios'));
-        if (!bSnap.empty) {
-          bloqueios = bSnap.docs.map(d => d.data());
-        }
+        if (!bSnap.empty) bloqueios = bSnap.docs.map(d => d.data());
       }
-      if (bloqueios && bloqueios.length > 0) {
-        activeBlockedDates = bloqueios;
-        renderCalendar();
-      }
-    } catch(e) {
-      console.warn('Sync bloqueios público:', e);
-    }
+      if (bloqueios && bloqueios.length > 0) applyBloqueiosToDOM(bloqueios);
+    } catch(e) {}
 
-    // 3. Salas (Valores, Capacidades e Descrições)
+    // 4. Salas
     try {
       let salas = [];
       if (isSupabaseConfigured) {
-        try {
-          salas = await getSalasSupabase();
-        } catch (e) {
-          console.warn('Sync salas Supabase:', e);
-        }
+        try { salas = await getSalasSupabase(); } catch (e) {}
       }
       if ((!salas || salas.length === 0) && db) {
         const sSnap = await getDocs(collection(db, 'salas'));
-        if (!sSnap.empty) {
-          salas = sSnap.docs.map(d => d.data());
-        }
+        if (!sSnap.empty) salas = sSnap.docs.map(d => d.data());
       }
-      if (salas && salas.length > 0) {
-        salas.forEach(s => {
-          const card = document.querySelector(`.room-pick-card[data-room="${s.nome}"]`);
-          if (card) {
-            if (s.capacidade) {
-              card.setAttribute('data-capacity', s.capacidade);
-              const capBadge = card.querySelector('.room-cap-badge');
-              if (capBadge) capBadge.textContent = `Até ${s.capacidade} pessoas`;
-            }
-            if (s.precoTotal) {
-              const preco = Number(s.precoTotal);
-              card.setAttribute('data-price', preco);
-              card.setAttribute('data-signal', preco / 2);
-              const totalVal = card.querySelector('.total-val');
-              if (totalVal) totalVal.textContent = `R$ ${preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-              const signalVal = card.querySelector('.signal-val');
-              if (signalVal) signalVal.textContent = `Sinal 50%: R$ ${(preco / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • No dia: R$ ${(preco / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            }
-            if (s.descricao) {
-              const descEl = card.querySelector('.room-pick-desc');
-              if (descEl) descEl.textContent = s.descricao;
-            }
-            if (s.ativo === false) {
-              card.style.opacity = '0.5';
-              card.style.pointerEvents = 'none';
-            }
-          }
-        });
-      }
-    } catch(e) {
-      console.warn('Sync salas público:', e);
-    }
+      if (salas && salas.length > 0) applySalasToDOM(salas);
+    } catch(e) {}
 
-    // 4. Cardápio Oficial (Sincronização em cardapio.html)
+    // 5. Cardápio Oficial
     if (document.querySelector('.cardapio-page-view') || document.getElementById('cardapio')) {
       try {
         let items = [];
         if (isSupabaseConfigured) {
-          try {
-            items = await getCardapioSupabase();
-          } catch(e) {
-            console.warn('Sync cardapio Supabase:', e);
-          }
+          try { items = await getCardapioSupabase(); } catch(e) {}
         }
         if ((!items || items.length === 0) && db) {
           const cSnap = await getDocs(collection(db, 'cardapio'));
-          if (!cSnap.empty) {
-            items = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-          }
+          if (!cSnap.empty) items = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         }
-
-        if (items && items.length > 0) {
-          items.forEach(it => {
-            const allItemRows = document.querySelectorAll('.menu-item-row');
-            let matchedRow = null;
-            allItemRows.forEach(row => {
-              const nameEl = row.querySelector('.item-name');
-              if (nameEl && nameEl.textContent.trim().toLowerCase() === (it.nome || '').trim().toLowerCase()) {
-                matchedRow = row;
-              }
-            });
-
-            if (matchedRow) {
-              if (it.ativo === false) {
-                matchedRow.style.display = 'none';
-              } else {
-                matchedRow.style.display = 'flex';
-                if (it.preco) {
-                  const priceEl = matchedRow.querySelector('.item-price');
-                  if (priceEl) priceEl.textContent = `R$ ${Number(it.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-                }
-                if (it.descricao) {
-                  const descEl = matchedRow.querySelector('.item-desc');
-                  if (descEl) descEl.textContent = it.descricao;
-                }
-              }
-            } else if (it.ativo !== false && it.nome) {
-              const targetPanel = document.getElementById(`cat-${it.categoriaId || 'petiscos'}`);
-              const grid = targetPanel ? targetPanel.querySelector('.menu-items-grid') : null;
-              if (grid) {
-                const newRow = document.createElement('div');
-                newRow.className = 'menu-item-row';
-                newRow.innerHTML = `
-                  <div class="item-left">
-                    <div class="item-name">${it.nome}</div>
-                    <div class="item-desc">${it.descricao || ''}</div>
-                  </div>
-                  <div class="item-price">R$ ${(Number(it.preco) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                `;
-                grid.appendChild(newRow);
-              }
-            }
-          });
-        }
-      } catch(e) {
-        console.warn('Sync cardapio público:', e);
-      }
+        if (items && items.length > 0) applyCardapioToDOM(items);
+      } catch(e) {}
     }
   } catch(err) {
     console.warn('Sync público geral:', err);
+  }
+}
+
+/**
+ * Inicializa ouvintes de tempo real no site:
+ * 1. BroadcastChannel (0ms entre abas do mesmo navegador)
+ * 2. Eventos de Storage (multi-aba)
+ * 3. Firestore onSnapshot (tempo real de nuvem para todos os visitantes)
+ * 4. Supabase Realtime Channels (se configurado)
+ */
+export function initRealtimeListeners() {
+  // 1. BroadcastChannel para comunicação instantânea entre abas
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('backstage_realtime');
+      bc.onmessage = (event) => {
+        const { type, data } = event.data || {};
+        if (type === 'CONFIGURACOES_UPDATE') applyConfiguracoesToDOM(data);
+        else if (type === 'SALAS_UPDATE') applySalasToDOM(data);
+        else if (type === 'PROMOCOES_UPDATE') applyPromocoesCards(data);
+        else if (type === 'CARDAPIO_UPDATE') applyCardapioToDOM(data);
+        else if (type === 'BLOQUEIOS_UPDATE') applyBloqueiosToDOM(data);
+      };
+    }
+  } catch(e) {}
+
+  // 2. Storage Event (fallback multi-aba)
+  try {
+    window.addEventListener('storage', (e) => {
+      if (!e.newValue) return;
+      try {
+        const parsed = JSON.parse(e.newValue);
+        if (e.key === 'backstage_configuracoes') applyConfiguracoesToDOM(parsed);
+        else if (e.key === 'backstage_promocoes') applyPromocoesCards(parsed);
+        else if (e.key === 'backstage_salas') applySalasToDOM(parsed);
+        else if (e.key === 'backstage_cardapio') applyCardapioToDOM(parsed);
+        else if (e.key === 'backstage_bloqueios') applyBloqueiosToDOM(parsed);
+      } catch(err) {}
+    });
+  } catch(e) {}
+
+  // 3. Firestore onSnapshot em tempo real
+  if (db) {
+    try {
+      // Configurações Gerais
+      onSnapshot(doc(db, 'configuracoes', 'geral'), (snap) => {
+        if (snap.exists()) applyConfiguracoesToDOM(snap.data());
+      }, (err) => console.warn('Realtime configuracoes aviso:', err));
+
+      // Promoções
+      onSnapshot(doc(db, 'configuracoes', 'promocoes'), (snap) => {
+        if (snap.exists() && snap.data()?.cards) applyPromocoesCards(snap.data().cards);
+      }, (err) => console.warn('Realtime promocoes aviso:', err));
+
+      // Salas
+      onSnapshot(collection(db, 'salas'), (snap) => {
+        if (!snap.empty) applySalasToDOM(snap.docs.map(d => d.data()));
+      }, (err) => console.warn('Realtime salas aviso:', err));
+
+      // Bloqueios
+      onSnapshot(collection(db, 'bloqueios'), (snap) => {
+        if (!snap.empty) applyBloqueiosToDOM(snap.docs.map(d => d.data()));
+      }, (err) => console.warn('Realtime bloqueios aviso:', err));
+
+      // Cardápio (se estiver na página de cardápio)
+      if (document.querySelector('.cardapio-page-view') || document.getElementById('cardapio')) {
+        onSnapshot(collection(db, 'cardapio'), (snap) => {
+          if (!snap.empty) applyCardapioToDOM(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }, (err) => console.warn('Realtime cardapio aviso:', err));
+      }
+    } catch(fsErr) {
+      console.warn('Realtime Firestore subscription aviso:', fsErr);
+    }
+  }
+
+  // 4. Supabase Realtime Channels (se configurado)
+  if (isSupabaseConfigured && supabase) {
+    try {
+      supabase.channel('backstage_public_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, async () => {
+          const c = await getConfiguracoesSupabase();
+          if (c) applyConfiguracoesToDOM(c);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'salas' }, async () => {
+          const s = await getSalasSupabase();
+          if (s) applySalasToDOM(s);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'cardapio' }, async () => {
+          const items = await getCardapioSupabase();
+          if (items) applyCardapioToDOM(items);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bloqueios' }, async () => {
+          const b = await getBloqueiosSupabase();
+          if (b) applyBloqueiosToDOM(b);
+        })
+        .subscribe();
+    } catch(supaErr) {
+      console.warn('Realtime Supabase subscription aviso:', supaErr);
+    }
   }
 }
 

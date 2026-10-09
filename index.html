@@ -187,10 +187,10 @@
       <div class="welcome-info-body">
         <div class="rules-grid">
           <div class="rule-card">
-            <div class="rule-text">As reservas são feitas mediante 50% do pagamento antecipado</div>
+            <div class="rule-text">Nas salas privadas o valor é único da sala inteira, sem cobrança por pessoa</div>
           </div>
           <div class="rule-card alert">
-            <div class="rule-text">O valor pago para o agendamento não é reembolsável em caso de desistência</div>
+            <div class="rule-text">Cancelamento com reembolso garantido conforme a nossa política de reservas</div>
           </div>
           <div class="rule-card">
             <div class="rule-text">A taxa de rolha é de R$ 80 por garrafa</div>
@@ -199,7 +199,7 @@
             <div class="rule-text">De terça a quinta as salas têm desconto especial, consulte a promoção!</div>
           </div>
           <div class="rule-card perk">
-            <div class="rule-text">Nas salas privadas os convidados não pagam entrada avulsa</div>
+            <div class="rule-text">Nas salas privadas todos os seus convidados têm acesso livre sem pagamento de entrada</div>
           </div>
           <div class="rule-card perk">
             <div class="rule-text">Menores de idade são bem-vindos nas salas privadas</div>
@@ -435,7 +435,7 @@
     <section class="birthday-section" id="aniversario">
       <div class="container">
         <div class="birthday-banner">
-          <div class="section-header" style="margin-bottom: 20px;">
+          <div class="section-header" style="margin-bottom: 10px;">
             
             <h2 class="section-title">Faça seu Aniversário no Backstage</h2>
             <p class="section-subtitle">
@@ -452,13 +452,13 @@
             </div>
           </div>
 
-          <div style="text-align: center; margin-top: 30px;">
+          <div class="birthday-action-wrap">
             <a href="https://wa.me/556181426321?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20a%20promo%C3%A7%C3%A3o%20de%20ter%C3%A7a%20a%20quinta%20das%20salas%20do%20Backstage" 
-               class="btn btn-primary btn-lg" 
+               class="btn btn-primary" 
                target="_blank" 
-               rel="noopener noreferrer"
+               rel="noopener noreferrer" 
                id="aniversarioPromoBtn">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/>
               </svg>
               Quero Aproveitar a Promoção
@@ -553,7 +553,7 @@
           <!-- Cards das 3 Salas (Red, Green, Blue) -->
           <div class="step-rooms-grid" id="stepRoomsGrid">
             <!-- SALA RED -->
-            <div class="step-room-card room-theme-red" onclick="openRoomPersonalityModal('Sala Red')">
+            <div class="step-room-card room-theme-red" data-room="Sala Red" onclick="openRoomPersonalityModal('Sala Red')">
               <div class="room-card-glow-bg"></div>
               <div class="room-card-head">
                 <span class="room-card-tag red">Sala 1</span>
@@ -565,8 +565,7 @@
               <div class="room-card-pricing-box">
                 <div class="room-card-total-price">R$ 800,00</div>
                 <div class="room-card-signal-split">
-                  <span>Sinal (50%): <strong>R$ 400,00</strong></span>
-                  <span>No dia: <strong>R$ 400,00</strong></span>
+                  <span>Pagamento Único • <strong>Reembolso garantido</strong></span>
                 </div>
               </div>
 
@@ -582,7 +581,7 @@
             </div>
 
             <!-- SALA GREEN -->
-            <div class="step-room-card room-theme-green" onclick="openRoomPersonalityModal('Sala Green')">
+            <div class="step-room-card room-theme-green" data-room="Sala Green" onclick="openRoomPersonalityModal('Sala Green')">
               <div class="room-card-glow-bg"></div>
               <div class="room-card-head">
                 <span class="room-card-tag green">Sala 2</span>
@@ -594,8 +593,7 @@
               <div class="room-card-pricing-box">
                 <div class="room-card-total-price">R$ 900,00</div>
                 <div class="room-card-signal-split">
-                  <span>Sinal (50%): <strong>R$ 450,00</strong></span>
-                  <span>No dia: <strong>R$ 450,00</strong></span>
+                  <span>Pagamento Único • <strong>Reembolso garantido</strong></span>
                 </div>
               </div>
 
@@ -611,7 +609,7 @@
             </div>
 
             <!-- SALA BLUE -->
-            <div class="step-room-card room-theme-blue" onclick="openRoomPersonalityModal('Sala Blue')">
+            <div class="step-room-card room-theme-blue" data-room="Sala Blue" onclick="openRoomPersonalityModal('Sala Blue')">
               <div class="room-card-glow-bg"></div>
               <div class="room-card-head">
                 <span class="room-card-tag blue">Sala 3 • VIP</span>
@@ -623,8 +621,7 @@
               <div class="room-card-pricing-box">
                 <div class="room-card-total-price">R$ 1.000,00</div>
                 <div class="room-card-signal-split">
-                  <span>Sinal (50%): <strong>R$ 500,00</strong></span>
-                  <span>No dia: <strong>R$ 500,00</strong></span>
+                  <span>Pagamento Único • <strong>Reembolso garantido</strong></span>
                 </div>
               </div>
 
@@ -691,7 +688,7 @@
                 <div class="summary-item">
                   <span class="summary-item-label">Investimento Total:</span>
                   <div class="summary-item-val" id="summaryTotalVal">R$ 800,00</div>
-                  <div class="summary-sub-val" id="summarySignalVal">Sinal de 50%: R$ 400,00</div>
+                  <div class="summary-sub-val" id="summarySignalVal">Pagamento Único • Reembolso garantido</div>
                 </div>
               </div>
             </div>
@@ -724,6 +721,23 @@
                 </div>
               </div>
 
+              <!-- Política de Cancelamento com Aceite Explícito Obrigatório -->
+              <div class="booking-cancellation-notice" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: #F87171; font-size: 0.88rem; margin-bottom: 6px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  Aviso: Política de Cancelamento da Sala
+                </div>
+                <p style="font-size: 0.82rem; color: #E2E8F0; line-height: 1.45; margin-bottom: 8px;">
+                  O pagamento da sala é integral no ato da reserva. Em caso de cancelamento, <strong>50% do valor total corresponde à parcela que poderá não ser reembolsada</strong>, observadas a legislação aplicável e as circunstâncias do caso.
+                </p>
+                <label class="terms-label-check" style="cursor: pointer; display: flex; align-items: flex-start; gap: 8px;">
+                  <input type="checkbox" id="bookingCancelamentoCheck" required>
+                  <span class="terms-check-text" style="font-size: 0.82rem; color: #FFFFFF; font-weight: 600;">
+                    Declaro que li e aceito expressamente a Política de Cancelamento (ciência de que 50% do valor corresponde à parcela que poderá não ser reembolsada).
+                  </span>
+                </label>
+              </div>
+
               <!-- Termos de Responsabilidade Obrigatório -->
               <div class="booking-terms-acknowledgment">
                 <label class="terms-label-check">
@@ -733,7 +747,7 @@
                     <button type="button" class="terms-inline-link" onclick="openTermosModal(event)">
                       termos de responsabilidade
                     </button>
-                    e concordo com as <strong>condições de reserva, cancelamento e retenção de sinal</strong>.
+                    e concordo com as <strong>condições de reserva, uso e convivência</strong>.
                   </span>
                 </label>
               </div>
@@ -1011,13 +1025,19 @@
             <a href="https://www.instagram.com/barbackstagekaraoke" 
                target="_blank" 
                rel="noopener noreferrer" 
+               id="footerInstagramLink"
                style="color: var(--primary-magenta); font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
               </svg>
-              @barbackstagekaraoke
+              <span id="footerInstagramText">@barbackstagekaraoke</span>
+            </a>
+          </div>
+          <div style="margin-top: 8px;">
+            <a id="footerContactEmail" href="mailto:contato@barbackstagekaraoke.com.br" style="color: var(--primary-cyan); font-size: 0.85rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+              ✉️ <span id="footerContactEmailText">contato@barbackstagekaraoke.com.br</span>
             </a>
           </div>
         </div>
@@ -1027,8 +1047,8 @@
         <div>
           &copy; 2026 Backstage Karaokê - Todos os direitos reservados
         </div>
-        <div>
-          Asa Norte, Brasília - DF • Proibido menores de 18 no Salão Principal
+        <div id="footerEndereco">
+          CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF • Proibido menores de 18 no Salão Principal
         </div>
       </div>
     </div>
@@ -1096,12 +1116,12 @@
               <strong class="spec-value highlight" id="popupRoomTotal">R$ 1.000,00</strong>
             </div>
             <div class="spec-pill">
-              <span class="spec-label">Sinal para Reserva (50%):</span>
-              <strong class="spec-value" id="popupRoomSignal">R$ 500,00</strong>
+              <span class="spec-label">Forma de Pagamento:</span>
+              <strong class="spec-value" id="popupRoomSignal">Pagamento Único</strong>
             </div>
           </div>
           <div class="spec-terms-notice">
-            * 50% restante pago na recepção no dia. Menores de idade são bem-vindos nas salas privadas.
+            * Pagamento único integral com reembolso garantido conforme regras de cancelamento. Menores de idade são bem-vindos nas salas privadas.
             <button type="button" class="terms-inline-link" onclick="openTermosModal(event); event.stopPropagation();" style="display: block; margin: 6px auto 0; font-size: 0.78rem;">
               Ver Termos de Responsabilidade da Reserva
             </button>
@@ -1346,8 +1366,8 @@
            PASSO 6 & 7: RESUMO DA RESERVA, VALOR E ESCOLHA DO PAGAMENTO
            ==================================================================== -->
       <div class="checkout-step-section" id="chkSectionResumo" style="display: none;">
-        <h3 class="booking-modal-title">5. Resumo da Reserva &amp; Forma de Pagamento</h3>
-        <p class="booking-modal-sub" style="margin-bottom: 14px;">
+        <h3 class="booking-modal-title" id="chkResumoTitulo">5. Resumo da Reserva &amp; Forma de Pagamento</h3>
+        <p class="booking-modal-sub" id="chkResumoSubtitulo" style="margin-bottom: 14px;">
           Revise os dados da reserva e escolha sua forma de pagamento por pessoa:
         </p>
 
@@ -1355,7 +1375,7 @@
         <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 0.85rem;">
             <div>
-              <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Mesa Escolhida:</span>
+              <span id="resumoTipoItemLabel" style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Mesa Escolhida:</span>
               <strong id="resumoMesaNome" style="color: #F59E0B;">--</strong>
             </div>
             <div>
@@ -1367,36 +1387,67 @@
               <strong id="resumoTitularNome" style="color: #FFF;">--</strong>
             </div>
             <div>
-              <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Quantidade:</span>
+              <span id="resumoQtdLabel" style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Quantidade:</span>
               <strong id="resumoQtdPessoas" style="color: var(--primary-cyan);">--</strong>
             </div>
           </div>
         </div>
 
-        <!-- 7. Cliente escolhe o pagamento (Pix R$20, Débito R$20, Crédito R$25) -->
-        <label class="field-label" style="font-size: 0.85rem; font-weight: 800; color: #FFFFFF; margin-bottom: 8px; display: block;">
-          Escolha a Forma de Pagamento da Entrada:
-        </label>
-        <div class="payment-pricing-grid" id="paymentPricingGrid">
-          <!-- PIX: R$ 20 por pessoa -->
-          <div class="payment-method-card selected" id="payCardPix" onclick="selecionarMetodoTarifa('pix')">
-            <div class="method-name">Pix</div>
-            <div class="method-rate">R$ 20<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
-            <div class="method-note">Aprovação imediata</div>
-          </div>
+        <!-- 7. Escolha do pagamento: BLOCO EXCLUSIVO PARA MESAS DO SALÃO (Entrada por pessoa) -->
+        <div id="boxPagamentoMesa">
+          <label class="field-label" id="lblFormaPagamentoMesa" style="font-size: 0.85rem; font-weight: 800; color: #FFFFFF; margin-bottom: 8px; display: block;">
+            Escolha a Forma de Pagamento da Entrada:
+          </label>
+          <div class="payment-pricing-grid" id="paymentPricingGridMesa">
+            <!-- PIX -->
+            <div class="payment-method-card selected" id="payCardPixMesa" onclick="selecionarMetodoTarifa('pix')">
+              <div class="method-name">Pix</div>
+              <div class="method-rate" id="payCardPixMesaRate">R$ 20<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+              <div class="method-note">Aprovação imediata</div>
+            </div>
 
-          <!-- DÉBITO: R$ 20 por pessoa -->
-          <div class="payment-method-card" id="payCardDebito" onclick="selecionarMetodoTarifa('debito')">
-            <div class="method-name">Débito</div>
-            <div class="method-rate">R$ 20<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
-            <div class="method-note">Cartão de débito</div>
-          </div>
+            <!-- DÉBITO -->
+            <div class="payment-method-card" id="payCardDebitoMesa" onclick="selecionarMetodoTarifa('debito')">
+              <div class="method-name">Débito</div>
+              <div class="method-rate" id="payCardDebitoMesaRate">R$ 20<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+              <div class="method-note">Cartão de débito</div>
+            </div>
 
-          <!-- CRÉDITO: R$ 25 por pessoa -->
-          <div class="payment-method-card" id="payCardCredito" onclick="selecionarMetodoTarifa('credito')">
-            <div class="method-name">Crédito</div>
-            <div class="method-rate" style="color: var(--primary-cyan);">R$ 25<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
-            <div class="method-note">Cartão de crédito</div>
+            <!-- CRÉDITO -->
+            <div class="payment-method-card" id="payCardCreditoMesa" onclick="selecionarMetodoTarifa('credito')">
+              <div class="method-name">Crédito</div>
+              <div class="method-rate" id="payCardCreditoMesaRate" style="color: var(--primary-cyan);">R$ 25<span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+              <div class="method-note">Cartão de crédito</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Escolha do pagamento: BLOCO EXCLUSIVO PARA SALAS PRIVADAS (Valor único da sala completa, SEM cobrança por pessoa!) -->
+        <div id="boxPagamentoSala" style="display: none;">
+          <label class="field-label" id="lblFormaPagamentoSala" style="font-size: 0.85rem; font-weight: 800; color: #FFFFFF; margin-bottom: 8px; display: block;">
+            Escolha a Forma de Pagamento da Sala:
+          </label>
+          <div class="payment-pricing-grid" id="paymentPricingGridSala">
+            <!-- PIX -->
+            <div class="payment-method-card selected" id="payCardPixSala" onclick="selecionarMetodoTarifa('pix')">
+              <div class="method-name">Pix</div>
+              <div class="method-rate" id="payCardPixSalaRate">--</div>
+              <div class="method-note">Valor único da sala • Aprovação imediata</div>
+            </div>
+
+            <!-- DÉBITO -->
+            <div class="payment-method-card" id="payCardDebitoSala" onclick="selecionarMetodoTarifa('debito')">
+              <div class="method-name">Débito</div>
+              <div class="method-rate" id="payCardDebitoSalaRate">--</div>
+              <div class="method-note">Valor único da sala • Débito</div>
+            </div>
+
+            <!-- CRÉDITO -->
+            <div class="payment-method-card" id="payCardCreditoSala" onclick="selecionarMetodoTarifa('credito')">
+              <div class="method-name">Crédito</div>
+              <div class="method-rate" id="payCardCreditoSalaRate" style="color: var(--primary-cyan);">--</div>
+              <div class="method-note">Valor único da sala • Crédito</div>
+            </div>
           </div>
         </div>
 
@@ -1404,11 +1455,28 @@
         <div style="background: rgba(16, 185, 129, 0.1); border: 1.5px solid #10B981; border-radius: 12px; padding: 14px 18px; text-align: center; margin-bottom: 16px;">
           <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Valor Total da Reserva:</div>
           <div style="font-size: 1.85rem; font-family: var(--font-heading); font-weight: 900; color: #10B981; margin: 4px 0;" id="resumoValorTotalCalculado">
-            R$ 80,00
+            --
           </div>
           <div style="font-size: 0.8rem; color: #CBD5E1;" id="resumoCalculoFormula">
-            4 pessoas × R$ 20,00 (Pix)
+            --
           </div>
+        </div>
+
+        <!-- Política de Cancelamento e Aceite Explícito Obrigatório -->
+        <div id="boxPoliticaCancelamentoResumo" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: #F87171; font-size: 0.9rem; margin-bottom: 6px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Política de Cancelamento &amp; Retenção
+          </div>
+          <p id="msgPoliticaCancelamentoTexto" style="font-size: 0.82rem; color: #E2E8F0; line-height: 1.5; margin-bottom: 10px;">
+            O cliente deve pagar o valor integral da sala no momento da reserva (sem sinal e sem saldo para pagar na recepção). <strong>Em caso de cancelamento, 50% do valor corresponde à parcela que poderá não ser reembolsada</strong>, observadas a legislação aplicável e as circunstâncias do caso.
+          </p>
+          <label class="legal-checkbox-item" style="cursor: pointer; display: flex; align-items: flex-start; gap: 8px;">
+            <input type="checkbox" id="chkPoliticaCancelamentoAceita" required>
+            <span class="legal-checkbox-label" style="font-size: 0.82rem; color: #FFFFFF; font-weight: 600;">
+              Aceito expressamente a Política de Cancelamento: estou ciente de que 50% do valor corresponde à parcela que poderá não ser reembolsada em caso de cancelamento.
+            </span>
+          </label>
         </div>
 
         <!-- Termos e Consentimentos Obrigatórios -->
@@ -1416,7 +1484,7 @@
           <label class="legal-checkbox-item">
             <input type="checkbox" id="chkReservaTermosAceitos" required checked>
             <span class="legal-checkbox-label">
-              Declaro ciência que a reserva garante a exclusividade da mesa para o meu grupo e concordo com os 
+              Declaro ciência que a reserva garante a exclusividade do espaço reservado para o meu grupo e concordo com os 
               <button type="button" class="terms-inline-link" onclick="openTermosCompletosModal(event); event.stopPropagation();">Termos de Compra e Reserva</button>
               e a <button type="button" class="terms-inline-link" onclick="openPoliticaPrivacidadeModal(event); event.stopPropagation();">Política de Privacidade</button>.
             </span>
@@ -1424,7 +1492,7 @@
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <button type="button" class="btn btn-outline btn-sm" onclick="voltarParaPassoDados()">
+          <button type="button" class="btn btn-outline btn-sm" id="btnVoltarDoResumo" onclick="voltarParaPassoDados()">
             ← Voltar para Seus Dados
           </button>
           <button type="button" class="btn btn-primary btn-md" onclick="avancarParaPassoPagar()">
@@ -1445,22 +1513,26 @@
         <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--primary-cyan); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
           <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Total a Pagar:</div>
           <div style="font-size: 2rem; font-family: var(--font-heading); font-weight: 900; color: #10B981; margin: 4px 0;" id="pagarValorDisplay">
-            R$ 80,00
+            --
           </div>
           <div style="font-size: 0.8rem; color: #CBD5E1;" id="pagarMetodoDisplay">
-            Pagamento via Pix
+            --
           </div>
         </div>
 
         <!-- Detalhes do Pix (caso Pix selecionado) -->
         <div id="pagarPixBox" style="background: rgba(14,22,45,0.9); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <div id="pagarPixQrWrap" style="display: none; text-align: center; margin-bottom: 14px;">
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Aponte a câmera do seu aplicativo de banco:</div>
+            <img id="pagarPixQrImg" src="" alt="QR Code Pix Asaas" style="width: 170px; height: 170px; border-radius: 8px; background: #FFF; padding: 6px; display: inline-block;">
+          </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 0.82rem; font-weight: 800; color: var(--primary-cyan);">Chave Pix Copia e Cola (Asaas):</span>
             <button type="button" class="btn-admin btn-admin-xs btn-admin-outline" onclick="copiarPixCodigo()" id="btnCopiarPix">
               Copiar Chave Pix 📋
             </button>
           </div>
-          <input type="text" id="chkPixInput" class="field-input" readonly value="financeiro@backstagekaraoke.com.br" style="font-family: monospace; font-size: 0.82rem; background: rgba(0,0,0,0.5);">
+          <input type="text" id="chkPixInput" class="field-input" readonly value="" placeholder="Gerando chave Pix oficial..." style="font-family: monospace; font-size: 0.82rem; background: rgba(0,0,0,0.5);">
           <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 6px;">
             Abra seu app do banco, escolha a opção "Pix Copia e Cola" e confirme o pagamento.
           </div>
@@ -1471,13 +1543,26 @@
           <div style="font-size: 0.85rem; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">
             Ambiente de Checkout Seguro Asaas
           </div>
-          <p style="font-size: 0.78rem; color: #CBD5E1; line-height: 1.45; margin: 0;">
+          <p style="font-size: 0.78rem; color: #CBD5E1; line-height: 1.45; margin: 0 0 12px 0;">
             A transação de cartão de débito/crédito é processada em ambiente isolado e certificado PCI-DSS do Asaas. Nenhum dado do seu cartão trafega ou fica registrado em nossos servidores.
           </p>
+          <div id="pagarCartaoLinkWrap" style="text-align: center; display: none;">
+            <a id="pagarCartaoLinkBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 8px;">
+              <span>Abrir Fatura Segura no Asaas 💳 →</span>
+            </a>
+          </div>
         </div>
 
-        <button type="button" class="btn btn-primary btn-lg btn-full" id="btnFinalizarPagamento" onclick="confirmarPagamentoEFinalizar()" style="padding: 16px 20px; font-size: 1.05rem; margin-bottom: 12px;">
-          <span>Confirmar Pagamento e Emitir Reserva ✓</span>
+        <!-- Feedback de verificação de status em tempo real -->
+        <div id="pagarStatusLiveBox" style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 10px; padding: 10px 14px; text-align: center; margin-bottom: 14px;">
+          <div id="pagarStatusLiveMsg" style="font-size: 0.82rem; color: #F59E0B; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #F59E0B;"></span>
+            <span id="pagarStatusLiveTexto">Aguardando pagamento no Asaas... (Verificação automática)</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-lg btn-full" id="btnFinalizarPagamento" onclick="verificarPagamentoManual()" style="padding: 16px 20px; font-size: 1.05rem; margin-bottom: 12px;">
+          <span id="btnFinalizarPagamentoTexto">Já Paguei, Verificar no Asaas 🔄</span>
         </button>
 
         <div style="text-align: center;">
