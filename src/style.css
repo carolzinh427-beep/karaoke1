@@ -1950,32 +1950,32 @@ img, video {
 .instagram-banner-card {
   background: linear-gradient(135deg, rgba(131, 24, 67, 0.35) 0%, rgba(20, 31, 68, 0.75) 100%);
   border: 1px solid rgba(255, 0, 122, 0.3);
-  border-radius: var(--radius-lg);
-  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 12px;
 }
 
 .insta-left-wrap {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .insta-icon-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #FFFFFF;
-  box-shadow: 0 6px 18px rgba(221, 42, 123, 0.35);
+  box-shadow: 0 4px 12px rgba(221, 42, 123, 0.35);
   flex-shrink: 0;
 }
 
