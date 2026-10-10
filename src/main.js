@@ -33,7 +33,12 @@ import {
   createPaymentSession,
   processPaymentConfirmation,
   checkPaymentStatus,
-  PAYMENT_METHODS
+  PAYMENT_METHODS,
+  calcularOpcoesPagamento,
+  gerarMensagemReservaWhatsApp,
+  gerarLinkWhatsAppManual,
+  obterDadosPixConfigurados,
+  formatarMoeda
 } from './lib/payment.js';
 import {
   MESAS_SALAO,
@@ -91,7 +96,9 @@ if (typeof window !== 'undefined') {
   window.selectedCheckoutHorario = selectedCheckoutHorario;
 }
 
-// Estado de Sessão e Monitoramento de Pagamento Asaas (Anti-Falso Positivo)
+// Estado de Configurações Administrativas e Pagamento Manual
+let cachedConfiguracoes = null;
+let selectedOpcaoPercentual = 50; // 50% sinal ou 100% integral
 let currentPaymentSession = null;
 let currentReservaPendente = null;
 let paymentPollingTimer = null;
@@ -104,7 +111,8 @@ function pararMonitoramentoPagamento() {
 }
 
 export function createWhatsAppUrl(message) {
-  return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+  const phone = (cachedConfiguracoes?.whatsapp || WHATSAPP_PHONE || '556181426321').replace(/\D/g, '');
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
 function bootstrap() {
@@ -1771,8 +1779,6 @@ window.avancarParaPassoPagar = async () => {
   const pagarMetodo = document.getElementById('pagarMetodoDisplay');
   const pixBox = document.getElementById('pagarPixBox');
   const cartaoBox = document.getElementById('pagarCartaoBox');
-  const linkAvisoErro = document.getElementById('pagarCartaoAvisoErro');
-  if (linkAvisoErro) linkAvisoErro.style.display = 'none';
 
   const nomeMetodo = selectedMetodoTarifa === 'pix' ? 'Pix' : selectedMetodoTarifa === 'debito' ? 'Cartão de Débito' : 'Cartão de Crédito';
 
@@ -1782,7 +1788,7 @@ window.avancarParaPassoPagar = async () => {
     valorCobrado = calc.valorCobrado;
     if (pagarValor) pagarValor.textContent = calc.formatadoCobrado;
     if (pagarMetodo) {
-      pagarMetodo.textContent = `Pagamento Integral da Sala via ${nomeMetodo} (Preço fixo total: ${calc.formatadoCobrado})`;
+      pagarMetodo.textContent = `Pagamento da Sala via ${nomeMetodo} (Preço fixo total: ${calc.formatadoCobrado})`;
     }
   } else {
     const calculo = calcularValorReserva(pessoas, selectedMetodoTarifa);
@@ -1790,6 +1796,16 @@ window.avancarParaPassoPagar = async () => {
     if (pagarValor) pagarValor.textContent = calculo.formatadoTotal;
     if (pagarMetodo) pagarMetodo.textContent = `Pagamento via ${nomeMetodo} (R$ ${calculo.valorUnitario}/pessoa)`;
   }
+
+  // Calcula opções de pagamento: 50% sinal mínimo ou 100% integral
+  const opcoes = calcularOpcoesPagamento(valorCobrado);
+  const p50El = document.getElementById('pagarValor50Texto');
+  const p100El = document.getElementById('pagarValor100Texto');
+  if (p50El) p50El.textContent = opcoes.formatado50;
+  if (p100El) p100El.textContent = opcoes.formatado100;
+
+  selectedOpcaoPercentual = 50;
+  window.selecionarOpcaoValorPagar(50);
 
   if (selectedMetodoTarifa === 'pix') {
     if (pixBox) pixBox.style.display = 'block';
@@ -1829,43 +1845,57 @@ window.avancarParaPassoPagar = async () => {
   const qrToken = generateQrCodeToken();
   const qrSvg = generateQrCodeSvg(codigoReserva, 180);
 
-  // Exibe feedback de geração de cobrança
-  const inputPix = document.getElementById('chkPixInput');
-  const liveStatus = document.getElementById('pagarStatusLiveTexto');
-  if (inputPix) inputPix.value = 'Conectando ao gateway Asaas...';
-  if (liveStatus) liveStatus.textContent = 'Gerando cobrança oficial no Asaas...';
-
-  // Cria a sessão de pagamento no servidor com validação autoritativa de preços
-  pararMonitoramentoPagamento();
-  try {
-    currentPaymentSession = await createPaymentSession({
-      codigoReserva,
-      valor: valorCobrado,
-      metodo: selectedMetodoTarifa,
-      comprador: { nome, email, whatsapp },
-      ambiente: ambienteNome,
-      tipoReserva: isSalaPrivada ? 'sala' : 'mesa',
-      salaNome: isSalaPrivada ? selectedBookingRoom : undefined,
-      mesaId: isSalaPrivada ? undefined : selectedMesaId,
-      pessoas
-    });
-  } catch (err) {
-    console.warn('Aviso ao gerar sessão Asaas:', err);
-    // Permanece na Etapa 8 e exibe aviso claro sem expulsar o cliente de volta à Etapa 6
-    if (liveStatus) {
-      liveStatus.textContent = `Aviso Gateway: ${err.message || 'Aguardando configuração de chave ou comunicação.'}`;
-    }
-    if (inputPix && selectedMetodoTarifa === 'pix') {
-      inputPix.value = `Indisponível no momento (${err.message || 'Erro Asaas'})`;
-    }
-    if (linkAvisoErro) {
-      linkAvisoErro.textContent = `Aviso do Asaas: ${err.message || 'Falha ao processar pagamento.'}`;
-      linkAvisoErro.style.display = 'block';
-    }
-    currentPaymentSession = null;
+  // Obtém configurações oficiais do estabelecimento para Pix e WhatsApp
+  let conf = cachedConfiguracoes;
+  if (!conf && isSupabaseConfigured) {
+    try { conf = await getConfiguracoesSupabase(); cachedConfiguracoes = conf; } catch (e) {}
+  }
+  if (!conf) {
+    try {
+      const res = await fetch('/api/admin-configuracoes');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.configuracoes) { conf = json.configuracoes; cachedConfiguracoes = conf; }
+      }
+    } catch(e) {}
   }
 
-  // Registra pré-reserva com status PENDING no Supabase
+  // Configuração estrita do Pix real (sem inventar chaves ou QR Codes falsos)
+  const pixDados = obterDadosPixConfigurados(conf || {});
+  const qrWrap = document.getElementById('pagarPixQrWrap');
+  const qrImg = document.getElementById('pagarPixQrImg');
+  const chaveWrap = document.getElementById('pagarPixChaveWrap');
+  const inputPix = document.getElementById('chkPixInput');
+  const avisoNaoConfig = document.getElementById('pagarPixNaoConfiguradoAviso');
+  const titularPixEl = document.getElementById('pagarPixTitularDisplay');
+  const tituloPixEl = document.getElementById('pagarPixChaveTitulo');
+
+  if (pixDados.configurado) {
+    if (chaveWrap) chaveWrap.style.display = 'block';
+    if (avisoNaoConfig) avisoNaoConfig.style.display = 'none';
+    if (inputPix) inputPix.value = pixDados.copiaCola || pixDados.chave;
+    if (tituloPixEl) tituloPixEl.textContent = `Chave Pix Oficial (${pixDados.tipo}):`;
+    if (titularPixEl) {
+      titularPixEl.textContent = pixDados.titular ? `Favorecido: ${pixDados.titular}` : '';
+      titularPixEl.style.display = pixDados.titular ? 'block' : 'none';
+    }
+
+    if (pixDados.qrcodeUrl && qrWrap && qrImg) {
+      qrImg.src = pixDados.qrcodeUrl;
+      qrWrap.style.display = 'block';
+    } else if (qrWrap) {
+      qrWrap.style.display = 'none';
+    }
+  } else {
+    // Chave ainda não cadastrada pelo estabelecimento no painel
+    if (chaveWrap) chaveWrap.style.display = 'none';
+    if (qrWrap) qrWrap.style.display = 'none';
+    if (avisoNaoConfig) avisoNaoConfig.style.display = 'block';
+    if (inputPix) inputPix.value = 'Chave Pix aguardando configuração no painel administrativo.';
+  }
+
+  // Registra a reserva com status PENDING / aguardando_comprovante
+  const valorPagarAgoraInicial = selectedOpcaoPercentual === 50 ? opcoes.valorMinimo50 : opcoes.valorIntegral100;
   currentReservaPendente = {
     codigoReserva,
     nome,
@@ -1879,13 +1909,14 @@ window.avancarParaPassoPagar = async () => {
     pessoas,
     status: 'PENDING',
     statusPagamento: 'aguardando',
-    transacaoId: currentPaymentSession?.transacaoId || null,
+    transacaoId: null,
     qrCodeToken: qrToken,
     valorTotal: valorCobrado,
-    valorSinal: null,
+    valorSinal: opcoes.valorMinimo50,
     valorPago: 0,
+    valorRestante: valorCobrado - valorPagarAgoraInicial,
     metodoPagamento: selectedMetodoTarifa,
-    gateway: 'asaas',
+    gateway: 'manual_whatsapp',
     origem: isSalaPrivada ? 'agendamento_salas' : 'site_cliente',
     qrSvg
   };
@@ -1898,75 +1929,206 @@ window.avancarParaPassoPagar = async () => {
     console.warn('Aviso pré-reserva Supabase:', dbErr);
   }
 
-  // Injeta dados Pix se disponíveis
-  if (currentPaymentSession) {
-    if (inputPix && currentPaymentSession.pixCopiaECola) {
-      inputPix.value = currentPaymentSession.pixCopiaECola;
-    }
+  pararMonitoramentoPagamento();
+  currentPaymentSession = null;
 
-    const qrWrap = document.getElementById('pagarPixQrWrap');
-    const qrImg = document.getElementById('pagarPixQrImg');
-    if (qrWrap && qrImg) {
-      if (currentPaymentSession.pixQrCodeBase64) {
-        qrImg.src = `data:image/png;base64,${currentPaymentSession.pixQrCodeBase64}`;
-        qrWrap.style.display = 'block';
-      } else {
-        qrWrap.style.display = 'none';
+  const liveStatus = document.getElementById('pagarStatusLiveTexto');
+  if (liveStatus) {
+    liveStatus.textContent = 'Reserva pré-agendada com status Aguardando Comprovante. Envie o comprovante via WhatsApp para conferência manual da equipe.';
+  }
+};
+
+window.selecionarOpcaoValorPagar = (percentual) => {
+  selectedOpcaoPercentual = percentual === 100 ? 100 : 50;
+  const card50 = document.getElementById('cardPagar50');
+  const card100 = document.getElementById('cardPagar100');
+  const radio50 = document.getElementById('radioPagar50');
+  const radio100 = document.getElementById('radioPagar100');
+
+  if (card50) card50.classList.toggle('selected', selectedOpcaoPercentual === 50);
+  if (card100) card100.classList.toggle('selected', selectedOpcaoPercentual === 100);
+  if (radio50) radio50.checked = (selectedOpcaoPercentual === 50);
+  if (radio100) radio100.checked = (selectedOpcaoPercentual === 100);
+
+  const total = currentReservaPendente?.valorTotal || 0;
+  const opcoes = calcularOpcoesPagamento(total);
+  const valorAgora = selectedOpcaoPercentual === 50 ? opcoes.valorMinimo50 : opcoes.valorIntegral100;
+  const textoInstrucao = document.getElementById('pagarValorInstrucaoPix');
+  if (textoInstrucao) {
+    textoInstrucao.textContent = selectedOpcaoPercentual === 50 ? opcoes.formatado50 : opcoes.formatado100;
+  }
+
+  if (currentReservaPendente) {
+    currentReservaPendente.valorRestante = total - valorAgora;
+  }
+};
+
+window.abrirWhatsAppComprovante = async () => {
+  if (!currentReservaPendente) {
+    alert('Nenhuma reserva ativa encontrada. Por favor, reinicie a reserva.');
+    return;
+  }
+
+  const errBox = document.getElementById('pagarWhatsappErroBox');
+  if (errBox) errBox.style.display = 'none';
+
+  let conf = cachedConfiguracoes;
+  if (!conf && isSupabaseConfigured) {
+    try { conf = await getConfiguracoesSupabase(); cachedConfiguracoes = conf; } catch (e) {}
+  }
+  if (!conf) {
+    try {
+      const res = await fetch('/api/admin-configuracoes');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.configuracoes) { conf = json.configuracoes; cachedConfiguracoes = conf; }
       }
+    } catch(e) {}
+  }
+
+  const numWpp = (conf?.whatsapp || WHATSAPP_PHONE || '').replace(/\D/g, '');
+  if (!numWpp || numWpp.length < 10) {
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.textContent = '⚠️ WhatsApp oficial do estabelecimento não configurado no painel administrativo. Não é possível abrir a conversa.';
     }
+    alert('Erro: O número oficial de WhatsApp do estabelecimento ainda não foi configurado no painel administrativo.');
+    return;
+  }
 
-    // Link para checkout Asaas em cartão
-    const linkWrap = document.getElementById('pagarCartaoLinkWrap');
-    const linkBtn = document.getElementById('pagarCartaoLinkBtn');
-    const linkAvisoErro = document.getElementById('pagarCartaoAvisoErro');
-    const sandboxAviso = document.getElementById('pagarCartaoSandboxAviso');
+  const total = currentReservaPendente.valorTotal;
+  const opcoes = calcularOpcoesPagamento(total);
+  const valorAgora = selectedOpcaoPercentual === 50 ? opcoes.valorMinimo50 : opcoes.valorIntegral100;
 
-    if (linkWrap && linkBtn) {
-      const url = currentPaymentSession.checkoutUrl;
-      const isUrlValida = url && typeof url === 'string' && url.startsWith('http') &&
-        !url.endsWith('/i/') && !url.endsWith('/i') && !url.endsWith('/c/') && !url.endsWith('/c') &&
-        !url.includes('/login') && !url.includes('/cadastro');
+  const dadosReserva = {
+    nome: currentReservaPendente.nome,
+    telefone: currentReservaPendente.whatsapp,
+    mesaOuSala: currentReservaPendente.salaOuMesa,
+    data: currentReservaPendente.data,
+    horario: currentReservaPendente.horario,
+    pessoas: currentReservaPendente.pessoas,
+    valorTotal: total,
+    formaPagamento: 'Pix',
+    valorPagarAgora: valorAgora,
+    codigoReserva: currentReservaPendente.codigoReserva
+  };
 
-      if (isUrlValida) {
-        linkBtn.href = url;
-        linkWrap.style.display = 'block';
-        if (linkAvisoErro) linkAvisoErro.style.display = 'none';
+  try {
+    const url = gerarLinkWhatsAppManual({
+      whatsappOficial: numWpp,
+      dadosReserva
+    });
 
-        // Mostra aviso informativo sobre autenticação de teste no Sandbox
-        if (sandboxAviso) {
-          sandboxAviso.style.display = currentPaymentSession.ambienteAsaas === 'sandbox' ? 'block' : 'none';
-        }
-      } else {
-        linkBtn.href = '#';
-        linkWrap.style.display = 'none';
-        if (sandboxAviso) sandboxAviso.style.display = 'none';
-        if (linkAvisoErro) {
-          linkAvisoErro.textContent = 'Link oficial de fatura do Asaas não disponível para esta transação.';
-          linkAvisoErro.style.display = 'block';
-        }
+    // Atualiza status no banco para aguardando_comprovante (sem auto-confirmação)
+    try {
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('reservas').update({
+          status: 'aguardando_comprovante',
+          status_pagamento: 'aguardando',
+          valor_restante: total - valorAgora,
+          atualizado_em: new Date().toISOString()
+        }).eq('codigo_reserva', currentReservaPendente.codigoReserva);
       }
+    } catch (e) {}
 
-      // Previne navegação acidental caso o link esteja indisponível
-      if (!linkBtn._clickGuardAttached) {
-        linkBtn._clickGuardAttached = true;
-        linkBtn.addEventListener('click', (e) => {
-          const currentHref = linkBtn.getAttribute('href') || '';
-          if (!currentHref || currentHref === '#' || !currentHref.startsWith('http')) {
-            e.preventDefault();
-            alert('Aguarde: o link da fatura segura ainda está sendo gerado ou não está disponível.');
-          }
-        });
-      }
+    window.open(url, '_blank');
+
+    const liveStatus = document.getElementById('pagarStatusLiveTexto');
+    if (liveStatus) {
+      liveStatus.textContent = 'Conversa iniciada no WhatsApp! Envie o comprovante Pix para a equipe conferir e aprovar sua reserva.';
     }
+  } catch (err) {
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.textContent = `⚠️ ${err.message}`;
+    }
+    alert(err.message);
+  }
+};
 
-    // Inicia monitoramento automático do pagamento junto ao servidor
-    iniciarMonitoramentoPagamento(currentPaymentSession.transacaoId, currentReservaPendente);
+window.abrirWhatsAppCartao = async () => {
+  if (!currentReservaPendente) {
+    alert('Nenhuma reserva ativa encontrada. Por favor, reinicie a reserva.');
+    return;
+  }
+
+  const errBox = document.getElementById('pagarWhatsappErroBox');
+  if (errBox) errBox.style.display = 'none';
+
+  let conf = cachedConfiguracoes;
+  if (!conf && isSupabaseConfigured) {
+    try { conf = await getConfiguracoesSupabase(); cachedConfiguracoes = conf; } catch (e) {}
+  }
+  if (!conf) {
+    try {
+      const res = await fetch('/api/admin-configuracoes');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.configuracoes) { conf = json.configuracoes; cachedConfiguracoes = conf; }
+      }
+    } catch(e) {}
+  }
+
+  const numWpp = (conf?.whatsapp || WHATSAPP_PHONE || '').replace(/\D/g, '');
+  if (!numWpp || numWpp.length < 10) {
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.textContent = '⚠️ WhatsApp oficial do estabelecimento não configurado no painel administrativo. Não é possível abrir a conversa.';
+    }
+    alert('Erro: O número oficial de WhatsApp do estabelecimento ainda não foi configurado no painel administrativo.');
+    return;
+  }
+
+  const total = currentReservaPendente.valorTotal;
+  const metodoNome = selectedMetodoTarifa === 'debito' ? 'Cartão de Débito' : 'Cartão de Crédito';
+
+  const dadosReserva = {
+    nome: currentReservaPendente.nome,
+    telefone: currentReservaPendente.whatsapp,
+    mesaOuSala: currentReservaPendente.salaOuMesa,
+    data: currentReservaPendente.data,
+    horario: currentReservaPendente.horario,
+    pessoas: currentReservaPendente.pessoas,
+    valorTotal: total,
+    formaPagamento: metodoNome,
+    valorPagarAgora: total,
+    codigoReserva: currentReservaPendente.codigoReserva
+  };
+
+  try {
+    const url = gerarLinkWhatsAppManual({
+      whatsappOficial: numWpp,
+      dadosReserva
+    });
+
+    try {
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('reservas').update({
+          status: 'aguardando_comprovante',
+          status_pagamento: 'aguardando',
+          atualizado_em: new Date().toISOString()
+        }).eq('codigo_reserva', currentReservaPendente.codigoReserva);
+      }
+    } catch (e) {}
+
+    window.open(url, '_blank');
+
+    const liveStatus = document.getElementById('pagarStatusLiveTexto');
+    if (liveStatus) {
+      liveStatus.textContent = 'Conversa iniciada no WhatsApp! Combine as instruções de pagamento no cartão com a equipe para aprovação da reserva.';
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.textContent = `⚠️ ${err.message}`;
+    }
+    alert(err.message);
   }
 };
 
 window.copiarPixCodigo = () => {
   const input = document.getElementById('chkPixInput');
-  if (input && input.value) {
+  if (input && input.value && !input.value.includes('aguardando')) {
     navigator.clipboard?.writeText(input.value);
     const btn = document.getElementById('btnCopiarPix');
     if (btn) {
@@ -1977,66 +2139,8 @@ window.copiarPixCodigo = () => {
   }
 };
 
-// Monitoramento automático periódico do pagamento junto ao servidor
-function iniciarMonitoramentoPagamento(transacaoId, reservaPendente) {
-  pararMonitoramentoPagamento();
-  if (!transacaoId) return;
-
-  const liveStatus = document.getElementById('pagarStatusLiveTexto');
-  if (liveStatus) {
-    liveStatus.textContent = 'Aguardando pagamento no Asaas... (Verificação automática ativa)';
-  }
-
-  paymentPollingTimer = setInterval(async () => {
-    try {
-      const statusCheck = await checkPaymentStatus(transacaoId);
-      if (statusCheck && statusCheck.pago) {
-        pararMonitoramentoPagamento();
-        await finalizarReservaAprovada(reservaPendente, statusCheck);
-      }
-    } catch (e) {
-      // Falha silenciosa no polling contínuo
-    }
-  }, 5000);
-}
-
-// ----------------------------------------------------------------------------
-// 9. Verificação manual ou automática do status real do pagamento
-// A reserva SÓ é aprovada após confirmação real do Asaas no servidor.
-// ----------------------------------------------------------------------------
-window.verificarPagamentoManual = async () => {
-  const btn = document.getElementById('btnFinalizarPagamento');
-  const txt = document.getElementById('btnFinalizarPagamentoTexto');
-
-  if (!currentPaymentSession?.transacaoId) {
-    alert('Nenhuma cobrança ativa identificada. Por favor, reinicie a reserva.');
-    return;
-  }
-
-  if (btn) btn.disabled = true;
-  if (txt) txt.textContent = 'Consultando Servidor Asaas... ⏳';
-
-  try {
-    const statusCheck = await checkPaymentStatus(currentPaymentSession.transacaoId);
-
-    if (statusCheck && statusCheck.pago) {
-      pararMonitoramentoPagamento();
-      await finalizarReservaAprovada(currentReservaPendente, statusCheck);
-    } else {
-      const statusLabel = statusCheck?.status || 'PENDING';
-      alert(`O Asaas ainda não identificou a confirmação do pagamento (Status: ${statusLabel}).\n\nSe você já realizou o pagamento no app do seu banco, aguarde alguns instantes pela compensação financeira e clique novamente em verificar.`);
-      const liveStatus = document.getElementById('pagarStatusLiveTexto');
-      if (liveStatus) {
-        liveStatus.textContent = `Aguardando compensação no Asaas... (Status: ${statusLabel})`;
-      }
-    }
-  } catch (err) {
-    console.error('Erro na consulta manual do Asaas:', err);
-    alert('Falha ao consultar status junto ao servidor. Tente novamente em alguns segundos.');
-  } finally {
-    if (btn) btn.disabled = false;
-    if (txt) txt.textContent = 'Já Paguei, Verificar no Asaas 🔄';
-  }
+window.verificarPagamentoManual = () => {
+  alert('A confirmação do pagamento é realizada pela equipe do Backstage após o recebimento do comprovante no WhatsApp.');
 };
 
 // Retrocompatibilidade
@@ -2681,6 +2785,7 @@ function applyPromocoesCards(cards) {
  */
 export function applyConfiguracoesToDOM(conf) {
   if (!conf || typeof conf !== 'object') return;
+  cachedConfiguracoes = conf;
 
   // 1. WhatsApp Oficial
   if (conf.whatsapp) {

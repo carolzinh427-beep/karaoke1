@@ -150,7 +150,7 @@
 
   <!-- Modal de Item do Cardápio (Adicionar / Editar) -->
   <div id="adminCardapioItemModal" class="admin-modal-overlay">
-    <div class="admin-modal-card" style="max-width: 540px;">
+    <div class="admin-modal-card" style="max-width: 520px;">
       <div class="admin-modal-header">
         <h3 class="admin-modal-title" id="cardapioModalTitle">Adicionar Item ao Cardápio</h3>
         <button type="button" class="admin-modal-close" onclick="window.closeCardapioItemModal()">&times;</button>
@@ -159,13 +159,13 @@
         <input type="hidden" id="modalItemId">
         <div class="admin-modal-body">
           <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" for="modalItemNome">Nome do Prato / Drink *</label>
+            <label class="form-label" for="modalItemNome">Nome do Produto *</label>
             <input type="text" id="modalItemNome" class="form-input" placeholder="Ex: Picanha na Chapa, Gin Tropical..." required>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
             <div class="form-group">
-              <label class="form-label" for="modalItemPreco">Preço Oficial (R$) *</label>
+              <label class="form-label" for="modalItemPreco">Preço (R$) *</label>
               <input type="number" step="0.01" min="0" id="modalItemPreco" class="form-input" placeholder="0.00" required>
             </div>
 
@@ -178,26 +178,30 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" for="modalItemDesc">Descrição / Ingredientes</label>
-            <textarea id="modalItemDesc" class="form-input" rows="3" placeholder="Detalhes dos ingredientes, acompanhamentos ou dosagem..." style="resize: vertical;"></textarea>
+            <label class="form-label" for="modalItemDesc">Descrição</label>
+            <textarea id="modalItemDesc" class="form-input" rows="3" placeholder="Ingredientes, porção ou detalhes do produto..." style="resize: vertical;"></textarea>
           </div>
 
           <div class="form-group" style="margin-bottom: 14px;">
-            <label class="form-label" for="modalItemFoto">Foto do Prato / Drink (Upload Rápido Opcional)</label>
-            <input type="file" id="modalItemFoto" class="form-input" accept="image/*" style="padding: 8px;">
+            <label class="form-label" for="modalItemFoto">Foto do Produto (Tirar foto ou escolher arquivo)</label>
+            <input type="file" id="modalItemFoto" class="form-input" accept="image/*" onchange="window.previewCardapioModalFoto(event)" style="padding: 10px;">
+            <div id="modalItemFotoPreviewBox" style="display: none; margin-top: 10px; align-items: center; gap: 12px; background: rgba(255,255,255,0.04); padding: 10px; border-radius: 8px; border: 1px dashed var(--admin-border);">
+              <img id="modalItemFotoPreviewImg" src="" alt="Prévia" style="width: 58px; height: 58px; border-radius: 6px; object-fit: cover; border: 1px solid var(--admin-border);">
+              <div style="flex: 1; min-width: 0;">
+                <div id="modalItemFotoPreviewText" style="font-size: 0.82rem; color: #FFF; font-weight: 600;">Foto configurada</div>
+                <div style="font-size: 0.74rem; color: var(--admin-text-muted);">Para alterar, selecione um novo arquivo acima</div>
+              </div>
+            </div>
             <div id="modalItemFotoInfo" style="font-size: 0.78rem; color: var(--admin-cyan); margin-top: 4px; display: none;"></div>
           </div>
 
-          <div class="form-group">
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #FFFFFF; font-weight: 600; font-size: 0.9rem;">
-              <input type="checkbox" id="modalItemAtivo" checked style="width: 18px; height: 18px; accent-color: var(--admin-cyan);">
-              <span>Disponível e ativo no site oficial</span>
-            </label>
+          <div class="form-group" style="display: none;">
+            <input type="checkbox" id="modalItemAtivo" checked>
           </div>
         </div>
         <div class="admin-modal-footer">
           <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.closeCardapioItemModal()">Cancelar</button>
-          <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarItemCardapio">Salvar no Banco de Dados</button>
+          <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarItemCardapio">Salvar no Supabase</button>
         </div>
       </form>
     </div>

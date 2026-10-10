@@ -25,6 +25,7 @@ import {
   deleteGaleriaItemSupabase,
   getReservasSupabase,
   updateReservaStatusSupabase,
+  updateReservaFinanceiroSupabase,
   deleteReservaSupabase,
   validarCheckInReserva,
   buscarReservaPorCodigo,
@@ -94,7 +95,16 @@ const state = {
   reservas: [],
   bloqueios: [],
   salas: [...DEFAULT_SALAS],
-  cardapio: [...DEFAULT_CARDAPIO],
+  cardapio: (() => {
+    try {
+      const local = typeof localStorage !== 'undefined' && localStorage.getItem('backstage_cardapio');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [...DEFAULT_CARDAPIO];
+  })(),
   categorias: [...DEFAULT_CATEGORIAS],
   activeFilterCardapio: 'todas',
   searchTermCardapio: '',
@@ -487,12 +497,25 @@ async function fetchCardapio() {
       const data = await getCardapioSupabase();
       if (data && data.length > 0) {
         state.cardapio = data;
+        try { localStorage.setItem('backstage_cardapio', JSON.stringify(data)); } catch (e) {}
         return state.cardapio;
       }
     } catch (supaErr) {
-      console.warn('Aviso Supabase cardápio, tentando Firestore:', supaErr);
+      console.warn('Aviso Supabase cardápio, tentando fallback:', supaErr);
     }
   }
+
+  // Verifica cache local do navegador para manter itens salvos pelo administrador
+  try {
+    const local = localStorage.getItem('backstage_cardapio');
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        state.cardapio = parsed;
+        return state.cardapio;
+      }
+    }
+  } catch (e) {}
 
   try {
     const snap = await getDocs(collection(db, 'cardapio'));
@@ -501,12 +524,14 @@ async function fetchCardapio() {
       const reSnap = await getDocs(collection(db, 'cardapio'));
       if (!reSnap.empty) {
         state.cardapio = reSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch (e) {}
         return state.cardapio;
       }
       state.cardapio = [...DEFAULT_CARDAPIO];
       return state.cardapio;
     }
     state.cardapio = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch (e) {}
     return state.cardapio;
   } catch (err) {
     console.warn('Erro ao carregar cardápio:', err);
@@ -792,7 +817,7 @@ function renderLoginView() {
         <form class="auth-form" id="adminLoginForm">
           <div class="form-group">
             <label class="form-label" for="adminLoginEmail">E-mail de Administrador</label>
-            <input type="email" id="adminLoginEmail" class="form-input" placeholder="MPLACERDA921@GMAIL.COM" required autocomplete="username">
+            <input type="email" id="adminLoginEmail" class="form-input" placeholder="Digite seu e-mail" required autocomplete="username">
           </div>
 
           <div class="form-group">
@@ -978,11 +1003,16 @@ function renderReservasView() {
   let list = [...state.reservas];
 
   if (state.activeFilterReservas === 'pendentes') {
-    list = list.filter(r => (r.status || '').toUpperCase() === 'PENDING' || (r.status || '').toLowerCase() === 'pendente');
+    list = list.filter(r => {
+      const s = (r.status || '').toLowerCase();
+      return s === 'pending' || s === 'pendente' || s === 'aguardando_comprovante';
+    });
+  } else if (state.activeFilterReservas === 'conferencia') {
+    list = list.filter(r => (r.status || '').toLowerCase() === 'aguardando_conferencia');
   } else if (state.activeFilterReservas === 'confirmadas') {
-    list = list.filter(r => (r.status || '').toUpperCase() === 'CONFIRMED' || (r.status || '').toLowerCase() === 'confirmada');
+    list = list.filter(r => (r.status || '').toLowerCase() === 'confirmed' || (r.status || '').toLowerCase() === 'confirmada');
   } else if (state.activeFilterReservas === 'canceladas') {
-    list = list.filter(r => (r.status || '').toUpperCase() === 'CANCELLED' || (r.status || '').toLowerCase() === 'cancelada');
+    list = list.filter(r => (r.status || '').toLowerCase() === 'cancelled' || (r.status || '').toLowerCase() === 'cancelada');
   }
 
   if (state.searchTermReservas) {
@@ -991,15 +1021,24 @@ function renderReservasView() {
       (r.nome || '').toLowerCase().includes(s) ||
       (r.whatsapp || '').includes(s) ||
       (r.data || '').toLowerCase().includes(s) ||
-      (r.sala || '').toLowerCase().includes(s)
+      (r.sala || '').toLowerCase().includes(s) ||
+      (r.codigoReserva || '').toLowerCase().includes(s)
     );
   }
+
+  const countPendentes = state.reservas.filter(r => {
+    const s = (r.status || '').toLowerCase();
+    return s === 'pending' || s === 'pendente' || s === 'aguardando_comprovante';
+  }).length;
+  const countConferencia = state.reservas.filter(r => (r.status || '').toLowerCase() === 'aguardando_conferencia').length;
+  const countConfirmadas = state.reservas.filter(r => (r.status || '').toLowerCase() === 'confirmed' || (r.status || '').toLowerCase() === 'confirmada').length;
+  const countCanceladas = state.reservas.filter(r => (r.status || '').toLowerCase() === 'cancelled' || (r.status || '').toLowerCase() === 'cancelada').length;
 
   return `
     <div class="view-header">
       <div class="view-headline">
         <h2>Gerenciamento de Reservas</h2>
-        <p>Controle de ocupação, validação de ingressos na portaria com QR Code e histórico financeiro</p>
+        <p>Controle de ocupação, conferência financeira de comprovantes Pix e validação de ingressos</p>
       </div>
       <div class="view-actions" style="display: flex; gap: 8px;">
         <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.openModalValidarCheckIn()" style="display: inline-flex; align-items: center; gap: 6px;">
@@ -1018,9 +1057,10 @@ function renderReservasView() {
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'todas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('todas')">Todas (${state.reservas.length})</button>
-          <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'pendentes' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('pendentes')">Pendentes</button>
-          <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'confirmadas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('confirmadas')">Confirmadas</button>
-          <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'canceladas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('canceladas')">Canceladas</button>
+          <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'pendentes' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('pendentes')">Pendentes (${countPendentes})</button>
+          <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'conferencia' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('conferencia')">Em Conferência (${countConferencia})</button>
+          <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'confirmadas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('confirmadas')">Confirmadas (${countConfirmadas})</button>
+          <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'canceladas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('canceladas')">Canceladas (${countCanceladas})</button>
         </div>
 
         <div style="max-width: 320px; width: 100%;">
@@ -1047,7 +1087,7 @@ function renderReservasView() {
                 <th>Data / Horário</th>
                 <th>Espaço / Sala</th>
                 <th>Pessoas</th>
-                <th>Pagamento</th>
+                <th>Financeiro</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -1063,19 +1103,25 @@ function renderReservasView() {
 }
 
 function renderReservaRow(r) {
-  const st = (r.status || 'PENDING').toUpperCase();
+  const st = (r.status || 'PENDING').toLowerCase();
   let badgeClass = 'pending';
   let badgeLabel = 'Pendente';
 
-  if (st === 'CONFIRMED' || st === 'CONFIRMADA') {
+  if (st === 'confirmed' || st === 'confirmada') {
     badgeClass = 'confirmed';
     badgeLabel = 'Confirmada';
-  } else if (st === 'CHECKED_IN') {
+  } else if (st === 'checked_in') {
     badgeClass = 'confirmed';
     badgeLabel = '✓ Check-in Realizado';
-  } else if (st === 'CANCELLED' || st === 'CANCELADA') {
+  } else if (st === 'cancelled' || st === 'cancelada') {
     badgeClass = 'cancelled';
     badgeLabel = 'Cancelada';
+  } else if (st === 'aguardando_conferencia') {
+    badgeClass = 'conference';
+    badgeLabel = 'Em Conferência';
+  } else if (st === 'aguardando_comprovante') {
+    badgeClass = 'pending';
+    badgeLabel = 'Aguardando Comprovante';
   }
 
   const cleanPhone = (r.whatsapp || '').replace(/\D/g, '');
@@ -1086,8 +1132,12 @@ function renderReservaRow(r) {
   if ((r.sala || '').includes('Blue')) roomClass = 'blue';
 
   const codigo = r.codigoReserva || (r.id ? r.id.substring(0, 10).toUpperCase() : '-');
-  const isCheckedIn = st === 'CHECKED_IN';
-  const isPaid = (r.statusPagamento || '').toLowerCase() === 'aprovado' || (r.valorPago && r.valorPago > 0);
+  const isCheckedIn = st === 'checked_in';
+
+  const totalVal = Number(r.valorTotal || 0);
+  const pagoVal = Number(r.valorPago || 0);
+  const restanteVal = r.valorRestante !== null && r.valorRestante !== undefined ? Number(r.valorRestante) : Math.max(0, totalVal - pagoVal);
+  const metodoStr = r.metodoPagamento ? (r.metodoPagamento.toLowerCase().includes('cred') ? 'Crédito' : r.metodoPagamento.toLowerCase().includes('deb') ? 'Débito' : 'Pix') : 'Pix';
 
   return `
     <tr>
@@ -1123,32 +1173,39 @@ function renderReservaRow(r) {
         ` : ''}
       </td>
       <td>
-        ${isPaid ? `
-          <span style="font-size: 0.75rem; color: var(--admin-green); font-weight: 700;">
-            ✓ Pago ${r.valorPago ? `(R$ ${Number(r.valorPago).toFixed(2)})` : ''}
+        <div style="line-height: 1.35;">
+          <strong style="color: var(--admin-text-main); font-size: 0.86rem; display: block;">Total: R$ ${totalVal.toFixed(2)}</strong>
+          <span style="font-size: 0.76rem; color: ${pagoVal > 0 ? 'var(--admin-green)' : 'var(--admin-yellow)'}; font-weight: 700;">
+            ${pagoVal > 0 ? `Recebido: R$ ${pagoVal.toFixed(2)}` : 'Aguardando Comprovante'}
           </span>
-        ` : `
-          <span style="font-size: 0.75rem; color: var(--admin-yellow); font-weight: 700;">Aguardando</span>
-        `}
+          ${restanteVal > 0 && pagoVal > 0 ? `
+            <div style="font-size: 0.72rem; color: #F59E0B;">Restante: R$ ${restanteVal.toFixed(2)}</div>
+          ` : ''}
+          <div style="font-size: 0.7rem; color: var(--admin-text-dim);">Via: ${metodoStr}</div>
+        </div>
       </td>
       <td>
         <span class="badge-status ${badgeClass}">${badgeLabel}</span>
       </td>
       <td>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          ${!isCheckedIn && st !== 'CANCELLED' && st !== 'CANCELADA' ? `
+          <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.abrirModalFinanceiroReserva('${r.id}')" title="Conferir Pagamento e Registrar Valores" style="border-color: var(--admin-cyan); color: var(--admin-cyan);">
+            Financeiro 💰
+          </button>
+
+          ${!isCheckedIn && st !== 'cancelled' && st !== 'cancelada' ? `
             <button type="button" class="btn-admin btn-admin-primary btn-admin-xs" onclick="window.fazerCheckInDireto('${r.id}')" title="Validar Check-In na Entrada">
               Check-In
             </button>
           ` : ''}
 
-          ${st !== 'CONFIRMED' && st !== 'CONFIRMADA' && !isCheckedIn ? `
-            <button type="button" class="btn-admin btn-admin-success btn-admin-xs" onclick="window.confirmarReserva('${r.id}')" title="Confirmar Reserva">
+          ${st !== 'confirmed' && st !== 'confirmada' && !isCheckedIn ? `
+            <button type="button" class="btn-admin btn-admin-success btn-admin-xs" onclick="window.confirmarReserva('${r.id}')" title="Confirmar Reserva (Após Conferir Recebimento)">
               Confirmar
             </button>
           ` : ''}
 
-          ${st !== 'CANCELLED' && st !== 'CANCELADA' ? `
+          ${st !== 'cancelled' && st !== 'cancelada' ? `
             <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.cancelarReserva('${r.id}')" title="Cancelar Reserva">
               Cancelar
             </button>
@@ -1612,7 +1669,7 @@ function renderCardapioPagination(totalItems, currentPage, totalPages, fromItem,
   `;
 }
 
-function renderCardapioTableRows(filteredItems) {
+function renderCardapioCardsGrid(filteredItems) {
   const page = state.cardapioPage || 1;
   const pageSize = state.cardapioPageSize || 12;
   const totalItems = filteredItems.length;
@@ -1640,65 +1697,90 @@ function renderCardapioTableRows(filteredItems) {
   }
 
   return `
-    <div class="table-responsive">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Item / Descrição</th>
-            <th>Categoria</th>
-            <th>Preço Oficial</th>
-            <th>Disponibilidade</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${pageItems.map(it => `
-            <tr>
-              <td>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  ${it.imagem ? `<img src="${it.imagem}" alt="${it.nome}" style="width: 42px; height: 42px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--admin-border);">` : ''}
-                  <div style="min-width: 0;">
-                    <strong style="color: #FFFFFF; font-size: 0.92rem; display: block; word-break: break-word;">${it.nome}</strong>
-                    <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin-top: 2px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${it.descricao || ''}</div>
-                  </div>
+    <div class="cardapio-cards-grid">
+      ${pageItems.map(it => {
+        const catNome = it.categoria || it.categoriaId || 'Geral';
+        const precoFormatado = Number(it.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const hasImg = Boolean(it.imagem && it.imagem.trim().length > 0);
+
+        return `
+          <div class="cardapio-item-card ${it.ativo === false ? 'is-paused' : ''}" data-id="${it.id}">
+            <!-- 1. Foto em cima -->
+            <div class="cardapio-item-img-wrap">
+              ${hasImg ? `
+                <img src="${it.imagem}" 
+                     alt="${it.nome}" 
+                     class="cardapio-item-img" 
+                     loading="lazy" 
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'cardapio-item-img-placeholder\\'><svg width=\\'36\\' height=\\'36\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.5\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\'/><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'/><polyline points=\\'21 15 16 10 5 21\\'/></svg><span>Sem Foto</span></div>';">
+              ` : `
+                <div class="cardapio-item-img-placeholder">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <span>Sem Foto</span>
                 </div>
-              </td>
-              <td>
-                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px; color: var(--admin-cyan); white-space: nowrap;">
-                  ${it.categoria || it.categoriaId || '-'}
-                </span>
-              </td>
-              <td>
-                <strong style="color: var(--admin-cyan); font-size: 0.95rem; white-space: nowrap;">
-                  R$ ${(it.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </strong>
-              </td>
-              <td>
-                <span class="badge-status ${it.ativo !== false ? 'confirmed' : 'cancelled'}" style="white-space: nowrap;">
-                  ${it.ativo !== false ? 'Ativo no Site' : 'Pausado'}
-                </span>
-              </td>
-              <td>
-                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap;">
-                  <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.editarItemCardapio('${it.id}')" title="Editar item">
-                    Editar
-                  </button>
-                  <button type="button" class="btn-admin btn-admin-xs ${it.ativo !== false ? 'btn-admin-danger' : 'btn-admin-success'}" onclick="window.toggleAtivoItemCardapio('${it.id}', ${it.ativo === false})" title="${it.ativo !== false ? 'Pausar item no site' : 'Reativar item'}">
-                    ${it.ativo !== false ? 'Pausar' : 'Ativar'}
-                  </button>
-                  <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirItemCardapio('${it.id}')" title="Excluir item permanentemente">
-                    &times;
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+              `}
+              <span class="cardapio-cat-badge">${catNome}</span>
+            </div>
+
+            <!-- 2. Nome do produto abaixo e Preço logo depois -->
+            <div class="cardapio-item-info">
+              <h4 class="cardapio-item-nome">${it.nome}</h4>
+              <div class="cardapio-item-preco">R$ ${precoFormatado}</div>
+              ${it.descricao ? `<p class="cardapio-item-desc" title="${it.descricao}">${it.descricao}</p>` : ''}
+            </div>
+
+            <!-- 3. Somente 3 ações visíveis: +, lápis (editar) e lixeira (excluir) -->
+            <div class="cardapio-item-actions">
+              <button type="button" 
+                      class="card-action-btn action-add" 
+                      onclick="window.adicionarItemNaCategoria('${it.categoriaId || ''}')" 
+                      title="Adicionar novo item nesta categoria">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>+</span>
+              </button>
+
+              <button type="button" 
+                      class="card-action-btn action-edit" 
+                      onclick="window.editarItemCardapio('${it.id}')" 
+                      title="Editar dados e trocar foto">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>Editar</span>
+              </button>
+
+              <button type="button" 
+                      class="card-action-btn action-delete" 
+                      onclick="window.excluirItemCardapio('${it.id}')" 
+                      title="Excluir item do cardápio">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                <span>Excluir</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('')}
     </div>
 
     ${renderCardapioPagination(totalItems, currentPage, totalPages, startIndex + 1, endIndex)}
   `;
+}
+
+function renderCardapioTableRows(filteredItems) {
+  return renderCardapioCardsGrid(filteredItems);
 }
 
 function updateCardapioItemsOnly() {
@@ -1714,7 +1796,7 @@ function updateCardapioItemsOnly() {
     clearBtn.style.display = (state.searchTermCardapio && state.searchTermCardapio.length > 0) ? 'flex' : 'none';
   }
   if (container) {
-    container.innerHTML = renderCardapioTableRows(filtered);
+    container.innerHTML = renderCardapioCardsGrid(filtered);
   }
 }
 
@@ -1726,14 +1808,15 @@ function renderCardapioView() {
     <div class="view-header">
       <div class="view-headline">
         <h2>Gerenciamento do Cardápio</h2>
-        <p>Edite pratos, porções, drinks, combos e organize as categorias do bar</p>
+        <p>Edite pratos, porções, drinks e combos com fotos otimizadas para celular</p>
       </div>
       <div class="view-actions">
         <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.openModalCategoria()">
           + Nova Categoria
         </button>
-        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.openModalItemCardapio()">
-          + Novo Item
+        <button type="button" class="btn-add-item-top" onclick="window.openModalItemCardapio()" title="Adicionar novo item ao cardápio">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>+ Adicionar Item</span>
         </button>
       </div>
     </div>
@@ -1793,7 +1876,7 @@ function renderCardapioView() {
       </div>
     </div>
 
-    <!-- Tabela de Itens com Paginação -->
+    <!-- Grade de Cards Compactos Otimizada para Celular -->
     <div class="admin-card" id="cardapioTableCard">
       <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
         <h3 class="admin-card-title">Itens do Cardápio</h3>
@@ -1803,7 +1886,7 @@ function renderCardapioView() {
       </div>
 
       <div id="cardapioTableContainer">
-        ${renderCardapioTableRows(items)}
+        ${renderCardapioCardsGrid(items)}
       </div>
     </div>
   `;
@@ -2130,6 +2213,47 @@ function renderConfiguracoesView() {
           <input type="text" id="confEndereco" class="form-input" value="${conf.endereco || 'CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF'}" required>
         </div>
 
+        <!-- Seção de Chave Pix Oficial e QR Code Estático -->
+        <div style="border-top: 1px solid var(--admin-border); margin: 24px 0; padding-top: 20px;">
+          <h4 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; color: var(--admin-cyan);">Configurações de Pagamento (Pix Manual &amp; WhatsApp)</h4>
+          <p style="font-size: 0.82rem; color: var(--admin-text-muted); margin-bottom: 16px; line-height: 1.45;">
+            Configure aqui a chave Pix oficial e a imagem do QR Code estático (sem valor pré-fixado). O cliente escolhe no site se pagará 50% ou 100%, digita o valor correspondente no aplicativo do seu banco e envia o comprovante para o WhatsApp oficial.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+            <div class="form-group">
+              <label class="form-label" for="confPixChave">Chave Pix Oficial</label>
+              <input type="text" id="confPixChave" class="form-input" placeholder="Ex: CNPJ, Telefone, E-mail ou Chave Aleatória" value="${conf.pixChave || ''}">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="confPixTipo">Tipo de Chave Pix</label>
+              <select id="confPixTipo" class="form-select">
+                <option value="CNPJ" ${conf.pixTipoChave === 'CNPJ' ? 'selected' : ''}>CNPJ</option>
+                <option value="Telefone" ${conf.pixTipoChave === 'Telefone' ? 'selected' : ''}>Telefone</option>
+                <option value="E-mail" ${conf.pixTipoChave === 'E-mail' ? 'selected' : ''}>E-mail</option>
+                <option value="CPF" ${conf.pixTipoChave === 'CPF' ? 'selected' : ''}>CPF</option>
+                <option value="Chave Aleatória" ${conf.pixTipoChave === 'Chave Aleatória' || !conf.pixTipoChave ? 'selected' : ''}>Chave Aleatória</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="confPixTitular">Titular / Razão Social da Conta</label>
+              <input type="text" id="confPixTitular" class="form-input" placeholder="Ex: Backstage Bar e Karaokê Ltda" value="${conf.pixTitular || ''}">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="confPixQrcode">URL da Imagem do QR Code Estático</label>
+              <input type="url" id="confPixQrcode" class="form-input" placeholder="https://... (URL pública da imagem do QR Code)" value="${conf.pixQrcodeUrl || ''}">
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label" for="confPixCopiaCola">Código Copia e Cola Estático (opcional)</label>
+              <input type="text" id="confPixCopiaCola" class="form-input" placeholder="Cole aqui o código Copia e Cola estático oficial fornecido pelo seu banco" value="${conf.pixCopiaCola || ''}">
+            </div>
+          </div>
+        </div>
+
         <div style="border-top: 1px solid var(--admin-border); margin: 24px 0; padding-top: 20px;">
           <h4 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; color: var(--admin-cyan);">Horários de Funcionamento Oficiais</h4>
           
@@ -2322,6 +2446,154 @@ window.toggleAdminSidebar = (open) => {
 };
 
 // 8.1 Ações de Reserva
+window.abrirModalFinanceiroReserva = (id) => {
+  const r = state.reservas.find(item => item.id === id);
+  if (!r) return;
+
+  const totalVal = Number(r.valorTotal || 0);
+  const pagoVal = r.valorPago !== null && r.valorPago !== undefined ? Number(r.valorPago) : (totalVal > 0 ? (totalVal / 2) : 0);
+  const restanteVal = r.valorRestante !== null && r.valorRestante !== undefined ? Number(r.valorRestante) : Math.max(0, totalVal - pagoVal);
+  const stAtual = (r.status || 'PENDING').toLowerCase();
+
+  const modalHtml = `
+    <div class="admin-modal-backdrop open" id="modalFinanceiroReservaBackdrop" onclick="if(event.target === this) window.fecharModalFinanceiroReserva()">
+      <div class="admin-modal-dialog" style="max-width: 520px; width: 100%; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--admin-border); padding-bottom: 12px;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--admin-cyan); margin: 0;">Conferência Financeira</h3>
+            <span style="font-family: monospace; font-size: 0.8rem; color: var(--admin-text-muted);">${r.codigoReserva || r.id}</span>
+          </div>
+          <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.fecharModalFinanceiroReserva()">&times;</button>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; margin-bottom: 18px; font-size: 0.85rem; line-height: 1.5;">
+          <div><strong style="color: #FFF;">Cliente:</strong> ${r.nome || 'Não informado'}</div>
+          <div><strong style="color: #FFF;">Espaço:</strong> ${r.salaOuMesa || r.sala || 'Salão'} • <strong>Data:</strong> ${r.data} às ${r.horario}</div>
+          <div><strong style="color: #FFF;">Contato:</strong> ${r.whatsapp || '-'}</div>
+          <div><strong style="color: var(--admin-cyan);">Valor Total da Reserva:</strong> R$ ${totalVal.toFixed(2)}</div>
+        </div>
+
+        <form onsubmit="window.salvarFinanceiroReserva(event, '${r.id}')">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Status da Reserva</label>
+            <select id="modalFinStatus" class="form-select" style="width: 100%;">
+              <option value="aguardando_comprovante" ${stAtual === 'aguardando_comprovante' || stAtual === 'pending' ? 'selected' : ''}>Aguardando Comprovante</option>
+              <option value="aguardando_conferencia" ${stAtual === 'aguardando_conferencia' ? 'selected' : ''}>Aguardando Conferência</option>
+              <option value="CONFIRMED" ${stAtual === 'confirmed' || stAtual === 'confirmada' ? 'selected' : ''}>Confirmada / Aprovada</option>
+              <option value="CANCELLED" ${stAtual === 'cancelled' || stAtual === 'cancelada' ? 'selected' : ''}>Cancelada</option>
+            </select>
+            <small style="font-size: 0.74rem; color: var(--admin-text-muted);">A confirmação só deve ser efetuada após conferir o recebimento bancário real.</small>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="modalFinValorPago">Valor Recebido (R$)</label>
+              <input type="number" step="0.01" min="0" id="modalFinValorPago" class="form-input" value="${pagoVal.toFixed(2)}" oninput="window.recalcularRestanteFinanceiro(${totalVal})">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="modalFinValorRestante">Valor Restante (R$)</label>
+              <input type="number" step="0.01" min="0" id="modalFinValorRestante" class="form-input" value="${restanteVal.toFixed(2)}">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 18px;">
+            <label class="form-label" for="modalFinObs">Observações / Histórico Financeiro</label>
+            <textarea id="modalFinObs" class="form-input" rows="2" placeholder="Ex: Recebido comprovante Pix de R$ 450,00 via WhatsApp. Restante na recepção.">${r.observacoes || ''}</textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.fecharModalFinanceiroReserva()">Cancelar</button>
+            <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarFin">Salvar Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const existing = document.getElementById('modalFinanceiroReservaBackdrop');
+  if (existing) existing.remove();
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = modalHtml;
+  document.body.appendChild(wrap.firstElementChild);
+};
+
+window.fecharModalFinanceiroReserva = () => {
+  const el = document.getElementById('modalFinanceiroReservaBackdrop');
+  if (el) el.remove();
+};
+
+window.recalcularRestanteFinanceiro = (total) => {
+  const pagoIn = document.getElementById('modalFinValorPago');
+  const restIn = document.getElementById('modalFinValorRestante');
+  if (pagoIn && restIn) {
+    const pago = parseFloat(pagoIn.value) || 0;
+    const rest = Math.max(0, total - pago);
+    restIn.value = rest.toFixed(2);
+  }
+};
+
+window.salvarFinanceiroReserva = async (e, id) => {
+  e.preventDefault();
+  const r = state.reservas.find(item => item.id === id);
+  if (!r) return;
+
+  const status = document.getElementById('modalFinStatus')?.value || 'aguardando_conferencia';
+  const valorPago = parseFloat(document.getElementById('modalFinValorPago')?.value) || 0;
+  const valorRestante = parseFloat(document.getElementById('modalFinValorRestante')?.value) || 0;
+  const observacoes = document.getElementById('modalFinObs')?.value?.trim() || '';
+
+  const statusPagamento = status === 'CONFIRMED' ? 'aprovado' : (valorPago > 0 ? 'parcial' : 'aguardando');
+
+  const btn = document.getElementById('btnSalvarFin');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando... ⏳'; }
+
+  try {
+    if (isSupabaseConfigured) {
+      try {
+        await updateReservaFinanceiroSupabase(id, {
+          status,
+          statusPagamento,
+          valorPago,
+          valorRestante,
+          observacoes
+        });
+      } catch (supaErr) {
+        console.warn('Aviso Supabase salvar financeiro:', supaErr);
+      }
+    }
+
+    if (db) {
+      try {
+        const docRef = doc(db, 'reservas', id);
+        await updateDoc(docRef, {
+          status,
+          statusPagamento,
+          valorPago,
+          valorRestante,
+          observacoes,
+          atualizadoEm: serverTimestamp()
+        });
+      } catch (e) {}
+    }
+
+    r.status = status;
+    r.statusPagamento = statusPagamento;
+    r.valorPago = valorPago;
+    r.valorRestante = valorRestante;
+    r.observacoes = observacoes;
+
+    window.fecharModalFinanceiroReserva();
+    showToast('Financeiro e status da reserva atualizados com sucesso!', 'success');
+    renderApp();
+  } catch (err) {
+    console.error('Erro ao salvar financeiro da reserva:', err);
+    showToast('Falha ao salvar dados financeiros.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar Alterações'; }
+  }
+};
+
 window.confirmarReserva = async (id) => {
   const res = state.reservas.find(r => r.id === id);
   if (!res) return;
@@ -2986,7 +3258,29 @@ window.excluirCategoria = (id) => {
   });
 };
 
-window.openModalItemCardapio = () => {
+window.adicionarItemNaCategoria = (catId) => {
+  window.openModalItemCardapio(catId);
+};
+
+window.previewCardapioModalFoto = (e) => {
+  const file = e.target?.files?.[0];
+  const pBox = document.getElementById('modalItemFotoPreviewBox');
+  const pImg = document.getElementById('modalItemFotoPreviewImg');
+  const pText = document.getElementById('modalItemFotoPreviewText');
+  if (!file) return;
+
+  if (pBox && pImg) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      pImg.src = ev.target.result;
+      pBox.style.display = 'flex';
+      if (pText) pText.textContent = `Nova foto selecionada (${file.name})`;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+window.openModalItemCardapio = (presetCatId = null) => {
   const modal = document.getElementById('adminCardapioItemModal');
   if (!modal) return;
 
@@ -2995,18 +3289,36 @@ window.openModalItemCardapio = () => {
   document.getElementById('modalItemNome').value = '';
   document.getElementById('modalItemPreco').value = '';
   document.getElementById('modalItemDesc').value = '';
-  document.getElementById('modalItemAtivo').checked = true;
+  const ativoEl = document.getElementById('modalItemAtivo');
+  if (ativoEl) ativoEl.checked = true;
+
   const fotoInput = document.getElementById('modalItemFoto');
   if (fotoInput) fotoInput.value = '';
+
+  const pBox = document.getElementById('modalItemFotoPreviewBox');
+  const pImg = document.getElementById('modalItemFotoPreviewImg');
+  const pText = document.getElementById('modalItemFotoPreviewText');
+  if (pBox) pBox.style.display = 'none';
+  if (pImg) pImg.src = '';
+  if (pText) pText.textContent = '';
+
   const fotoInfo = document.getElementById('modalItemFotoInfo');
   if (fotoInfo) { fotoInfo.style.display = 'none'; fotoInfo.textContent = ''; }
+
+  const btnSalvar = document.getElementById('btnSalvarItemCardapio');
+  if (btnSalvar) {
+    btnSalvar.disabled = false;
+    btnSalvar.innerHTML = 'Salvar no Supabase';
+  }
 
   const selectCat = document.getElementById('modalItemCategoria');
   if (selectCat) {
     selectCat.innerHTML = state.categorias.map(c => `
       <option value="${c.id}">${c.nome}</option>
     `).join('');
-    if (state.activeFilterCardapio && state.activeFilterCardapio !== 'todas') {
+    if (presetCatId) {
+      selectCat.value = presetCatId;
+    } else if (state.activeFilterCardapio && state.activeFilterCardapio !== 'todas') {
       selectCat.value = state.activeFilterCardapio;
     }
   }
@@ -3026,18 +3338,34 @@ window.editarItemCardapio = (id) => {
   document.getElementById('modalItemNome').value = it.nome;
   document.getElementById('modalItemPreco').value = it.preco || '';
   document.getElementById('modalItemDesc').value = it.descricao || '';
-  document.getElementById('modalItemAtivo').checked = it.ativo !== false;
+  const ativoEl = document.getElementById('modalItemAtivo');
+  if (ativoEl) ativoEl.checked = it.ativo !== false;
+
   const fotoInput = document.getElementById('modalItemFoto');
   if (fotoInput) fotoInput.value = '';
-  const fotoInfo = document.getElementById('modalItemFotoInfo');
-  if (fotoInfo) {
+
+  const pBox = document.getElementById('modalItemFotoPreviewBox');
+  const pImg = document.getElementById('modalItemFotoPreviewImg');
+  const pText = document.getElementById('modalItemFotoPreviewText');
+  if (pBox && pImg) {
     if (it.imagem) {
-      fotoInfo.style.display = 'block';
-      fotoInfo.textContent = 'Imagem atual configurada. Selecione outra foto para substituir.';
+      pBox.style.display = 'flex';
+      pImg.src = it.imagem;
+      if (pText) pText.textContent = 'Foto atual do item. Selecione outro arquivo para trocar.';
     } else {
-      fotoInfo.style.display = 'none';
-      fotoInfo.textContent = '';
+      pBox.style.display = 'none';
+      pImg.src = '';
+      if (pText) pText.textContent = '';
     }
+  }
+
+  const fotoInfo = document.getElementById('modalItemFotoInfo');
+  if (fotoInfo) { fotoInfo.style.display = 'none'; fotoInfo.textContent = ''; }
+
+  const btnSalvar = document.getElementById('btnSalvarItemCardapio');
+  if (btnSalvar) {
+    btnSalvar.disabled = false;
+    btnSalvar.innerHTML = 'Salvar Alterações';
   }
 
   const selectCat = document.getElementById('modalItemCategoria');
@@ -3064,7 +3392,7 @@ window.saveCardapioItem = async (e) => {
   const catObj = state.categorias.find(c => c.id === categoriaId);
   const categoriaNome = catObj ? catObj.nome : categoriaId;
   const descricao = document.getElementById('modalItemDesc').value.trim();
-  const ativo = document.getElementById('modalItemAtivo').checked;
+  const ativo = document.getElementById('modalItemAtivo') ? document.getElementById('modalItemAtivo').checked : true;
   const fotoInput = document.getElementById('modalItemFoto');
   const fotoFile = fotoInput?.files?.[0];
 
@@ -3074,6 +3402,7 @@ window.saveCardapioItem = async (e) => {
   try {
     let fotoUrl = null;
     let fotoPublicId = null;
+
     if (fotoFile) {
       const val = validateMediaFile(fotoFile, 'imagem');
       if (!val.ok) {
@@ -3082,10 +3411,11 @@ window.saveCardapioItem = async (e) => {
         return;
       }
 
+      if (btn) btn.innerHTML = '<span class="admin-spinner"></span> Otimizando foto...';
       const compressed = await compressImageIfNeeded(fotoFile, 1280, 0.82);
 
       if (isSupabaseConfigured) {
-        if (btn) btn.textContent = 'Enviando foto ao Supabase Storage...';
+        if (btn) btn.innerHTML = '<span class="admin-spinner"></span> Enviando foto ao Supabase...';
         try {
           const sRes = await uploadFileSupabaseStorage({
             file: compressed,
@@ -3095,15 +3425,15 @@ window.saveCardapioItem = async (e) => {
           fotoPublicId = sRes.publicId;
         } catch (fotoErr) {
           console.error('Erro upload foto cardápio Supabase:', fotoErr);
-          showToast('Erro no upload da foto para Supabase Storage: ' + fotoErr.message, 'error');
+          showToast('Erro no upload da foto: ' + fotoErr.message, 'error');
           if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Salvar no Banco de Dados';
+            btn.innerHTML = id ? 'Salvar Alterações' : 'Salvar no Supabase';
           }
           return;
         }
       } else {
-        if (btn) btn.textContent = 'Enviando foto ao Cloudinary...';
+        if (btn) btn.innerHTML = '<span class="admin-spinner"></span> Enviando foto ao Cloudinary...';
         try {
           const idToken = await auth.currentUser?.getIdToken();
           const cRes = await uploadToCloudinary({
@@ -3118,47 +3448,47 @@ window.saveCardapioItem = async (e) => {
           showToast('Erro no upload da foto para Cloudinary: ' + fotoErr.message, 'error');
           if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Salvar no Banco de Dados';
+            btn.innerHTML = id ? 'Salvar Alterações' : 'Salvar no Supabase';
           }
           return;
         }
       }
     }
 
+    if (btn) btn.innerHTML = '<span class="admin-spinner"></span> Gravando no Supabase...';
+    const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+
     if (id) {
       // Edição de item existente
+      const existingItem = state.cardapio.find(it => it.id === id);
       const payload = {
+        id,
         nome,
         preco,
         categoriaId,
         categoria: categoriaNome,
         descricao,
         ativo,
+        imagem: fotoUrl || existingItem?.imagem || '',
+        imagemPublicId: fotoPublicId || existingItem?.imagemPublicId || '',
         atualizadoEm: serverTimestamp()
       };
-      if (fotoUrl) {
-        payload.imagem = fotoUrl;
-        payload.imagemPublicId = fotoPublicId;
-      }
 
-      if (isSupabaseConfigured) {
-        try {
-          await saveCardapioItemSupabase({ id, ...payload });
-        } catch (supaErr) {
-          console.warn('Aviso Supabase atualizar item cardápio:', supaErr);
-        }
-      }
+      // Persiste no Supabase com validação estrita
+      await saveCardapioItemSupabase(payload, idToken);
 
+      // Atualiza também no Firestore se configurado
       if (db) {
         try {
           await updateDoc(doc(db, 'cardapio', id), payload);
-        } catch(e) {}
+        } catch (e) {}
       }
 
-      const item = state.cardapio.find(it => it.id === id);
-      if (item) Object.assign(item, payload);
+      if (existingItem) Object.assign(existingItem, payload);
+      try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch (e) {}
+      notifyRealtimeUpdate('CARDAPIO_UPDATE', state.cardapio);
 
-      showToast(`Item "${nome}" atualizado no cardápio.`, 'success');
+      showToast(`Item "${nome}" atualizado com sucesso no Supabase!`, 'success');
     } else {
       // Novo item criado
       const payload = {
@@ -3174,30 +3504,22 @@ window.saveCardapioItem = async (e) => {
         criadoEm: serverTimestamp()
       };
 
-      let newItemId = null;
-      if (isSupabaseConfigured) {
-        try {
-          const res = await saveCardapioItemSupabase(payload);
-          if (res?.id) newItemId = res.id;
-        } catch (supaErr) {
-          console.warn('Aviso Supabase criar item cardápio:', supaErr);
-        }
-      }
+      // Persiste no Supabase com validação estrita
+      const savedRes = await saveCardapioItemSupabase(payload, idToken);
+      const newItemId = savedRes?.id || ('item-' + Date.now());
 
       if (db) {
         try {
-          const docRef = await addDoc(collection(db, 'cardapio'), payload);
-          if (!newItemId) newItemId = docRef.id;
-        } catch(e) {}
+          await addDoc(collection(db, 'cardapio'), payload);
+        } catch (e) {}
       }
 
-      state.cardapio.push({ id: newItemId || ('item-' + Date.now()), ...payload });
+      state.cardapio.unshift({ id: newItemId, ...payload });
+      try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch (e) {}
+      notifyRealtimeUpdate('CARDAPIO_UPDATE', state.cardapio);
 
-      showToast(`Item "${nome}" adicionado com sucesso.`, 'success');
+      showToast(`Item "${nome}" adicionado e salvo com sucesso no Supabase!`, 'success');
     }
-
-    try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch(e) {}
-    notifyRealtimeUpdate('CARDAPIO_UPDATE', state.cardapio);
 
     window.closeCardapioItemModal();
     if (document.getElementById('cardapioTableContainer')) {
@@ -3207,11 +3529,11 @@ window.saveCardapioItem = async (e) => {
     }
   } catch (err) {
     console.error('Erro ao salvar item do cardápio:', err);
-    showToast('Erro ao salvar item: ' + err.message, 'error');
+    showToast('Erro ao salvar no Supabase: ' + err.message, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = 'Salvar no Banco de Dados';
+      btn.innerHTML = id ? 'Salvar Alterações' : 'Salvar no Supabase';
     }
   }
 };
@@ -3219,7 +3541,6 @@ window.saveCardapioItem = async (e) => {
 window.setCardapioFilter = (catId) => {
   state.activeFilterCardapio = catId;
   state.cardapioPage = 1;
-  // Atualiza classes ativas diretamente nos botões para resposta instantânea
   document.querySelectorAll('.cat-pill-btn').forEach(btn => {
     if (btn.dataset.cat === catId) {
       btn.classList.remove('btn-admin-outline');
@@ -3235,7 +3556,6 @@ window.setCardapioFilter = (catId) => {
 window.handleSearchCardapio = (e) => {
   state.searchTermCardapio = e.target.value;
   state.cardapioPage = 1;
-  // Atualiza exclusivamente a tabela sem destruir o DOM nem perder o foco
   updateCardapioItemsOnly();
 };
 
@@ -3262,22 +3582,19 @@ window.changeCardapioPage = (page) => {
 window.toggleAtivoItemCardapio = async (id, novoAtivo) => {
   try {
     const item = state.cardapio.find(it => it.id === id);
-    if (isSupabaseConfigured && item) {
-      try {
-        await saveCardapioItemSupabase({ ...item, ativo: novoAtivo });
-      } catch (supaErr) {
-        console.warn('Aviso Supabase toggle item cardápio:', supaErr);
-      }
+    const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+    if (item) {
+      await saveCardapioItemSupabase({ ...item, ativo: novoAtivo }, idToken);
     }
 
     if (db) {
       try {
         await updateDoc(doc(db, 'cardapio', id), { ativo: novoAtivo });
-      } catch(e) {}
+      } catch (e) {}
     }
 
     if (item) item.ativo = novoAtivo;
-    try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch(e) {}
+    try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch (e) {}
     notifyRealtimeUpdate('CARDAPIO_UPDATE', state.cardapio);
 
     showToast(novoAtivo ? 'Item reativado no cardápio.' : 'Item pausado no cardápio.', 'info');
@@ -3289,36 +3606,34 @@ window.toggleAtivoItemCardapio = async (id, novoAtivo) => {
 };
 
 window.excluirItemCardapio = (id) => {
+  const item = state.cardapio.find(it => it.id === id);
+  const nomeItem = item ? item.nome : 'este item';
+
   showConfirmModal({
     title: 'Excluir Item do Cardápio',
-    message: 'Deseja realmente remover este item do cardápio permanentemente?',
-    confirmText: 'Excluir',
+    message: `Tem certeza que deseja excluir "${nomeItem}" do cardápio? Esta alteração será removida do banco de dados.`,
+    confirmText: 'Sim, Excluir',
     confirmBtnClass: 'btn-admin-danger',
     onConfirm: async () => {
       try {
-        if (isSupabaseConfigured) {
-          try {
-            await deleteCardapioItemSupabase(id);
-          } catch (supaErr) {
-            console.warn('Aviso Supabase excluir item cardápio:', supaErr);
-          }
-        }
+        const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+        await deleteCardapioItemSupabase(id, idToken);
 
         if (db) {
           try {
             await deleteDoc(doc(db, 'cardapio', id));
-          } catch(e) {}
+          } catch (e) {}
         }
 
         state.cardapio = state.cardapio.filter(it => it.id !== id);
-        try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch(e) {}
+        try { localStorage.setItem('backstage_cardapio', JSON.stringify(state.cardapio)); } catch (e) {}
         notifyRealtimeUpdate('CARDAPIO_UPDATE', state.cardapio);
 
-        showToast('Item excluído com sucesso.', 'info');
+        showToast(`Item "${nomeItem}" excluído com sucesso do Supabase.`, 'success');
         updateCardapioItemsOnly();
       } catch (err) {
-        console.error('Erro excluir item:', err);
-        showToast('Erro ao excluir item: ' + err.message, 'error');
+        console.error('Erro ao excluir item do cardápio:', err);
+        showToast('Erro ao excluir item do Supabase: ' + err.message, 'error');
       }
     }
   });
@@ -4092,6 +4407,12 @@ window.handleSalvarConfiguracoes = async (e) => {
   const contatoEmail = document.getElementById('confEmail')?.value?.trim();
   const endereco = document.getElementById('confEndereco')?.value?.trim();
 
+  const pixChave = document.getElementById('confPixChave')?.value?.trim() || '';
+  const pixTipo = document.getElementById('confPixTipo')?.value?.trim() || 'Chave Aleatória';
+  const pixTitular = document.getElementById('confPixTitular')?.value?.trim() || '';
+  const pixQrcode = document.getElementById('confPixQrcode')?.value?.trim() || '';
+  const pixCopiaCola = document.getElementById('confPixCopiaCola')?.value?.trim() || '';
+
   const terca = document.getElementById('confHorarioTerca')?.value?.trim();
   const quarta = document.getElementById('confHorarioQuarta')?.value?.trim();
   const quinta = document.getElementById('confHorarioQuinta')?.value?.trim();
@@ -4130,6 +4451,11 @@ window.handleSalvarConfiguracoes = async (e) => {
       endereco,
       pdfUrl: state.configuracoes?.pdfUrl || '/cardapio-oficial.pdf',
       pdfPublicId: state.configuracoes?.pdfPublicId || null,
+      pixChave,
+      pixTipoChave: pixTipo,
+      pixTitular,
+      pixQrcodeUrl: pixQrcode,
+      pixCopiaCola,
       horarios: {
         terca: terca || '19:00 → 02:30 (madrugada de quarta)',
         quarta: quarta || '19:00 → 03:30 (madrugada de quinta)',
@@ -4171,6 +4497,11 @@ window.handleSalvarConfiguracoes = async (e) => {
           endereco: payload.endereco,
           pdfUrl: payload.pdfUrl,
           pdfPublicId: payload.pdfPublicId,
+          pixChave: payload.pixChave,
+          pixTipoChave: payload.pixTipoChave,
+          pixTitular: payload.pixTitular,
+          pixQrcodeUrl: payload.pixQrcodeUrl,
+          pixCopiaCola: payload.pixCopiaCola,
           horarios: payload.horarios
         })
       });

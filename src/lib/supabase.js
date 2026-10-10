@@ -10,11 +10,13 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 
+  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) ||
   'https://qepsqxllrgtrrtafpwpe.supabase.co';
 
 const supabasePublishableKey = 
-  (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env?.VITE_SUPABASE_ANON_KEY)) || 
-  '';
+  (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_SUPABASE_ANON_KEY || import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY)) || 
+  (typeof process !== 'undefined' && (process.env?.VITE_SUPABASE_ANON_KEY || process.env?.SUPABASE_ANON_KEY || process.env?.VITE_SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_PUBLISHABLE_KEY)) ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlcHNxeGxscmd0cnJ0YWZwd3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExOTk4MTMsImV4cCI6MjEwNjc3NTgxM30.SqtA6rfMQVs0t8q9FIcV8M0r6ucV9EIJ7Wj2_X2X0kY';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
@@ -41,27 +43,27 @@ export async function testSupabaseConnection() {
     return {
       connected: false,
       configured: false,
-      message: 'Supabase aguardando chave VITE_SUPABASE_PUBLISHABLE_KEY no arquivo .env.local',
+      message: 'Supabase aguardando chave no arquivo .env.local',
       url: supabaseUrl
     };
   }
 
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/`, {
-      method: 'GET',
-      headers: {
-        'apikey': supabasePublishableKey,
-        'Authorization': `Bearer ${supabasePublishableKey}`
-      }
-    });
+    const { error } = await supabase.from('salas').select('id').limit(1);
+    if (error) {
+      return {
+        connected: false,
+        configured: true,
+        message: 'Erro na consulta do Supabase: ' + (error.message || String(error)),
+        url: supabaseUrl
+      };
+    }
 
     return {
-      connected: res.status !== 401,
+      connected: true,
       configured: true,
-      status: res.status,
-      message: res.status === 401 
-        ? 'Chave VITE_SUPABASE_PUBLISHABLE_KEY inválida ou não autorizada.' 
-        : 'Conexão com a API do Supabase estabelecida com sucesso!',
+      status: 200,
+      message: 'Conexão com a API do Supabase estabelecida com sucesso!',
       url: supabaseUrl
     };
   } catch (err) {
@@ -153,31 +155,51 @@ export async function getCategoriasSupabase() {
 // 3. ITENS DO CARDÁPIO
 // ==============================================================================
 export async function getCardapioSupabase() {
-  if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('cardapio')
-    .select('*')
-    .order('ordem', { ascending: true });
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('cardapio')
+        .select('*')
+        .order('ordem', { ascending: true });
 
-  if (error) throw error;
-  return (data || []).map(item => ({
-    id: item.id,
-    nome: item.nome,
-    preco: Number(item.preco),
-    categoriaId: item.categoria_id,
-    categoria: item.categoria,
-    descricao: item.descricao || '',
-    imagem: item.imagem || '',
-    imagemPublicId: item.imagem_public_id,
-    ativo: item.ativo !== false,
-    ordem: item.ordem || 1,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at
-  }));
+      if (!error && data && data.length > 0) {
+        return data.map(item => ({
+          id: item.id,
+          nome: item.nome,
+          preco: Number(item.preco),
+          categoriaId: item.categoria_id,
+          categoria: item.categoria,
+          descricao: item.descricao || '',
+          imagem: item.imagem || '',
+          imagemPublicId: item.imagem_public_id,
+          ativo: item.ativo !== false,
+          ordem: item.ordem || 1,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at
+        }));
+      }
+    } catch (directErr) {
+      console.warn('Tentativa direta Supabase cardápio:', directErr.message);
+    }
+  }
+
+  // Fallback via endpoint Serverless oficial
+  try {
+    const res = await fetch('/api/admin-cardapio');
+    if (res.ok) {
+      const json = await res.json();
+      if (json.sucesso && Array.isArray(json.cardapio)) {
+        return json.cardapio;
+      }
+    }
+  } catch (apiErr) {
+    console.warn('Erro ao consultar /api/admin-cardapio:', apiErr.message);
+  }
+
+  return null;
 }
 
-export async function saveCardapioItemSupabase(item) {
-  if (!supabase) throw new Error('Supabase não configurado');
+export async function saveCardapioItemSupabase(item, idToken = null) {
   const payload = {
     nome: item.nome,
     preco: item.preco || 0,
@@ -191,24 +213,78 @@ export async function saveCardapioItemSupabase(item) {
   if (item.imagem) payload.imagem = item.imagem;
   if (item.imagemPublicId) payload.imagem_public_id = item.imagemPublicId;
 
-  const { data, error } = await supabase
-    .from('cardapio')
-    .upsert(payload)
-    .select()
-    .single();
+  // 1. Tenta salvar via cliente direto do Supabase se configurado
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('cardapio')
+        .upsert(payload)
+        .select()
+        .single();
 
-  if (error) throw error;
-  return data;
+      if (!error && data) {
+        return data;
+      }
+      console.warn('Aviso Supabase direto:', error?.message);
+    } catch (err) {
+      console.warn('Exceção Supabase direto:', err.message);
+    }
+  }
+
+  // 2. Persiste via Serverless API /api/admin-cardapio com autenticação
+  const headers = { 'Content-Type': 'application/json' };
+  if (idToken) {
+    headers['Authorization'] = `Bearer ${idToken}`;
+  }
+
+  const res = await fetch('/api/admin-cardapio', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(item)
+  });
+
+  const resData = await res.json().catch(() => ({}));
+  if (!res.ok || !resData.sucesso) {
+    throw new Error(resData.error || `Falha ao salvar no banco de dados (HTTP ${res.status}).`);
+  }
+
+  return resData.item || payload;
 }
 
-export async function deleteCardapioItemSupabase(id) {
-  if (!supabase) throw new Error('Supabase não configurado');
-  const { error } = await supabase
-    .from('cardapio')
-    .delete()
-    .eq('id', id);
+export async function deleteCardapioItemSupabase(id, idToken = null) {
+  if (!id) throw new Error('ID do item obrigatório para exclusão.');
 
-  if (error) throw error;
+  // 1. Tenta excluir via cliente direto do Supabase se configurado
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('cardapio')
+        .delete()
+        .eq('id', id);
+
+      if (!error) return true;
+      console.warn('Aviso Supabase delete direto:', error?.message);
+    } catch (err) {
+      console.warn('Exceção Supabase delete direto:', err.message);
+    }
+  }
+
+  // 2. Exclui via Serverless API /api/admin-cardapio
+  const headers = {};
+  if (idToken) {
+    headers['Authorization'] = `Bearer ${idToken}`;
+  }
+
+  const res = await fetch(`/api/admin-cardapio?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers
+  });
+
+  const resData = await res.json().catch(() => ({}));
+  if (!res.ok || !resData.sucesso) {
+    throw new Error(resData.error || `Falha ao excluir item no banco de dados (HTTP ${res.status}).`);
+  }
+
   return true;
 }
 
@@ -313,6 +389,7 @@ export async function getReservasSupabase() {
     valorTotal: r.valor_total ? Number(r.valor_total) : null,
     valorSinal: r.valor_sinal ? Number(r.valor_sinal) : null,
     valorPago: r.valor_pago ? Number(r.valor_pago) : null,
+    valorRestante: r.valor_restante !== null && r.valor_restante !== undefined ? Number(r.valor_restante) : null,
     termosAceitos: r.termos_aceitos !== false,
     termosAceitosEm: r.termos_aceitos_em,
     termosVersao: r.termos_versao || '2026.1',
@@ -344,6 +421,7 @@ export async function saveReservaSupabase(dados) {
     valor_total: dados.valorTotal || null,
     valor_sinal: dados.valorSinal || null,
     valor_pago: dados.valorPago || null,
+    valor_restante: dados.valorRestante !== undefined ? dados.valorRestante : null,
     termos_aceitos: dados.termosAceitos !== false,
     termos_versao: dados.termosVersao || '2026.1',
     consentimento_marketing: Boolean(dados.consentimentoMarketing),
@@ -553,17 +631,64 @@ export async function getAmbientesSupabase() {
   return data || [];
 }
 
-export async function updateReservaStatusSupabase(id, status) {
+export async function updateReservaStatusSupabase(id, status, extraFields = {}) {
   if (!supabase) throw new Error('Supabase não configurado');
+  const payload = { status, ...extraFields };
   const { data, error } = await supabase
     .from('reservas')
-    .update({ status })
+    .update(payload)
     .eq('id', id)
     .select()
     .single();
 
   if (error) throw error;
   return data;
+}
+
+export async function updateReservaFinanceiroSupabase(id, {
+  status = 'CONFIRMED',
+  statusPagamento = 'aprovado',
+  valorPago = null,
+  valorRestante = null,
+  observacoes = null
+} = {}) {
+  if (!supabase) throw new Error('Supabase não configurado');
+  const payload = {
+    status,
+    status_pagamento: statusPagamento,
+    atualizado_em: new Date().toISOString()
+  };
+  if (valorPago !== null && valorPago !== undefined) payload.valor_pago = Number(valorPago);
+  if (valorRestante !== null && valorRestante !== undefined) payload.valor_restante = Number(valorRestante);
+  if (observacoes !== null && observacoes !== undefined) payload.observacoes = observacoes;
+
+  try {
+    const { data, error } = await supabase
+      .from('reservas')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '42703' || error.message?.includes('valor_restante')) {
+        const { valor_restante, ...fallbackPayload } = payload;
+        const retry = await supabase
+          .from('reservas')
+          .update(fallbackPayload)
+          .eq('id', id)
+          .select()
+          .single();
+        if (retry.error) throw retry.error;
+        return retry.data;
+      }
+      throw error;
+    }
+    return data;
+  } catch (err) {
+    console.warn('Erro ao atualizar financeiro da reserva no Supabase:', err.message);
+    throw err;
+  }
 }
 
 export async function deleteReservaSupabase(id) {
@@ -653,6 +778,11 @@ export async function getConfiguracoesSupabase() {
     contatoEmail: data.contato_email || undefined,
     pdfUrl: data.pdf_url,
     pdfPublicId: data.pdf_public_id,
+    pixChave: data.pix_chave || '',
+    pixTipoChave: data.pix_tipo_chave || '',
+    pixTitular: data.pix_titular || '',
+    pixCopiaCola: data.pix_copia_cola || '',
+    pixQrcodeUrl: data.pix_qrcode_url || '',
     horarios: data.horarios || {},
     createdAt: data.created_at,
     updatedAt: data.updated_at
@@ -670,6 +800,11 @@ export async function saveConfiguracoesSupabase(config) {
     contato_email: config.contatoEmail || '',
     pdf_url: config.pdfUrl || '/cardapio-oficial.pdf',
     pdf_public_id: config.pdfPublicId || null,
+    pix_chave: config.pixChave || '',
+    pix_tipo_chave: config.pixTipoChave || '',
+    pix_titular: config.pixTitular || '',
+    pix_copia_cola: config.pixCopiaCola || '',
+    pix_qrcode_url: config.pixQrcodeUrl || '',
     horarios: config.horarios || {}
   };
 
@@ -680,13 +815,13 @@ export async function saveConfiguracoesSupabase(config) {
     .maybeSingle();
 
   if (error) {
-    // Se a coluna contato_email ou pdf_public_id ainda não existir no schema remoto
-    if (error.message?.includes('contato_email') || error.code === '42703') {
-      console.warn('Aviso: coluna contato_email não encontrada no Supabase. Gravando demais campos...');
-      const { contato_email, ...payloadSemEmail } = payload;
+    // Se colunas novas ainda não existirem no schema remoto
+    if (error.code === '42703' || error.message?.includes('column') || error.message?.includes('contato_email')) {
+      console.warn('Aviso: colunas adicionais não encontradas no Supabase. Gravando campos essenciais...', error.message);
+      const { contato_email, pix_chave, pix_tipo_chave, pix_titular, pix_copia_cola, pix_qrcode_url, ...payloadBase } = payload;
       const retry = await supabase
         .from('configuracoes')
-        .upsert(payloadSemEmail)
+        .upsert(payloadBase)
         .select()
         .maybeSingle();
       if (retry.error) throw retry.error;

@@ -29,14 +29,12 @@ export default defineConfig(({ mode }) => {
               return next();
             }
 
-            // Rotas de API Cloudinary e Asaas para ambiente de desenvolvimento local
-            if (req.url && (
-              req.url.startsWith('/api/cloudinary-sign') || 
-              req.url.startsWith('/api/cloudinary-delete') ||
-              req.url.startsWith('/api/asaas-criar-cobranca') ||
-              req.url.startsWith('/api/asaas-webhook') ||
-              req.url.startsWith('/api/asaas-status')
-            )) {
+            // Rotas de API para ambiente de desenvolvimento local
+            if (req.url && req.url.startsWith('/api/')) {
+              const urlObj = new URL(req.url, 'http://localhost');
+              const pathname = urlObj.pathname;
+              req.query = Object.fromEntries(urlObj.searchParams.entries());
+
               const chunks = [];
               req.on('data', chunk => chunks.push(chunk));
               req.on('end', async () => {
@@ -59,19 +57,27 @@ export default defineConfig(({ mode }) => {
                 };
 
                 try {
-                  if (req.url.startsWith('/api/cloudinary-sign')) {
+                  if (pathname === '/api/cloudinary-sign') {
                     await signHandler(req, res);
-                  } else if (req.url.startsWith('/api/cloudinary-delete')) {
+                  } else if (pathname === '/api/cloudinary-delete') {
                     await deleteHandler(req, res);
-                  } else if (req.url.startsWith('/api/asaas-criar-cobranca')) {
+                  } else if (pathname === '/api/asaas-criar-cobranca') {
                     const asaasCriarHandler = (await import('./api/asaas-criar-cobranca.js')).default;
                     await asaasCriarHandler(req, res);
-                  } else if (req.url.startsWith('/api/asaas-webhook')) {
+                  } else if (pathname === '/api/asaas-webhook') {
                     const asaasWebhookHandler = (await import('./api/asaas-webhook.js')).default;
                     await asaasWebhookHandler(req, res);
-                  } else if (req.url.startsWith('/api/asaas-status')) {
+                  } else if (pathname === '/api/asaas-status') {
                     const asaasStatusHandler = (await import('./api/asaas-status.js')).default;
                     await asaasStatusHandler(req, res);
+                  } else if (pathname === '/api/admin-cardapio') {
+                    const adminCardapioHandler = (await import('./api/admin-cardapio.js')).default;
+                    await adminCardapioHandler(req, res);
+                  } else if (pathname === '/api/admin-configuracoes') {
+                    const adminConfigHandler = (await import('./api/admin-configuracoes.js')).default;
+                    await adminConfigHandler(req, res);
+                  } else {
+                    next();
                   }
                 } catch (handlerErr) {
                   console.error('Erro na API no servidor dev:', handlerErr);

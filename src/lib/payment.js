@@ -31,6 +31,155 @@ export const TARIFAS_SALAO = {
 };
 
 /**
+ * Formata um valor numérico para o padrão de moeda brasileiro (R$ 0,00).
+ */
+export function formatarMoeda(valor) {
+  const num = Number(valor) || 0;
+  return `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/**
+ * Calcula as opções de pagamento da reserva:
+ * - Sinal mínimo obrigatório de 50%
+ * - Pagamento integral de 100%
+ */
+export function calcularOpcoesPagamento(valorTotal) {
+  const total = Number(valorTotal) || 0;
+  const minimo50 = Math.round((total * 0.5) * 100) / 100;
+  const integral100 = total;
+
+  return {
+    valorTotal: total,
+    valorMinimo50: minimo50,
+    valorIntegral100: integral100,
+    formatadoTotal: formatarMoeda(total),
+    formatado50: formatarMoeda(minimo50),
+    formatado100: formatarMoeda(integral100)
+  };
+}
+
+/**
+ * Monta a mensagem pré-preenchida oficial para o WhatsApp com os dados da reserva.
+ *
+ * Contém obrigatoriamente todos os dados da reserva:
+ * 1. Nome do cliente
+ * 2. Telefone de contato quando informado
+ * 3. Mesa ou sala escolhida
+ * 4. Data
+ * 5. Horário
+ * 6. Quantidade de pessoas
+ * 7. Valor total
+ * 8. Forma de pagamento
+ * 9. Valor que pretende pagar agora
+ */
+export function gerarMensagemReservaWhatsApp({
+  nome,
+  telefone,
+  mesaOuSala,
+  data,
+  horario,
+  pessoas,
+  valorTotal,
+  formaPagamento,
+  metodo,
+  valorPagarAgora,
+  codigoReserva
+} = {}) {
+  const cleanNome = (nome || '').trim() || 'Não informado';
+  const cleanTel = (telefone || '').trim() || 'Não informado';
+  const cleanEspaco = (mesaOuSala || '').trim() || 'A definir';
+  const cleanData = (data || '').trim() || 'A definir';
+  const cleanHorario = (horario || '').trim() || '19:00';
+  const cleanPessoas = pessoas ? `${pessoas} pessoa(s)` : 'A definir';
+  const totalFmt = formatarMoeda(valorTotal);
+  const pagarAgoraFmt = formatarMoeda(valorPagarAgora !== undefined && valorPagarAgora !== null ? valorPagarAgora : valorTotal);
+
+  const rawForma = formaPagamento || metodo || 'Pix';
+  const metodoNormalizado = String(rawForma)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  const nomeFormaPagamento = metodoNormalizado.includes('cred')
+    ? 'Cartão de Crédito'
+    : metodoNormalizado.includes('deb')
+      ? 'Cartão de Débito'
+      : 'Pix';
+
+  const linhas = [
+    `Olá, equipe Backstage Karaokê! Gostaria de dar andamento à minha reserva:`,
+    ``,
+    ...(codigoReserva ? [`*Código da Reserva:* ${codigoReserva}`] : []),
+    `*Nome do Cliente:* ${cleanNome}`,
+    `*Telefone de Contato:* ${cleanTel}`,
+    `*Espaço Escolhido:* ${cleanEspaco}`,
+    `*Data:* ${cleanData}`,
+    `*Horário:* ${cleanHorario}`,
+    `*Quantidade de Pessoas:* ${cleanPessoas}`,
+    `*Valor Total:* ${totalFmt}`,
+    `*Forma de Pagamento:* ${nomeFormaPagamento}`,
+    `*Valor que pretendo pagar agora:* ${pagarAgoraFmt}`,
+    ``
+  ];
+
+  if (nomeFormaPagamento === 'Pix') {
+    linhas.push(`Segue o comprovante da transferência Pix em anexo para conferência da equipe.`);
+  } else if (nomeFormaPagamento === 'Cartão de Crédito') {
+    linhas.push(`Gostaria de combinar as instruções e opções de pagamento por cartão de crédito com a equipe.`);
+  } else {
+    linhas.push(`Gostaria de combinar o pagamento por débito com a equipe.`);
+  }
+
+  linhas.push(``);
+  linhas.push(`Aguardo a conferência e confirmação da reserva!`);
+
+  return linhas.join('\n');
+}
+
+/**
+ * Valida o número oficial do WhatsApp configurado no painel administrativo
+ * e gera o link seguro para abertura da conversa com a mensagem pré-preenchida.
+ * Se o WhatsApp oficial não estiver configurado, lança um erro explicativo.
+ */
+export function gerarLinkWhatsAppManual({
+  whatsappOficial,
+  dadosReserva
+}) {
+  const cleanPhone = String(whatsappOficial || '').replace(/\D/g, '');
+  if (!cleanPhone || cleanPhone.length < 10) {
+    throw new Error('WhatsApp oficial do estabelecimento não configurado no painel administrativo.');
+  }
+
+  const phoneCompleto = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+  const mensagem = gerarMensagemReservaWhatsApp(dadosReserva);
+
+  return `https://wa.me/${phoneCompleto}?text=${encodeURIComponent(mensagem)}`;
+}
+
+/**
+ * Obtém os dados Pix configurados pelo estabelecimento.
+ * Não inventa chaves fictícias nem gera QR Codes falsos se não estiver configurado.
+ */
+export function obterDadosPixConfigurados(configuracoes = {}) {
+  const chave = String(configuracoes.pixChave || configuracoes.pix_chave || '').trim();
+  const qrcodeUrl = String(configuracoes.pixQrcodeUrl || configuracoes.pix_qrcode_url || '').trim();
+  const tipo = String(configuracoes.pixTipoChave || configuracoes.pix_tipo_chave || '').trim() || 'Chave Pix';
+  const titular = String(configuracoes.pixTitular || configuracoes.pix_titular || '').trim();
+  const copiaCola = String(configuracoes.pixCopiaCola || configuracoes.pix_copia_cola || chave).trim();
+
+  const configurado = Boolean(chave || qrcodeUrl);
+
+  return {
+    configurado,
+    chave: configurado ? chave : '',
+    tipo: configurado ? tipo : '',
+    titular: configurado ? titular : '',
+    qrcodeUrl: configurado ? qrcodeUrl : '',
+    copiaCola: configurado ? copiaCola : ''
+  };
+}
+
+/**
  * Cria uma sessão segura de pagamento para a reserva formatada para o Asaas.
  *
  * @param {Object} params

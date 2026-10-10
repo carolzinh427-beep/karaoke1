@@ -40,6 +40,11 @@ export default async function handler(req, res) {
           mapsUrl: 'https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6',
           contatoEmail: 'contato@barbackstagekaraoke.com.br',
           endereco: 'CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF',
+          pixChave: '',
+          pixTipoChave: '',
+          pixTitular: '',
+          pixCopiaCola: '',
+          pixQrcodeUrl: '',
           horarios: {}
         }
       });
@@ -69,6 +74,11 @@ export default async function handler(req, res) {
               contatoEmail: row.contato_email || '',
               pdfUrl: row.pdf_url || '/cardapio-oficial.pdf',
               pdfPublicId: row.pdf_public_id || null,
+              pixChave: row.pix_chave || '',
+              pixTipoChave: row.pix_tipo_chave || '',
+              pixTitular: row.pix_titular || '',
+              pixCopiaCola: row.pix_copia_cola || '',
+              pixQrcodeUrl: row.pix_qrcode_url || '',
               horarios: row.horarios || {},
               atualizadoEm: row.updated_at || row.created_at
             }
@@ -107,7 +117,12 @@ export default async function handler(req, res) {
     endereco,
     horarios,
     pdfUrl,
-    pdfPublicId
+    pdfPublicId,
+    pixChave,
+    pixTipoChave,
+    pixTitular,
+    pixCopiaCola,
+    pixQrcodeUrl
   } = req.body || {};
 
   // 2. Validação rigorosa dos campos
@@ -144,6 +159,11 @@ export default async function handler(req, res) {
     contato_email: cleanEmail,
     pdf_url: pdfUrl || '/cardapio-oficial.pdf',
     pdf_public_id: pdfPublicId || null,
+    pix_chave: String(pixChave || '').trim(),
+    pix_tipo_chave: String(pixTipoChave || '').trim(),
+    pix_titular: String(pixTitular || '').trim(),
+    pix_copia_cola: String(pixCopiaCola || '').trim(),
+    pix_qrcode_url: String(pixQrcodeUrl || '').trim(),
     horarios: horarios || {},
     updated_at: new Date().toISOString()
   };
@@ -165,10 +185,10 @@ export default async function handler(req, res) {
       if (!supaRes.ok) {
         const errJson = await supaRes.json().catch(() => ({}));
 
-        // Caso a coluna contato_email ainda não exista no schema remoto
-        if (errJson?.message?.includes('contato_email') || errJson?.code === '42703') {
-          console.warn('[Admin Config] Coluna contato_email ausente no Supabase, gravando os demais campos...');
-          const { contato_email, ...payloadSemEmail } = payload;
+        // Caso colunas novas ainda não existam no schema remoto do Supabase
+        if (errJson?.code === '42703' || errJson?.message?.includes('column') || errJson?.message?.includes('contato_email')) {
+          console.warn('[Admin Config] Colunas adicionais ausentes no Supabase, salvando campos essenciais...', errJson?.message);
+          const { contato_email, pix_chave, pix_tipo_chave, pix_titular, pix_copia_cola, pix_qrcode_url, ...payloadBase } = payload;
           const retryRes = await fetch(`${supabaseUrl}/rest/v1/configuracoes`, {
             method: 'POST',
             headers: {
@@ -177,7 +197,7 @@ export default async function handler(req, res) {
               'Content-Type': 'application/json',
               'Prefer': 'resolution=merge-duplicates,return=representation'
             },
-            body: JSON.stringify(payloadSemEmail)
+            body: JSON.stringify(payloadBase)
           });
 
           if (!retryRes.ok) {

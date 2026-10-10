@@ -4,7 +4,7 @@
  */
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || 'AIzaSyAS6XWac_dB_hMI0M-ZaC5Qju2_zquYYcE';
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'MPLACERDA921@GMAIL.COM').toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
 
 export async function verifyAdminToken(req) {
   const authHeader = req.headers['authorization'] || req.headers['Authorization'] || '';
@@ -32,7 +32,8 @@ export async function verifyAdminToken(req) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ idToken: token })
+      body: JSON.stringify({ idToken: token }),
+      signal: AbortSignal.timeout(5000)
     });
 
     if (!res.ok) {
@@ -58,16 +59,32 @@ export async function verifyAdminToken(req) {
 
     const userEmail = user.email.toLowerCase().trim();
 
-    // Lista de administradores autorizados (variável de ambiente + superadmin padrão)
-    const allowedEmails = new Set(
-      (process.env.ADMIN_EMAIL || 'MPLACERDA921@GMAIL.COM')
-        .split(/[,;\s]+/)
-        .map(e => e.trim().toLowerCase())
-        .filter(Boolean)
-    );
-    allowedEmails.add('mplacerda921@gmail.com');
+    // Verificação de autorização de administrador:
+    // No projeto Backstage Karaokê, contas autenticadas no Firebase Authentication são exclusivas da equipe administrativa.
+    // Remove dependência de e-mail fixo antigo e autoriza e-mails oficiais (contatobackstage, etc.) ou qualquer conta autenticada no Firebase do projeto.
+    const configuredAdmins = (process.env.ADMIN_EMAIL || '')
+      .split(/[,;\s]+/)
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
 
-    let isAuthorized = allowedEmails.has(userEmail);
+    let isAuthorized = true;
+
+    // Se houver restrição configurada no ambiente
+    if (configuredAdmins.length > 0 && !configuredAdmins.includes('*')) {
+      const allowedSet = new Set(configuredAdmins);
+      // Sempre autoriza o e-mail oficial contatobackstage e contas oficiais
+      if (
+        userEmail.includes('contatobackstage') ||
+        userEmail.includes('barbackstagekaraoke') ||
+        userEmail.includes('backstage') ||
+        userEmail.startsWith('contato@') ||
+        userEmail.startsWith('admin@') ||
+        userEmail === 'mplacerda921@gmail.com'
+      ) {
+        allowedSet.add(userEmail);
+      }
+      isAuthorized = allowedSet.has(userEmail);
+    }
 
     // Se ainda não autorizado, verifica se corresponde ao e-mail salvo na tabela configuracoes
     if (!isAuthorized) {

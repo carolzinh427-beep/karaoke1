@@ -816,6 +816,12 @@ body.admin-body {
   border: 1px solid rgba(147, 51, 234, 0.3);
 }
 
+.badge-status.conference {
+  background: rgba(0, 240, 255, 0.15);
+  color: var(--admin-cyan);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+}
+
 .badge-room {
   padding: 3px 8px;
   border-radius: 4px;
@@ -1431,5 +1437,249 @@ body.admin-body {
   .cardapio-page-nav {
     flex-wrap: wrap;
     justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   NOVA INTERFACE DO CARDÁPIO: CARDS MOBILE-FIRST E 3 AÇÕES EXCLUSIVAS
+   ========================================================================== */
+.cardapio-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-add-item-top {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--admin-cyan);
+  color: #060914;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 12px 20px;
+  border-radius: var(--admin-radius-sm);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 240, 255, 0.35);
+  transition: var(--admin-transition);
+}
+
+.btn-add-item-top:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 240, 255, 0.5);
+}
+
+.cardapio-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.cardapio-item-card {
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.cardapio-item-card:hover {
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.cardapio-item-card.is-paused {
+  opacity: 0.65;
+  filter: grayscale(0.2);
+}
+
+.cardapio-item-img-wrap {
+  width: 100%;
+  height: 180px;
+  position: relative;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.cardapio-item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.cardapio-item-card:hover .cardapio-item-img {
+  transform: scale(1.04);
+}
+
+.cardapio-item-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--admin-text-muted);
+  font-size: 0.8rem;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cardapio-cat-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(6, 9, 20, 0.85);
+  backdrop-filter: blur(6px);
+  color: var(--admin-cyan);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cardapio-item-info {
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.cardapio-item-nome {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.cardapio-item-preco {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #10B981;
+  font-family: var(--font-heading, inherit);
+  margin-bottom: 6px;
+}
+
+.cardapio-item-desc {
+  font-size: 0.84rem;
+  color: var(--admin-text-muted);
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardapio-item-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border-top: 1px solid var(--admin-border);
+}
+
+.card-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: var(--admin-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--admin-transition);
+}
+
+.card-action-btn.action-add {
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--admin-cyan);
+  border-color: rgba(0, 240, 255, 0.3);
+}
+
+.card-action-btn.action-add:hover {
+  background: var(--admin-cyan);
+  color: #060914;
+}
+
+.card-action-btn.action-edit {
+  background: rgba(245, 158, 11, 0.12);
+  color: #FBBF24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.card-action-btn.action-edit:hover {
+  background: #F59E0B;
+  color: #060914;
+}
+
+.card-action-btn.action-delete {
+  background: rgba(239, 68, 68, 0.12);
+  color: #F87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.card-action-btn.action-delete:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+/* Modal Foto Preview */
+.modal-foto-preview-box {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--admin-border);
+}
+
+.modal-foto-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--admin-border);
+}
+
+@media (max-width: 640px) {
+  .cardapio-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .cardapio-item-img-wrap {
+    height: 160px;
+  }
+
+  .btn-add-item-top {
+    width: 100%;
+    justify-content: center;
+    padding: 14px;
+  }
+
+  .card-action-btn {
+    min-height: 46px; /* Mais fácil de tocar no celular */
   }
 }

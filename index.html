@@ -877,9 +877,14 @@
             </div>
           </div>
 
-          <!-- Card 3: Lateral Direita (Balde Heineken - sem descrição por padrão) -->
+          <!-- Card 3: Lateral Direita (Balde Heineken - Promoção Tempo Ilimitado) -->
           <div class="gallery-card promo-card" id="promoCard3" data-slot="2">
-            <img src="/assets/promos/promo-heineken.png" alt="Balde de Long Neck Gelada no Backstage Karaokê" loading="lazy">
+            <img src="/assets/promos/promo-heineken.png" alt="Promoção Balde por Nossa Conta no Backstage Karaokê" loading="lazy">
+            <div class="gallery-caption promo-caption">
+              <span class="caption-tag">Tempo Ilimitado</span>
+              <span class="caption-title">Balde por Nossa Conta</span>
+              <p class="promo-desc">Chegando junto com mais 5 amigos vocês ganham um balde de long neck por nossa conta. Voucher retirado na recepção de terça a quinta.</p>
+            </div>
           </div>
         </div>
 
@@ -1515,12 +1520,12 @@
       </div>
 
       <!-- ====================================================================
-           PASSO 8: PROSSEGUE PARA O PAGAMENTO (INTEGRAÇÃO ASAAS)
+           PASSO 8: PROSSEGUE PARA O PAGAMENTO (PAGAMENTO MANUAL VIA PIX / WHATSAPP)
            ==================================================================== -->
       <div class="checkout-step-section" id="chkSectionPagar" style="display: none;">
-        <h3 class="booking-modal-title">6. Pagamento Seguro da Reserva</h3>
+        <h3 class="booking-modal-title">6. Pagamento &amp; Envio de Comprovante</h3>
         <p class="booking-modal-sub" style="margin-bottom: 14px;">
-          Pagamento processado com segurança via Asaas. Nenhum dado de cartão é armazenado no sistema:
+          Efetue o pagamento via Pix ou combine diretamente com a nossa equipe no WhatsApp para validação manual da reserva:
         </p>
 
         <!-- Resumo Completo e Fixo da Reserva Visível Durante Todo o Pagamento -->
@@ -1546,7 +1551,7 @@
         </div>
 
         <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--primary-cyan); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
-          <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Total Oficial a Pagar:</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Valor Total da Reserva:</div>
           <div style="font-size: 2rem; font-family: var(--font-heading); font-weight: 900; color: #10B981; margin: 4px 0;" id="pagarValorDisplay">
             --
           </div>
@@ -1555,54 +1560,102 @@
           </div>
         </div>
 
+        <!-- Opções de Pagamento: 50% Agora ou Valor Integral -->
+        <div id="pagarOpcoesValorBox" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+          <div style="font-size: 0.82rem; font-weight: 800; color: #FFF; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">
+            Escolha quanto pagar agora:
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+            <label class="pagar-opcao-card selected" id="cardPagar50" style="cursor: pointer; background: rgba(0, 240, 255, 0.08); border: 1.5px solid var(--primary-cyan); border-radius: 10px; padding: 10px 12px; display: block; text-align: left; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                <input type="radio" name="opcaoValorPagar" id="radioPagar50" value="50" checked onchange="window.selecionarOpcaoValorPagar(50)" style="accent-color: var(--primary-cyan);">
+                <span style="font-size: 0.7rem; font-weight: 800; background: rgba(0, 240, 255, 0.2); color: var(--primary-cyan); padding: 1px 6px; border-radius: 4px;">Sinal Mínimo (50%)</span>
+              </div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #10B981;" id="pagarValor50Texto">R$ --</div>
+              <div style="font-size: 0.72rem; color: #CBD5E1;">Garante a sua reserva</div>
+            </label>
+            <label class="pagar-opcao-card" id="cardPagar100" style="cursor: pointer; background: rgba(255, 255, 255, 0.04); border: 1.5px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 10px 12px; display: block; text-align: left; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                <input type="radio" name="opcaoValorPagar" id="radioPagar100" value="100" onchange="window.selecionarOpcaoValorPagar(100)" style="accent-color: var(--primary-cyan);">
+                <span style="font-size: 0.7rem; font-weight: 800; background: rgba(255, 255, 255, 0.1); color: #FFF; padding: 1px 6px; border-radius: 4px;">Integral (100%)</span>
+              </div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #10B981;" id="pagarValor100Texto">R$ --</div>
+              <div style="font-size: 0.72rem; color: #CBD5E1;">Quitação total adiantada</div>
+            </label>
+          </div>
+          <div style="font-size: 0.74rem; color: #94A3B8; margin-top: 8px;">
+            💡 Pagamento mínimo de 50% para confirmação. O saldo restante poderá ser acertado com a equipe.
+          </div>
+        </div>
+
         <!-- Detalhes do Pix (caso Pix selecionado) -->
         <div id="pagarPixBox" style="background: rgba(14,22,45,0.9); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <!-- Aviso Obrigatório de Digitação do Valor no App do Banco -->
+          <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.8rem; color: #F59E0B; text-align: left; line-height: 1.45;">
+            ⚠️ <strong>Atenção:</strong> Como o QR Code Pix é estático (sem valor pré-fixado), <strong>você deve digitar o valor escolhido (<span id="pagarValorInstrucaoPix" style="font-weight: 800; color: #FFF;">R$ --</span>) diretamente no aplicativo do seu banco</strong> ao fazer a transferência.
+          </div>
+
+          <!-- QR Code Estático Oficial do Estabelecimento -->
           <div id="pagarPixQrWrap" style="display: none; text-align: center; margin-bottom: 14px;">
             <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Aponte a câmera do seu aplicativo de banco:</div>
-            <img id="pagarPixQrImg" src="" alt="QR Code Pix Asaas" style="width: 170px; height: 170px; border-radius: 8px; background: #FFF; padding: 6px; display: inline-block;">
+            <img id="pagarPixQrImg" src="" alt="QR Code Pix do Backstage" style="width: 170px; height: 170px; border-radius: 8px; background: #FFF; padding: 6px; display: inline-block; object-fit: contain;">
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 0.82rem; font-weight: 800; color: var(--primary-cyan);">Chave Pix Copia e Cola (Asaas):</span>
-            <button type="button" class="btn-admin btn-admin-xs btn-admin-outline" onclick="copiarPixCodigo()" id="btnCopiarPix">
-              Copiar Chave Pix 📋
-            </button>
+
+          <!-- Bloco da Chave Pix / Copia e Cola -->
+          <div id="pagarPixChaveWrap">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <span style="font-size: 0.82rem; font-weight: 800; color: var(--primary-cyan);" id="pagarPixChaveTitulo">Chave Pix Oficial:</span>
+              <button type="button" class="btn-admin btn-admin-xs btn-admin-outline" onclick="window.copiarPixCodigo()" id="btnCopiarPix">
+                Copiar Chave Pix 📋
+              </button>
+            </div>
+            <input type="text" id="chkPixInput" class="field-input" readonly value="" placeholder="Chave Pix oficial do estabelecimento..." style="font-family: monospace; font-size: 0.82rem; background: rgba(0,0,0,0.5);">
+            <div id="pagarPixTitularDisplay" style="font-size: 0.76rem; color: #CBD5E1; margin-top: 6px;"></div>
           </div>
-          <input type="text" id="chkPixInput" class="field-input" readonly value="" placeholder="Gerando chave Pix oficial..." style="font-family: monospace; font-size: 0.82rem; background: rgba(0,0,0,0.5);">
-          <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 6px;">
-            Abra seu app do banco, escolha a opção "Pix Copia e Cola" e confirme o pagamento.
+
+          <!-- Aviso quando o estabelecimento ainda não configurou chave Pix -->
+          <div id="pagarPixNaoConfiguradoAviso" style="display: none; background: rgba(245, 158, 11, 0.1); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 12px; margin-top: 10px; color: #FCD34D; font-size: 0.82rem; text-align: left; line-height: 1.45;">
+            ℹ️ <strong>Chave Pix em configuração:</strong> A chave Pix oficial do estabelecimento está sendo configurada no painel administrativo. Por favor, clique no botão abaixo para concluir sua reserva diretamente com a equipe pelo WhatsApp.
+          </div>
+
+          <!-- Botão para Enviar Comprovante via WhatsApp -->
+          <button type="button" class="btn btn-primary btn-lg btn-full" id="btnEnviarComprovanteWhatsApp" onclick="window.abrirWhatsAppComprovante()" style="padding: 16px 20px; font-size: 1.05rem; margin-top: 16px; margin-bottom: 6px; background: #25D366; border-color: #25D366; color: #000; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>Abrir WhatsApp e Enviar Comprovante 💬</span>
+          </button>
+          <div style="font-size: 0.74rem; color: var(--text-muted); text-align: center;">
+            Após pagar no seu banco, envie o comprovante pelo WhatsApp para conferência e confirmação da sua reserva.
           </div>
         </div>
 
-        <!-- Detalhes de Débito / Crédito (Asaas Checkout Seguro) -->
+        <!-- Detalhes de Débito / Crédito (Combinação Manual no WhatsApp) -->
         <div id="pagarCartaoBox" style="display: none; background: rgba(14,22,45,0.9); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-          <div style="font-size: 0.85rem; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">
-            Ambiente de Checkout Seguro Asaas
+          <div style="font-size: 0.88rem; font-weight: 800; color: #FFFFFF; margin-bottom: 6px;">
+            Pagamento com Cartão de Crédito / Débito
           </div>
-          <p style="font-size: 0.78rem; color: #CBD5E1; line-height: 1.45; margin: 0 0 12px 0;">
-            A transação de cartão de débito/crédito é processada em ambiente isolado e certificado PCI-DSS do Asaas. Nenhum dado do seu cartão trafega ou fica registrado em nossos servidores.
+          <p style="font-size: 0.8rem; color: #CBD5E1; line-height: 1.5; margin: 0 0 12px 0;">
+            Não cobramos seu cartão dentro do site. As opções de pagamento por cartão de crédito/débito são combinadas diretamente com a nossa equipe no WhatsApp oficial.
           </p>
-          <div id="pagarCartaoLinkWrap" style="text-align: center; display: none;">
-            <a id="pagarCartaoLinkBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 8px;">
-              <span>Abrir Fatura Segura no Asaas 💳 →</span>
-            </a>
+
+          <button type="button" class="btn btn-primary btn-lg btn-full" id="btnCombinarCartaoWhatsApp" onclick="window.abrirWhatsAppCartao()" style="padding: 16px 20px; font-size: 1.02rem; margin-bottom: 6px; background: #25D366; border-color: #25D366; color: #000; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>Combinar Pagamento no Cartão via WhatsApp 💳💬</span>
+          </button>
+          <div style="font-size: 0.74rem; color: var(--text-muted); text-align: center;">
+            Abriremos uma conversa no WhatsApp com todos os dados da reserva pré-preenchidos.
           </div>
-          <div id="pagarCartaoSandboxAviso" style="display: none; color: #F59E0B; font-size: 0.78rem; text-align: center; margin-top: 10px; background: rgba(245, 158, 11, 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
-            ⚠️ <strong>Modo Sandbox (Testes):</strong> Para visualizar a fatura de teste no Sandbox do Asaas sem redirecionamento para login, mantenha uma sessão ativa em <em>sandbox.asaas.com</em> neste navegador.
-          </div>
-          <div id="pagarCartaoAvisoErro" style="display: none; color: #EF4444; font-size: 0.82rem; text-align: center; margin-top: 8px; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.3);"></div>
         </div>
 
-        <!-- Feedback de verificação de status em tempo real -->
+        <!-- Aviso de Erro quando WhatsApp Oficial não estiver configurado no Admin -->
+        <div id="pagarWhatsappErroBox" style="display: none; color: #EF4444; font-size: 0.84rem; text-align: center; margin-bottom: 14px; background: rgba(239, 68, 68, 0.12); padding: 12px 14px; border-radius: 8px; border: 1.5px solid rgba(239, 68, 68, 0.4); line-height: 1.45;">
+          ⚠️ <strong>WhatsApp Oficial Não Configurado:</strong> O número oficial de WhatsApp do estabelecimento ainda não foi informado no painel administrativo. Não foi possível abrir a conversa. Por favor, contate o estabelecimento.
+        </div>
+
+        <!-- Feedback de status manual: Aguardando Comprovante / Conferência -->
         <div id="pagarStatusLiveBox" style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 10px; padding: 10px 14px; text-align: center; margin-bottom: 14px;">
           <div id="pagarStatusLiveMsg" style="font-size: 0.82rem; color: #F59E0B; display: flex; align-items: center; justify-content: center; gap: 8px;">
             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #F59E0B;"></span>
-            <span id="pagarStatusLiveTexto">Aguardando pagamento no Asaas... (Verificação automática)</span>
+            <span id="pagarStatusLiveTexto">Aguardando envio do comprovante para conferência manual da nossa equipe.</span>
           </div>
         </div>
-
-        <button type="button" class="btn btn-primary btn-lg btn-full" id="btnFinalizarPagamento" onclick="verificarPagamentoManual()" style="padding: 16px 20px; font-size: 1.05rem; margin-bottom: 12px;">
-          <span id="btnFinalizarPagamentoTexto">Já Paguei, Verificar no Asaas 🔄</span>
-        </button>
 
         <div style="text-align: center;">
           <button type="button" class="btn btn-outline btn-xs" onclick="voltarParaPassoResumo()">

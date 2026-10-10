@@ -311,9 +311,9 @@ export const DEFAULT_PROMOCOES = [
     label: 'Lateral Direita',
     imagemUrl: '/assets/promos/promo-heineken.png',
     imagemPublicId: null,
-    tag: '',
-    titulo: '',
-    descricao: ''
+    tag: 'Tempo Ilimitado',
+    titulo: 'Balde por Nossa Conta',
+    descricao: 'Chegando junto com mais 5 amigos vocês ganham um balde de long neck por nossa conta. Voucher retirado na recepção de terça a quinta.'
   }
 ];
 
