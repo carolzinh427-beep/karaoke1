@@ -3858,7 +3858,13 @@ window.openMediaUploadModal = (preselectedRoom = null, preselectedType = null) =
   const submitBtn = document.getElementById('btnSubmitMediaUpload');
   if (submitBtn) {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Fazer Upload';
+    submitBtn.textContent = '💾 Salvar Mídia';
+  }
+
+  const directBtn = document.getElementById('btnSalvarMediaDireto');
+  if (directBtn) {
+    directBtn.disabled = false;
+    directBtn.textContent = '💾 Salvar Mídia Agora';
   }
 
   modal.classList.add('open');
@@ -3934,7 +3940,13 @@ window.editarItemGaleria = (id) => {
   const submitBtn = document.getElementById('btnSubmitMediaUpload');
   if (submitBtn) {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Salvar Alterações';
+    submitBtn.textContent = '💾 Salvar Alterações';
+  }
+
+  const directBtn = document.getElementById('btnSalvarMediaDireto');
+  if (directBtn) {
+    directBtn.disabled = false;
+    directBtn.textContent = '💾 Salvar Alterações';
   }
 
   modal.classList.add('open');
@@ -4020,6 +4032,12 @@ window.handleMediaFileSelected = (e) => {
   if (previewBox) previewBox.style.display = 'block';
   if (previewLabel) previewLabel.textContent = 'Novo Arquivo Selecionado (Prévia):';
 
+  const directBtn = document.getElementById('btnSalvarMediaDireto');
+  if (directBtn) {
+    directBtn.disabled = false;
+    directBtn.textContent = '💾 Salvar Mídia Agora';
+  }
+
   if (radioTipo === 'video' || file.type.startsWith('video/')) {
     if (imgWrap) imgWrap.style.display = 'none';
     if (vidWrap) vidWrap.style.display = 'block';
@@ -4035,6 +4053,13 @@ window.handleMediaFileSelected = (e) => {
 
   if (infoEl) {
     infoEl.textContent = `Arquivo: ${file.name} (${sizeMb} MB) • Tipo: ${file.type || 'Detectado'}`;
+  }
+
+  // Rola suavemente para que a prévia e o botão de salvar fiquem no campo de visão imediato do usuário
+  if (previewBox) {
+    setTimeout(() => {
+      previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 80);
   }
 };
 
@@ -4144,10 +4169,15 @@ window.submitMediaUpload = async (e) => {
   const progressPercent = document.getElementById('mediaUploadProgressPercent');
   const progressText = document.getElementById('mediaUploadProgressText');
   const submitBtn = document.getElementById('btnSubmitMediaUpload');
+  const directBtn = document.getElementById('btnSalvarMediaDireto');
 
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Processando...';
+    submitBtn.textContent = '⏳ Salvando Mídia...';
+  }
+  if (directBtn) {
+    directBtn.disabled = true;
+    directBtn.textContent = '⏳ Salvando Mídia...';
   }
 
   try {
@@ -4168,7 +4198,11 @@ window.submitMediaUpload = async (e) => {
         alert(val.error);
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = editId ? 'Salvar Alterações' : 'Fazer Upload';
+          submitBtn.textContent = editId ? '💾 Salvar Alterações' : '💾 Salvar Mídia';
+        }
+        if (directBtn) {
+          directBtn.disabled = false;
+          directBtn.textContent = editId ? '💾 Salvar Alterações' : '💾 Salvar Mídia Agora';
         }
         return;
       }
@@ -4364,7 +4398,11 @@ window.submitMediaUpload = async (e) => {
     showToast('Falha no upload: ' + err.message, 'error');
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = editId ? 'Salvar Alterações' : 'Tentar Novamente';
+      submitBtn.textContent = editId ? '💾 Salvar Alterações' : '💾 Tentar Novamente';
+    }
+    if (directBtn) {
+      directBtn.disabled = false;
+      directBtn.textContent = editId ? '💾 Salvar Alterações' : '💾 Tentar Novamente';
     }
   }
 };

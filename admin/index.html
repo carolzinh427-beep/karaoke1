@@ -107,12 +107,17 @@
           <div id="uploadMediaPreviewBox" style="display: none; margin-bottom: 16px; border: 1px dashed var(--admin-border); border-radius: 8px; padding: 12px; text-align: center; background: rgba(0,0,0,0.35);">
             <div style="font-size: 0.76rem; text-transform: uppercase; color: var(--admin-cyan); font-weight: 700; margin-bottom: 8px;" id="uploadMediaPreviewLabel">Pré-visualização da Mídia</div>
             <div id="uploadMediaImgPreviewWrap" style="display: none;">
-              <img id="uploadMediaImgPreview" src="" alt="Prévia" style="max-height: 190px; max-width: 100%; border-radius: 6px; object-fit: contain; margin: 0 auto; display: block; border: 1px solid rgba(255,255,255,0.1);">
+              <img id="uploadMediaImgPreview" src="" alt="Prévia" style="max-height: 160px; max-width: 100%; border-radius: 6px; object-fit: contain; margin: 0 auto; display: block; border: 1px solid rgba(255,255,255,0.1);">
             </div>
             <div id="uploadMediaVidPreviewWrap" style="display: none;">
-              <video id="uploadMediaVidPreview" controls playsinline style="max-height: 200px; width: 100%; border-radius: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1);"></video>
+              <video id="uploadMediaVidPreview" controls playsinline style="max-height: 180px; width: 100%; border-radius: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1);"></video>
             </div>
             <div id="uploadMediaFileInfo" style="font-size: 0.8rem; color: var(--admin-text-main); margin-top: 8px;"></div>
+            <div style="margin-top: 12px;">
+              <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm btn-admin-full" id="btnSalvarMediaDireto" style="font-size: 0.92rem; font-weight: 800; padding: 11px 16px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(0, 240, 255, 0.3);">
+                💾 Salvar Mídia Agora
+              </button>
+            </div>
           </div>
 
           <!-- Ordem e Estado Ativo -->
@@ -142,7 +147,7 @@
         </div>
         <div class="admin-modal-footer">
           <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.closeMediaUploadModal()">Cancelar</button>
-          <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSubmitMediaUpload">Fazer Upload</button>
+          <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSubmitMediaUpload" style="font-weight: 800; min-width: 140px;">💾 Salvar Mídia</button>
         </div>
       </form>
     </div>
