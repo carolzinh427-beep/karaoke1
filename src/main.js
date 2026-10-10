@@ -43,6 +43,12 @@ import {
   calcularValorReserva,
   getMesaById
 } from './lib/mesasSalao.js';
+import {
+  ROOM_DATA,
+  calcularPrecoSalaPrivada
+} from './lib/salasPrivadas.js';
+
+export { ROOM_DATA, calcularPrecoSalaPrivada };
 
 // ============================================================================
 // ESTADO GLOBAL COMPARTILHADO (CALENDÁRIO, SALAS E SALÃO PRINCIPAL)
@@ -64,6 +70,7 @@ let WHATSAPP_PHONE = '556181426321';
 let selectedBookingDate = null;
 let selectedBookingRoom = null;
 let pendingRoomSelection = null;
+let selectedBookingHorario = '19:00';
 let currentBookingStep = 1;
 let currentCalYear = new Date().getFullYear();
 let currentCalMonth = new Date().getMonth();
@@ -72,11 +79,17 @@ let currentCalMonth = new Date().getMonth();
 let selectedMesaId = 'mesa-30';
 let selectedReservaData = null; // { dateStr: 'YYYY-MM-DD', formattedDisplay: 'Quarta, 07/10/2026' }
 let selectedReservaHorario = '20:00';
+let selectedCheckoutHorario = '19:00';
 let selectedMetodoTarifa = 'pix'; // 'pix' | 'debito' | 'credito'
 let modalCalYear = new Date().getFullYear();
 let modalCalMonth = new Date().getMonth();
 let reservasOcupadas = [];
 let activeConfirmedReservation = null;
+
+if (typeof window !== 'undefined') {
+  window.selectedBookingHorario = selectedBookingHorario;
+  window.selectedCheckoutHorario = selectedCheckoutHorario;
+}
 
 // Estado de Sessão e Monitoramento de Pagamento Asaas (Anti-Falso Positivo)
 let currentPaymentSession = null;
@@ -479,84 +492,7 @@ function handleInitialHashNavigation() {
 }
 
 // 9. Interactive Booking System (Fluxo em 3 Passos & Pop-up por Sala)
-
-// Dados e Personalidades Exclusivas das Salas
-const ROOM_DATA = {
-  'Sala Blue': {
-    name: 'Sala Blue',
-    slug: 'sala-blue',
-    num: 'Sala 3 • VIP',
-    tag: 'blue',
-    themeColor: '#00A6FF',
-    glowColor: 'rgba(0, 166, 255, 0.45)',
-    phrase: 'Você quer me locar? Estou pronta para te proporcionar momentos inesquecíveis!',
-    capacidade: 'Até 50 pessoas',
-    capacidadeNum: 50,
-    precoTotal: 'R$ 1.000,00',
-    precoTotalNum: 1000,
-    sinal: 'Pagamento Único',
-    sinalNum: 1000
-  },
-  'Sala Red': {
-    name: 'Sala Red',
-    slug: 'sala-red',
-    num: 'Sala 1',
-    tag: 'red',
-    themeColor: '#FF3366',
-    glowColor: 'rgba(255, 51, 102, 0.45)',
-    phrase: 'Que bom que me escolheu, eu vou te dar momentos que nenhum outro lugar te daria!',
-    capacidade: 'Até 30 pessoas',
-    capacidadeNum: 30,
-    precoTotal: 'R$ 800,00',
-    precoTotalNum: 800,
-    sinal: 'Pagamento Único',
-    sinalNum: 800
-  },
-  'Sala Green': {
-    name: 'Sala Green',
-    slug: 'sala-green',
-    num: 'Sala 2',
-    tag: 'green',
-    themeColor: '#00E699',
-    glowColor: 'rgba(0, 230, 153, 0.45)',
-    phrase: 'Você fez a escolha perfeita! O meu palco é seu para soltar a voz e viver uma noite épica!',
-    capacidade: 'Até 40 pessoas',
-    capacidadeNum: 40,
-    precoTotal: 'R$ 900,00',
-    precoTotalNum: 900,
-    sinal: 'Pagamento Único',
-    sinalNum: 900
-  }
-};
-
-/**
- * Calcula a precificação de salas privativas:
- * - Pagamento único integral da sala completa (sem cobrança por pessoa e sem acréscimo de taxas)
- * - Valor nominal normal para todos os métodos (Pix, Débito e Crédito)
- * - Reembolso garantido
- */
-export function calcularPrecoSalaPrivada(roomName, metodo = 'pix') {
-  const room = ROOM_DATA[roomName] || ROOM_DATA['Sala Red'];
-  const valorBase = room ? room.precoTotalNum : 800;
-  const cleanMetodo = (metodo || 'pix').toLowerCase();
-  const isCredito = (cleanMetodo === 'credito' || cleanMetodo === 'credit_card' || cleanMetodo === 'cartao_credito');
-  
-  // Salas possuem valor único integral da sala inteira (sem taxa de 3,99% e sem cobrança por pessoa)
-  const valorCobrado = valorBase;
-
-  return {
-    room,
-    nome: room ? room.name : 'Sala Privada',
-    metodo: cleanMetodo,
-    isCredito,
-    valorBase,
-    valorCobrado,
-    taxaPercentual: 0,
-    taxaValor: 0,
-    formatadoBase: `R$ ${valorBase.toFixed(2).replace('.', ',')}`,
-    formatadoCobrado: `R$ ${valorCobrado.toFixed(2).replace('.', ',')}`
-  };
-}
+// ROOM_DATA e calcularPrecoSalaPrivada são importados de ./lib/salasPrivadas.js
 
 
 function initBookingSystem() {
@@ -1494,10 +1430,56 @@ window.mostrarResumoEPagamento = () => {
   alternarSecaoFluxo('chkSectionResumo', 6);
 
   const isSalaPrivada = Boolean(selectedBookingRoom);
-  const room = isSalaPrivada ? (ROOM_DATA[selectedBookingRoom] || ROOM_DATA['Sala Red']) : null;
+  const room = isSalaPrivada ? (ROOM_DATA[selectedBookingRoom] || (pendingRoomSelection ? ROOM_DATA[pendingRoomSelection] : null) || ROOM_DATA['Sala Green']) : null;
   const mesa = isSalaPrivada ? null : getMesaById(selectedMesaId);
-  const nome = document.getElementById('modalBookingNome')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingNome')?.value?.trim() : '') || 'Cliente';
-  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || (isSalaPrivada ? document.getElementById('bookingPessoas')?.value : '') || '4', 10);
+
+  // Sincronização e recuperação bidirecional de dados cadastrais
+  let nome = document.getElementById('modalBookingNome')?.value?.trim() ||
+             (isSalaPrivada ? document.getElementById('bookingNome')?.value?.trim() : '') || '';
+  if (!nome) {
+    try { nome = localStorage.getItem('bk_cliente_nome') || ''; } catch (e) {}
+  }
+  if (nome) {
+    const mn = document.getElementById('modalBookingNome');
+    const bn = document.getElementById('bookingNome');
+    if (mn && !mn.value) mn.value = nome;
+    if (bn && !bn.value) bn.value = nome;
+  }
+
+  let whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim() ||
+                 (isSalaPrivada ? document.getElementById('bookingWhatsapp')?.value?.trim() : '') || '';
+  if (!whatsapp) {
+    try { whatsapp = localStorage.getItem('bk_cliente_zap') || ''; } catch (e) {}
+  }
+  if (whatsapp) {
+    const mz = document.getElementById('modalBookingWhatsapp');
+    const bz = document.getElementById('bookingWhatsapp');
+    if (mz && !mz.value) mz.value = whatsapp;
+    if (bz && !bz.value) bz.value = whatsapp;
+  }
+
+  let email = document.getElementById('modalBookingEmail')?.value?.trim() ||
+              (isSalaPrivada ? document.getElementById('bookingEmail')?.value?.trim() : '') || '';
+  if (!email) {
+    try { email = localStorage.getItem('bk_cliente_email') || ''; } catch (e) {}
+  }
+  if (email) {
+    const me = document.getElementById('modalBookingEmail');
+    const be = document.getElementById('bookingEmail');
+    if (me && !me.value) me.value = email;
+    if (be && !be.value) be.value = email;
+  }
+
+  const mPessoasVal = document.getElementById('modalBookingPessoas')?.value;
+  const bPessoasVal = document.getElementById('bookingPessoas')?.value;
+  let pessoas = parseInt(mPessoasVal || (isSalaPrivada ? bPessoasVal : '') || '0', 10);
+  if (isNaN(pessoas) || pessoas < 0) {
+    pessoas = 0;
+  }
+  const mp = document.getElementById('modalBookingPessoas');
+  const bp = document.getElementById('bookingPessoas');
+  if (mp && (!mp.value || mp.value === '0') && pessoas > 0) mp.value = pessoas;
+  if (bp && (!bp.value || bp.value === '0') && pessoas > 0) bp.value = pessoas;
 
   // Stepper: oculta no fluxo de sala privada e exibe no fluxo de mesas
   const stepper = document.getElementById('checkoutFlowStepper');
@@ -1540,30 +1522,32 @@ window.mostrarResumoEPagamento = () => {
     if (tituloSecao) tituloSecao.textContent = 'Resumo da Sala Privada & Pagamento';
     if (subtituloSecao) subtituloSecao.textContent = 'O valor da sala privativa é fixo e integral para o espaço completo (não cobramos por pessoa nas salas):';
     
-    const salaNomeExibicao = room ? `${room.name} (${room.capacidade})` : 'Sala Privada';
+    const salaNomeExibicao = room ? `${room.name} (${room.capacidade})` : 'Sala Green (Até 40 pessoas)';
     if (resumoTipoLabel) resumoTipoLabel.textContent = 'Sala Escolhida:';
     if (resumoPagarTipoLabel) resumoPagarTipoLabel.textContent = 'Sala Escolhida:';
     if (resumoMesa) {
       resumoMesa.textContent = salaNomeExibicao;
-      resumoMesa.style.color = room ? room.themeColor : '#10B981';
+      resumoMesa.style.color = room ? room.themeColor : '#00E699';
     }
     if (resumoPagarMesa) {
       resumoPagarMesa.textContent = salaNomeExibicao;
-      resumoPagarMesa.style.color = room ? room.themeColor : '#10B981';
+      resumoPagarMesa.style.color = room ? room.themeColor : '#00E699';
     }
 
-    const dataTxt = selectedBookingDate ? selectedBookingDate.formattedDisplay : 'Data a definir';
+    const dataTxt = selectedBookingDate ? selectedBookingDate.formattedDisplay : '';
     const horaTxt = selectedBookingHorario || '19:00';
-    const dataHoraStr = `${dataTxt} às ${horaTxt}`;
+    const dataHoraStr = dataTxt ? `${dataTxt} às ${horaTxt}` : `Data a definir às ${horaTxt}`;
     if (resumoDataHora) resumoDataHora.textContent = dataHoraStr;
     if (resumoPagarDataHora) resumoPagarDataHora.textContent = dataHoraStr;
 
-    if (resumoTitular) resumoTitular.textContent = nome;
-    if (resumoPagarTitular) resumoPagarTitular.textContent = nome;
+    const titularStr = nome || 'Nome pendente de preenchimento';
+    if (resumoTitular) resumoTitular.textContent = titularStr;
+    if (resumoPagarTitular) resumoPagarTitular.textContent = titularStr;
 
     if (resumoQtdLabel) resumoQtdLabel.textContent = 'Quantidade de Convidados:';
     if (resumoPagarQtdLabel) resumoPagarQtdLabel.textContent = 'Quantidade de Convidados:';
-    const qtdConvidadosStr = `${pessoas} convidados (Máx: ${room ? room.capacidadeNum : 40})`;
+    const maxCap = room ? room.capacidadeNum : 40;
+    const qtdConvidadosStr = pessoas > 0 ? `${pessoas} convidados (Máx: ${maxCap})` : `Pendente de preenchimento (Máx: ${maxCap})`;
     if (resumoQtd) resumoQtd.textContent = qtdConvidadosStr;
     if (resumoPagarQtd) resumoPagarQtd.textContent = qtdConvidadosStr;
 
@@ -1591,16 +1575,18 @@ window.mostrarResumoEPagamento = () => {
       resumoPagarMesa.style.color = '#F59E0B';
     }
 
-    const dataHoraMesa = `${selectedReservaData ? selectedReservaData.formattedDisplay : 'Data'} às ${selectedCheckoutHorario || selectedReservaHorario}`;
+    const horaMesa = selectedCheckoutHorario || selectedReservaHorario || '19:00';
+    const dataHoraMesa = `${selectedReservaData ? selectedReservaData.formattedDisplay : 'Data a definir'} às ${horaMesa}`;
     if (resumoDataHora) resumoDataHora.textContent = dataHoraMesa;
     if (resumoPagarDataHora) resumoPagarDataHora.textContent = dataHoraMesa;
 
-    if (resumoTitular) resumoTitular.textContent = nome;
-    if (resumoPagarTitular) resumoPagarTitular.textContent = nome;
+    const titularStrMesa = nome || 'Nome pendente de preenchimento';
+    if (resumoTitular) resumoTitular.textContent = titularStrMesa;
+    if (resumoPagarTitular) resumoPagarTitular.textContent = titularStrMesa;
 
     if (resumoQtdLabel) resumoQtdLabel.textContent = 'Quantidade:';
     if (resumoPagarQtdLabel) resumoPagarQtdLabel.textContent = 'Quantidade:';
-    const qtdPessoasMesaStr = `${pessoas} pessoa(s)`;
+    const qtdPessoasMesaStr = pessoas > 0 ? `${pessoas} pessoa(s)` : 'Quantidade a definir';
     if (resumoQtd) resumoQtd.textContent = qtdPessoasMesaStr;
     if (resumoPagarQtd) resumoPagarQtd.textContent = qtdPessoasMesaStr;
 
@@ -1608,14 +1594,15 @@ window.mostrarResumoEPagamento = () => {
   }
 
   // Atualiza valores conforme o método ativo (Passo 7)
-  window.selecionarMetodoTarifa(selectedMetodoTarifa);
+  window.selecionarMetodoTarifa(selectedMetodoTarifa || 'pix');
 };
 
 // 7. Cliente escolhe o pagamento
-// - Salas privadas: valor único da sala inteira (Pix, Débito e Crédito sem taxa de 3,99% e sem valor por pessoa).
+// - Salas privadas: valor único da sala inteira (Pix, Débito e Crédito sem taxa e sem valor por pessoa).
+//   Sala Green = R$ 900,00 | Sala Red = R$ 800,00 | Sala Blue = R$ 1.000,00
 // - Reserva de mesa: apenas valores individuais por pessoa (R$ 20 Pix/Débito, R$ 25 Crédito).
 window.selecionarMetodoTarifa = (metodo = 'pix') => {
-  selectedMetodoTarifa = metodo;
+  selectedMetodoTarifa = (metodo || 'pix').toLowerCase();
   const isSalaPrivada = Boolean(selectedBookingRoom);
 
   const boxMesa = document.getElementById('boxPagamentoMesa');
@@ -1625,23 +1612,23 @@ window.selecionarMetodoTarifa = (metodo = 'pix') => {
   const cardPixMesa = document.getElementById('payCardPixMesa');
   const cardDebitoMesa = document.getElementById('payCardDebitoMesa');
   const cardCreditoMesa = document.getElementById('payCardCreditoMesa');
-  if (cardPixMesa) cardPixMesa.classList.toggle('selected', metodo === 'pix');
-  if (cardDebitoMesa) cardDebitoMesa.classList.toggle('selected', metodo === 'debito');
-  if (cardCreditoMesa) cardCreditoMesa.classList.toggle('selected', metodo === 'credito');
+  if (cardPixMesa) cardPixMesa.classList.toggle('selected', selectedMetodoTarifa === 'pix');
+  if (cardDebitoMesa) cardDebitoMesa.classList.toggle('selected', selectedMetodoTarifa === 'debito');
+  if (cardCreditoMesa) cardCreditoMesa.classList.toggle('selected', selectedMetodoTarifa === 'credito');
 
   // Toggle visual nos cards de Sala
   const cardPixSala = document.getElementById('payCardPixSala');
   const cardDebitoSala = document.getElementById('payCardDebitoSala');
   const cardCreditoSala = document.getElementById('payCardCreditoSala');
-  if (cardPixSala) cardPixSala.classList.toggle('selected', metodo === 'pix');
-  if (cardDebitoSala) cardDebitoSala.classList.toggle('selected', metodo === 'debito');
-  if (cardCreditoSala) cardCreditoSala.classList.toggle('selected', metodo === 'credito');
+  if (cardPixSala) cardPixSala.classList.toggle('selected', selectedMetodoTarifa === 'pix');
+  if (cardDebitoSala) cardDebitoSala.classList.toggle('selected', selectedMetodoTarifa === 'debito');
+  if (cardCreditoSala) cardCreditoSala.classList.toggle('selected', selectedMetodoTarifa === 'credito');
 
   const totalEl = document.getElementById('resumoValorTotalCalculado');
   const formulaEl = document.getElementById('resumoCalculoFormula');
   const pagarValor = document.getElementById('pagarValorDisplay');
   const pagarMetodo = document.getElementById('pagarMetodoDisplay');
-  const nomeMetodo = metodo === 'pix' ? 'Pix' : metodo === 'debito' ? 'Débito' : 'Crédito';
+  const nomeMetodo = selectedMetodoTarifa === 'pix' ? 'Pix' : selectedMetodoTarifa === 'debito' ? 'Débito' : 'Crédito';
 
   if (isSalaPrivada) {
     // Garante que o bloco de mesas permaneça 100% oculto
@@ -1649,25 +1636,27 @@ window.selecionarMetodoTarifa = (metodo = 'pix') => {
     if (boxSala) boxSala.style.display = 'block';
 
     // Cálculo específico para Sala Privada: valor fixo integral da sala inteira
-    const calc = calcularPrecoSalaPrivada(selectedBookingRoom, metodo);
-    const precoFormatado = calc.formatadoCobrado;
+    const calcPix = calcularPrecoSalaPrivada(selectedBookingRoom, 'pix');
+    const calcDebito = calcularPrecoSalaPrivada(selectedBookingRoom, 'debito');
+    const calcCredito = calcularPrecoSalaPrivada(selectedBookingRoom, 'credito');
+    const calcAtual = calcularPrecoSalaPrivada(selectedBookingRoom, selectedMetodoTarifa);
 
     const ratePixSala = document.getElementById('payCardPixSalaRate');
     const rateDebitoSala = document.getElementById('payCardDebitoSalaRate');
     const rateCreditoSala = document.getElementById('payCardCreditoSalaRate');
 
-    if (ratePixSala) ratePixSala.textContent = precoFormatado;
-    if (rateDebitoSala) rateDebitoSala.textContent = precoFormatado;
-    if (rateCreditoSala) rateCreditoSala.textContent = precoFormatado;
+    if (ratePixSala) ratePixSala.textContent = calcPix.formatadoCobrado;
+    if (rateDebitoSala) rateDebitoSala.textContent = calcDebito.formatadoCobrado;
+    if (rateCreditoSala) rateCreditoSala.textContent = calcCredito.formatadoCobrado;
 
     // Atualiza valor total e fórmula (preço fixo integral da sala escolhida)
-    if (totalEl) totalEl.textContent = precoFormatado;
-    if (pagarValor) pagarValor.textContent = precoFormatado;
+    if (totalEl) totalEl.textContent = calcAtual.formatadoCobrado;
+    if (pagarValor) pagarValor.textContent = calcAtual.formatadoCobrado;
 
-    const descSala = `${calc.nome} • Preço fixo total da sala: ${precoFormatado} (Pagamento integral da sala completa, sem cobrança por pessoa)`;
+    const descSala = `${calcAtual.nome} • Preço fixo total da sala: ${calcAtual.formatadoCobrado} (Pagamento integral da sala completa, sem cobrança por pessoa)`;
     if (formulaEl) formulaEl.textContent = descSala;
     if (pagarMetodo) {
-      pagarMetodo.textContent = `Pagamento Integral da Sala via ${nomeMetodo} (Preço fixo total: ${precoFormatado})`;
+      pagarMetodo.textContent = `Pagamento Integral da Sala via ${nomeMetodo} (Preço fixo total: ${calcAtual.formatadoCobrado})`;
     }
   } else {
     // Garante que o bloco de salas permaneça 100% oculto
@@ -1676,7 +1665,7 @@ window.selecionarMetodoTarifa = (metodo = 'pix') => {
 
     // Cálculo específico para Mesa do Salão (apenas valores individuais)
     const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
-    const calculo = calcularValorReserva(pessoas, metodo);
+    const calculo = calcularValorReserva(pessoas, selectedMetodoTarifa);
 
     const ratePixMesa = document.getElementById('payCardPixMesaRate');
     const rateDebitoMesa = document.getElementById('payCardDebitoMesaRate');
@@ -1727,6 +1716,54 @@ window.avancarParaPassoPagar = async () => {
     }
   }
 
+  // Validação estrita de campos obrigatórios (sem inventar nome, data, horário ou quantidade)
+  const nome = document.getElementById('modalBookingNome')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingNome')?.value?.trim() : '') || '';
+  const whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingWhatsapp')?.value?.trim() : '') || '';
+  const email = document.getElementById('modalBookingEmail')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingEmail')?.value?.trim() : '') || '';
+  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || (isSalaPrivada ? document.getElementById('bookingPessoas')?.value : '') || '0', 10);
+
+  if (!nome) {
+    alert('Por favor, informe seu nome completo antes de prosseguir para o pagamento.');
+    const inNome = document.getElementById('modalBookingNome') || document.getElementById('bookingNome');
+    if (inNome) inNome.focus();
+    return;
+  }
+
+  const cleanZap = (whatsapp || '').replace(/\D/g, '');
+  if (!cleanZap || cleanZap.length < 10) {
+    alert('Por favor, informe seu WhatsApp com DDD (10 ou 11 dígitos) antes de prosseguir para o pagamento.');
+    const inZap = document.getElementById('modalBookingWhatsapp') || document.getElementById('bookingWhatsapp');
+    if (inZap) inZap.focus();
+    return;
+  }
+
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    alert('Por favor, informe um e-mail válido para envio do voucher e comprovante.');
+    const inEmail = document.getElementById('modalBookingEmail') || document.getElementById('bookingEmail');
+    if (inEmail) inEmail.focus();
+    return;
+  }
+
+  if (!pessoas || pessoas < 1) {
+    alert('Por favor, informe a quantidade de convidados para prosseguir.');
+    const inPessoas = document.getElementById('modalBookingPessoas') || document.getElementById('bookingPessoas');
+    if (inPessoas) inPessoas.focus();
+    return;
+  }
+
+  if (isSalaPrivada && !selectedBookingDate) {
+    alert('Por favor, selecione uma data no calendário antes de prosseguir para o pagamento.');
+    window.closeBookingDataModal();
+    window.goToBookingStep(1);
+    return;
+  }
+
+  if (!isSalaPrivada && !selectedReservaData) {
+    alert('Por favor, selecione a data da reserva antes de prosseguir.');
+    window.voltarParaPassoData();
+    return;
+  }
+
   // Avança imediatamente para o Passo 8 (Pagar)
   alternarSecaoFluxo('chkSectionPagar', 8);
 
@@ -1748,7 +1785,6 @@ window.avancarParaPassoPagar = async () => {
       pagarMetodo.textContent = `Pagamento Integral da Sala via ${nomeMetodo} (Preço fixo total: ${calc.formatadoCobrado})`;
     }
   } else {
-    const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || '4', 10);
     const calculo = calcularValorReserva(pessoas, selectedMetodoTarifa);
     valorCobrado = calculo.valorTotal;
     if (pagarValor) pagarValor.textContent = calculo.formatadoTotal;
@@ -1763,16 +1799,12 @@ window.avancarParaPassoPagar = async () => {
     if (cartaoBox) cartaoBox.style.display = 'block';
   }
 
-  // Prepara dados cadastrais da reserva
-  const nome = document.getElementById('modalBookingNome')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingNome')?.value?.trim() : '') || 'Cliente';
-  const whatsapp = document.getElementById('modalBookingWhatsapp')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingWhatsapp')?.value?.trim() : '') || '';
-  const email = document.getElementById('modalBookingEmail')?.value?.trim() || (isSalaPrivada ? document.getElementById('bookingEmail')?.value?.trim() : '') || 'cliente@backstagekaraoke.com.br';
-  const pessoas = parseInt(document.getElementById('modalBookingPessoas')?.value || (isSalaPrivada ? document.getElementById('bookingPessoas')?.value : '') || '4', 10);
   const mesa = isSalaPrivada ? null : getMesaById(selectedMesaId);
   const mesaNome = isSalaPrivada ? selectedBookingRoom : (mesa ? mesa.nomeExibicao : 'Mesa Salão');
   const ambienteNome = isSalaPrivada ? selectedBookingRoom : 'Salão Principal';
   const ambienteId = isSalaPrivada ? 'salas-privadas' : 'salao-principal';
-  const dataReserva = isSalaPrivada ? (selectedBookingDate ? selectedBookingDate.formattedDisplay : 'Hoje') : (selectedReservaData ? selectedReservaData.formattedDisplay : 'Hoje');
+  const dataReserva = isSalaPrivada ? selectedBookingDate.formattedDisplay : selectedReservaData.formattedDisplay;
+  const horaDisplay = isSalaPrivada ? (selectedBookingHorario || '19:00') : (selectedCheckoutHorario || selectedReservaHorario || '19:00');
 
   // Sincroniza dados no resumo fixo da tela de pagamento (Passo 8)
   const rPagarTipo = document.getElementById('resumoPagarTipoLabel');
@@ -1785,13 +1817,13 @@ window.avancarParaPassoPagar = async () => {
   if (rPagarTipo) rPagarTipo.textContent = isSalaPrivada ? 'Sala Escolhida:' : 'Mesa Escolhida:';
   if (rPagarMesa) {
     rPagarMesa.textContent = mesaNome;
-    rPagarMesa.style.color = isSalaPrivada ? ((ROOM_DATA[selectedBookingRoom] || {}).themeColor || '#10B981') : '#F59E0B';
+    rPagarMesa.style.color = isSalaPrivada ? ((ROOM_DATA[selectedBookingRoom] || {}).themeColor || '#00E699') : '#F59E0B';
   }
-  const horaDisplay = isSalaPrivada ? (selectedBookingHorario || '19:00') : (selectedCheckoutHorario || selectedReservaHorario || '19:00');
   if (rPagarDataHora) rPagarDataHora.textContent = `${dataReserva} às ${horaDisplay}`;
   if (rPagarTitular) rPagarTitular.textContent = nome;
   if (rPagarQtdLabel) rPagarQtdLabel.textContent = isSalaPrivada ? 'Quantidade de Convidados:' : 'Quantidade:';
-  if (rPagarQtd) rPagarQtd.textContent = isSalaPrivada ? `${pessoas} convidados` : `${pessoas} pessoa(s)`;
+  const maxCap = isSalaPrivada ? ((ROOM_DATA[selectedBookingRoom] || {}).capacidadeNum || 40) : 40;
+  if (rPagarQtd) rPagarQtd.textContent = isSalaPrivada ? `${pessoas} convidados (Máx: ${maxCap})` : `${pessoas} pessoa(s)`;
 
   const codigoReserva = generateReservationCode();
   const qrToken = generateQrCodeToken();
@@ -1840,7 +1872,7 @@ window.avancarParaPassoPagar = async () => {
     whatsapp,
     email,
     data: dataReserva,
-    horario: isSalaPrivada ? '19:00' : selectedReservaHorario,
+    horario: isSalaPrivada ? (selectedBookingHorario || '19:00') : (selectedCheckoutHorario || selectedReservaHorario || '19:00'),
     ambienteId,
     salaOuMesa: mesaNome,
     sala: mesaNome,
@@ -2216,10 +2248,20 @@ window.handleBookingSubmit = (e) => {
   const email = document.getElementById('bookingEmail')?.value?.trim();
   const pessoas = parseInt(document.getElementById('bookingPessoas')?.value || '1', 10);
   const chkTermos = document.getElementById('bookingTermosCheck');
+  const horario = document.getElementById('bookingHorario')?.value || selectedBookingHorario || '19:00';
+  selectedBookingHorario = horario;
+  if (typeof window !== 'undefined') window.selectedBookingHorario = horario;
+
+  if (!selectedBookingDate) {
+    alert('Por favor, selecione primeiro uma data no calendário para a sua reserva!');
+    window.goToBookingStep(1);
+    return;
+  }
 
   if (!nome) return alert('Por favor, informe seu nome completo.');
-  if (!whatsapp || whatsapp.length < 10) return alert('Por favor, informe seu WhatsApp com DDD.');
-  if (!email || !email.includes('@')) return alert('Por favor, informe um e-mail válido para envio da fatura ou voucher.');
+  const cleanZap = (whatsapp || '').replace(/\D/g, '');
+  if (!cleanZap || cleanZap.length < 10) return alert('Por favor, informe seu WhatsApp com DDD (10 ou 11 dígitos).');
+  if (!email || !email.includes('@') || !email.includes('.')) return alert('Por favor, informe um e-mail válido para envio da fatura ou voucher.');
   if (!pessoas || pessoas < 1) return alert('Por favor, informe a quantidade de convidados.');
   if (chkTermos && !chkTermos.checked) return alert('É necessário concordar com os termos de responsabilidade para prosseguir.');
 
@@ -2236,6 +2278,14 @@ window.handleBookingSubmit = (e) => {
   if (!selectedBookingRoom) {
     selectedBookingRoom = 'Sala Red';
   }
+  if (typeof window !== 'undefined') window.selectedBookingRoom = selectedBookingRoom;
+
+  // Salva no storage para reutilização/autofill
+  try {
+    localStorage.setItem('bk_cliente_nome', nome);
+    localStorage.setItem('bk_cliente_zap', whatsapp);
+    localStorage.setItem('bk_cliente_email', email);
+  } catch (err) {}
 
   // Sincroniza com os campos do modal de pagamento Asaas
   const mNome = document.getElementById('modalBookingNome');

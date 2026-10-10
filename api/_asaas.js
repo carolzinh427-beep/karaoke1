@@ -342,6 +342,7 @@ export function calcularPrecoOficialServidor({
 
     return {
       tipo: 'sala',
+      isSalaPrivada: true,
       nome: nomeNormalizado,
       pessoas: qtdConvidados,
       valor,
@@ -358,6 +359,7 @@ export function calcularPrecoOficialServidor({
 
   return {
     tipo: 'mesa',
+    isSalaPrivada: false,
     nome: mesaId || 'Mesa Salão Principal',
     pessoas: qtdPessoas,
     tarifaPorPessoa,
