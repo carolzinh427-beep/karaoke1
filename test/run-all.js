@@ -10,7 +10,8 @@ const testFiles = [
   'test/table-reservation-flow.test.js',
   'test/private-room-flow.test.js',
   'test/manual-pix-whatsapp-flow.test.js',
-  'test/supabase-integration.test.js'
+  'test/supabase-integration.test.js',
+  'test/sitemap-validation.test.js'
 ];
 
 let allPassed = true;
