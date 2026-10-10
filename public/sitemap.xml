@@ -1,45 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- Página Inicial / Salão Principal / Reservas -->
   <url>
     <loc>https://karaoke1.vercel.app/</loc>
-    <lastmod>2026-09-29</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://karaoke1.vercel.app/assets/brand/hero-bg.webp</image:loc>
+      <image:title>Backstage Karaokê Brasília - Salão Principal e Palco</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://karaoke1.vercel.app/assets/brand/mapa-salao-principal.jpg</image:loc>
+      <image:title>Mapa das Mesas do Salão Principal Backstage Karaokê</image:title>
+    </image:image>
   </url>
+
+  <!-- Salas Privadas (Red, Green, Blue) -->
   <url>
-    <loc>https://karaoke1.vercel.app/#aniversario</loc>
-    <lastmod>2026-09-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://karaoke1.vercel.app/#salas</loc>
-    <lastmod>2026-09-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://karaoke1.vercel.app/#salao-principal</loc>
-    <lastmod>2026-09-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://karaoke1.vercel.app/#cardapio</loc>
-    <lastmod>2026-09-29</lastmod>
+    <loc>https://karaoke1.vercel.app/salas.html</loc>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://karaoke1.vercel.app/assets/brand/hero-bg.webp</image:loc>
+      <image:title>Salas Privativas com Karaokê Exclusivo - Backstage</image:title>
+    </image:image>
   </url>
+
+  <!-- Cardápio Oficial Completo -->
   <url>
-    <loc>https://karaoke1.vercel.app/#galeria</loc>
-    <lastmod>2026-09-29</lastmod>
+    <loc>https://karaoke1.vercel.app/cardapio.html</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Cardápio Oficial em PDF -->
+  <url>
+    <loc>https://karaoke1.vercel.app/cardapio-oficial.pdf</loc>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://karaoke1.vercel.app/#localizacao</loc>
-    <lastmod>2026-09-29</lastmod>
-    <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>
 </urlset>
