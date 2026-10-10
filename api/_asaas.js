@@ -150,6 +150,37 @@ export async function criarCobrancaAsaas({
 }
 
 /**
+ * Cria Link de Pagamento avulso no Asaas (/v3/paymentLinks)
+ * Fluxo alternativo oficial do Asaas para checkout hospedado.
+ */
+export async function criarLinkPagamentoAsaas({
+  nome,
+  description,
+  valor,
+  billingType = 'UNDEFINED',
+  dueDateLimitDays = 1,
+  externalReference
+}) {
+  if (!valor || valor <= 0) throw new Error('Valor inválido para link de pagamento.');
+
+  const payload = {
+    name: nome || 'Reserva Backstage Karaokê',
+    description: description || 'Reserva Backstage Karaokê',
+    value: Number(valor).toFixed(2),
+    billingType: billingType.toUpperCase(),
+    chargeType: 'DETACHED',
+    dueDateLimitDays: dueDateLimitDays || 1,
+    externalReference: externalReference || undefined
+  };
+
+  return await asaasRequest('/paymentLinks', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+
+/**
  * Recupera o código Pix Copia e Cola e a imagem QR Code de uma cobrança Pix
  */
 export async function obterPixQrCodeAsaas(paymentId) {
@@ -168,6 +199,40 @@ export async function consultarCobrancaAsaas(paymentId) {
     method: 'GET'
   });
 }
+
+/**
+ * Consulta dados cadastrais da conta Asaas vinculada à API Key (para verificação do estabelecimento)
+ */
+export async function consultarDadosContaAsaas() {
+  const config = getAsaasConfig();
+  if (!config.isConfigured) {
+    return {
+      configurado: false,
+      ambiente: config.environment,
+      mensagem: 'ASAAS_API_KEY não configurada no servidor.'
+    };
+  }
+
+  try {
+    const dados = await asaasRequest('/myAccount', { method: 'GET' });
+    return {
+      configurado: true,
+      ambiente: config.environment,
+      nome: dados.name,
+      email: dados.email || dados.loginEmail,
+      cpfCnpj: dados.cpfCnpj,
+      cidade: dados.city,
+      estado: dados.state
+    };
+  } catch (err) {
+    return {
+      configurado: true,
+      ambiente: config.environment,
+      erro: err.message
+    };
+  }
+}
+
 
 /**
  * Valida integridade e autenticidade da requisição de Webhook recebida do Asaas

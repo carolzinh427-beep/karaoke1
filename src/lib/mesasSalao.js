@@ -142,10 +142,11 @@ export const MESAS_SALAO = [
 ];
 
 /**
+/**
  * Valida se a quantidade de pessoas solicitada cabe na mesa selecionada
  */
 export function validarCapacidadeMesa(mesaId, quantidadePessoas) {
-  const mesa = MESAS_SALAO.find(m => m.id === mesaId);
+  const mesa = getMesaById(mesaId);
   const qtd = parseInt(quantidadePessoas, 10);
 
   if (!mesa) {
@@ -206,8 +207,29 @@ export function calcularValorReserva(quantidadePessoas, metodoPagamento = 'pix')
 }
 
 /**
- * Busca uma mesa pelo identificador
+ * Busca uma mesa pelo identificador (compatível com mapa 2D e IDs legados)
  */
 export function getMesaById(id) {
-  return MESAS_SALAO.find(m => m.id === id) || null;
+  if (!id) return null;
+  const cleanId = String(id).toLowerCase().trim();
+
+  // 1. Busca exata por ID cadastrado em MESAS_SALAO
+  let mesa = MESAS_SALAO.find(m => m.id.toLowerCase() === cleanId);
+  if (mesa) return mesa;
+
+  // 2. Extrai numeração da mesa (ex: 'mesa-1' -> 1, 'mesa-11' -> 11)
+  const match = cleanId.match(/\d+/);
+  if (match) {
+    const num = parseInt(match[0], 10);
+    // Índice de 1 a 11 representa a ordem sequencial das 11 mesas do salão
+    if (num >= 1 && num <= MESAS_SALAO.length) {
+      return MESAS_SALAO[num - 1];
+    }
+    // Caso o número coincida com a capacidade da mesa (ex: 'mesa-30')
+    mesa = MESAS_SALAO.find(m => m.capacidade === num);
+    if (mesa) return mesa;
+  }
+
+  return MESAS_SALAO[0] || null;
 }
+

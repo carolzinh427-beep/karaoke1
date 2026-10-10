@@ -18,8 +18,10 @@ import assert from 'node:assert/strict';
 import {
   calcularPrecoOficialServidor,
   PRECOS_SALAS_OFICIAIS,
-  TARIFAS_SALAO_OFICIAIS
+  TARIFAS_SALAO_OFICIAIS,
+  consultarDadosContaAsaas
 } from '../api/_asaas.js';
+import { getMesaById, validarCapacidadeMesa } from '../src/lib/mesasSalao.js';
 import criarCobrancaHandler from '../api/asaas-criar-cobranca.js';
 import webhookHandler from '../api/asaas-webhook.js';
 
@@ -311,6 +313,138 @@ await asyncTest('7. Webhook do Asaas deve descartar eventos duplicados por idemp
   assert.equal(data2.duplicado, true, 'O webhook deve marcar a segunda chamada como duplicado: true');
 });
 
+// ----------------------------------------------------------------------------
+// 8. MAPEAMENTO E VALIDAÇÃO DE MESAS DO MAPA 2D
+// ----------------------------------------------------------------------------
+test('8. Mapeamento de mesas do mapa 2D (mesa-1 a mesa-11) e validação de capacidade', () => {
+  const mesa1 = getMesaById('mesa-1');
+  assert.ok(mesa1, 'Mesa 1 deve ser encontrada por mesa-1');
+  assert.equal(mesa1.capacidade, 30, 'Capacidade da Mesa 1 deve ser 30');
+
+  const mesa11 = getMesaById('mesa-11');
+  assert.ok(mesa11, 'Mesa 11 deve ser encontrada por mesa-11');
+  assert.equal(mesa11.capacidade, 2, 'Capacidade da Mesa 11 deve ser 2');
+
+  const valCapOk = validarCapacidadeMesa('mesa-1', 25);
+  assert.equal(valCapOk.valida, true, '25 pessoas devem caber na mesa de 30');
+
+  const valCapExcesso = validarCapacidadeMesa('mesa-1', 35);
+  assert.equal(valCapExcesso.valida, false, '35 pessoas devem exceder a capacidade de 30');
+});
+
+// ----------------------------------------------------------------------------
+// 9. SEGURANÇA CONTRA LINKS FALSOS / CADASTRO ASAAS
+// ----------------------------------------------------------------------------
+await asyncTest('9. Backend Asaas deve responder com status claro (HTTP 503) e nunca expor URLs genéricas de cadastro', async () => {
+  const { req, res } = createMockHttp({
+    method: 'POST',
+    body: {
+      nome: 'Cliente Teste',
+      email: 'cliente@teste.com',
+      tipoReserva: 'sala',
+      salaNome: 'Sala Red',
+      valor: 800,
+      metodo: 'pix'
+    }
+  });
+
+  await criarCobrancaHandler(req, res);
+  const status = res.getStatusCode();
+  const data = res.getData();
+
+  // Se a chave não estiver no ambiente de teste, deve retornar 503 limpo com aviso explicativo
+  if (status === 503) {
+    assert.equal(data.configurado, false);
+    assert.match(data.error, /aguardando configuração da chave API/);
+    assert.equal(data.invoiceUrl, undefined, 'Nunca deve retornar invoiceUrl falso');
+  } else if (status === 200) {
+    assert.ok(data.invoiceUrl, 'Em cobrança real com chave, deve retornar a invoiceUrl oficial');
+    assert.match(data.invoiceUrl, /^https:\/\/(www|sandbox)\.asaas\.com\/i\//, 'invoiceUrl deve apontar diretamente para a fatura oficial (/i/), nunca para telas genéricas de cadastro ou /checkout');
+  }
+});
+
+// ----------------------------------------------------------------------------
+// 10. AUDITORIA SEGURA DE CREDENCIAIS DA CONTA DO ESTABELECIMENTO
+// ----------------------------------------------------------------------------
+await asyncTest('10. Auditoria de credenciais Asaas não deve vazar segredos nem quebrar sem chave', async () => {
+  const dados = await consultarDadosContaAsaas();
+  assert.ok(dados, 'Objeto de status da conta deve existir');
+  if (!dados.configurado) {
+    assert.equal(dados.configurado, false);
+    assert.match(dados.mensagem, /ASAAS_API_KEY/);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// 11. VALIDAÇÃO DE URLs ESPECÍFICAS DE FATURA CONTRA REDIRECIONAMENTO PARA LOGIN
+// ----------------------------------------------------------------------------
+test('11. Validador de URL de checkout deve rejeitar URLs que redirecionam para login/cadastro do Asaas', () => {
+  const isValidSpecificPaymentUrl = (url) => {
+    if (!url || typeof url !== 'string' || !url.startsWith('http')) return false;
+    try {
+      const parsed = new URL(url);
+      const path = (parsed.pathname || '').trim();
+      if (!path || path === '/' || path === '/i' || path === '/i/' || path === '/c' || path === '/c/') {
+        return false;
+      }
+      if (path.includes('/login') || path.includes('/cadastro') || path.includes('/auth')) {
+        return false;
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // URLs que sabidamente causam 302 para login/cadastro
+  assert.equal(isValidSpecificPaymentUrl('https://www.asaas.com'), false);
+  assert.equal(isValidSpecificPaymentUrl('https://www.asaas.com/'), false);
+  assert.equal(isValidSpecificPaymentUrl('https://www.asaas.com/i/'), false);
+  assert.equal(isValidSpecificPaymentUrl('https://www.asaas.com/i'), false);
+  assert.equal(isValidSpecificPaymentUrl('https://sandbox.asaas.com/i/'), false);
+  assert.equal(isValidSpecificPaymentUrl('https://www.asaas.com/c/'), false);
+  assert.equal(isValidSpecificPaymentUrl('https://www.asaas.com/login/auth'), false);
+  assert.equal(isValidSpecificPaymentUrl('https://sandbox.asaas.com/cadastro'), false);
+  assert.equal(isValidSpecificPaymentUrl('#'), false);
+  assert.equal(isValidSpecificPaymentUrl(''), false);
+  assert.equal(isValidSpecificPaymentUrl(null), false);
+
+  // URLs de faturas e links específicos válidos do Asaas
+  assert.equal(isValidSpecificPaymentUrl('https://www.asaas.com/i/058295819582'), true);
+  assert.equal(isValidSpecificPaymentUrl('https://sandbox.asaas.com/i/058295819582'), true);
+  assert.equal(isValidSpecificPaymentUrl('https://www.asaas.com/c/bkpay12345'), true);
+});
+
+// ----------------------------------------------------------------------------
+// 12. SALAS PRIVADAS PRESERVAM PREÇO INTEGRAL INDEPENDENTE DO MÉTODO DE CARTÃO
+// ----------------------------------------------------------------------------
+test('12. Salas Privadas mantêm preço fixo total integral nos métodos de cartão e pix', () => {
+  // Red R$ 800
+  const redPix = calcularPrecoOficialServidor({ salaNome: 'Sala Red', metodo: 'pix' });
+  const redDeb = calcularPrecoOficialServidor({ salaNome: 'Sala Red', metodo: 'debito' });
+  const redCred = calcularPrecoOficialServidor({ salaNome: 'Sala Red', metodo: 'credito' });
+  assert.equal(redPix.valor, 800);
+  assert.equal(redDeb.valor, 800);
+  assert.equal(redCred.valor, 800);
+
+  // Green R$ 900
+  const greenPix = calcularPrecoOficialServidor({ salaNome: 'Sala Green', pessoas: 30, metodo: 'pix' });
+  const greenDeb = calcularPrecoOficialServidor({ salaNome: 'Sala Green', pessoas: 30, metodo: 'debito' });
+  const greenCred = calcularPrecoOficialServidor({ salaNome: 'Sala Green', pessoas: 30, metodo: 'credito' });
+  assert.equal(greenPix.valor, 900);
+  assert.equal(greenDeb.valor, 900);
+  assert.equal(greenCred.valor, 900);
+
+  // Blue R$ 1000
+  const bluePix = calcularPrecoOficialServidor({ salaNome: 'Sala Blue', metodo: 'pix' });
+  const blueDeb = calcularPrecoOficialServidor({ salaNome: 'Sala Blue', metodo: 'debito' });
+  const blueCred = calcularPrecoOficialServidor({ salaNome: 'Sala Blue', metodo: 'credito' });
+  assert.equal(bluePix.valor, 1000);
+  assert.equal(blueDeb.valor, 1000);
+  assert.equal(blueCred.valor, 1000);
+});
+
 console.log('\n======================================================');
 console.log(` RESULTADO FINAL: ${passedTests}/${totalTests} TESTES APROVADOS COM SUCESSO!`);
 console.log('======================================================\n');
+

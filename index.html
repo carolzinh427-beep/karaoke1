@@ -714,10 +714,8 @@
                 </div>
 
                 <div class="form-field-group">
-                  <label class="field-label">Horário de Funcionamento</label>
-                  <div class="field-input readonly-box" style="display: flex; align-items: center; color: var(--text-muted);">
-                    Terça a Sábado, das 18h às 02h
-                  </div>
+                  <label for="bookingEmail" class="field-label">E-mail para Envio da Fatura / Voucher *</label>
+                  <input type="email" id="bookingEmail" class="field-input" placeholder="seuemail@exemplo.com" required>
                 </div>
               </div>
 
@@ -1510,8 +1508,30 @@
           Pagamento processado com segurança via Asaas. Nenhum dado de cartão é armazenado no sistema:
         </p>
 
+        <!-- Resumo Completo e Fixo da Reserva Visível Durante Todo o Pagamento -->
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 0.85rem;">
+            <div>
+              <span id="resumoPagarTipoLabel" style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Espaço Escolhido:</span>
+              <strong id="resumoPagarMesaNome" style="color: #F59E0B;">--</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Data &amp; Horário:</span>
+              <strong id="resumoPagarDataHora" style="color: #FFF;">--</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Titular:</span>
+              <strong id="resumoPagarTitularNome" style="color: #FFF;">--</strong>
+            </div>
+            <div>
+              <span id="resumoPagarQtdLabel" style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; display: block;">Convidados / Pessoas:</span>
+              <strong id="resumoPagarQtdPessoas" style="color: var(--primary-cyan);">--</strong>
+            </div>
+          </div>
+        </div>
+
         <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--primary-cyan); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
-          <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Total a Pagar:</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Total Oficial a Pagar:</div>
           <div style="font-size: 2rem; font-family: var(--font-heading); font-weight: 900; color: #10B981; margin: 4px 0;" id="pagarValorDisplay">
             --
           </div>
@@ -1551,6 +1571,10 @@
               <span>Abrir Fatura Segura no Asaas 💳 →</span>
             </a>
           </div>
+          <div id="pagarCartaoSandboxAviso" style="display: none; color: #F59E0B; font-size: 0.78rem; text-align: center; margin-top: 10px; background: rgba(245, 158, 11, 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
+            ⚠️ <strong>Modo Sandbox (Testes):</strong> Para visualizar a fatura de teste no Sandbox do Asaas sem redirecionamento para login, mantenha uma sessão ativa em <em>sandbox.asaas.com</em> neste navegador.
+          </div>
+          <div id="pagarCartaoAvisoErro" style="display: none; color: #EF4444; font-size: 0.82rem; text-align: center; margin-top: 8px; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.3);"></div>
         </div>
 
         <!-- Feedback de verificação de status em tempo real -->

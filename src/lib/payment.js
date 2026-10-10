@@ -91,6 +91,13 @@ export async function createPaymentSession({
     if (res.ok) {
       const data = await res.json();
       if (data.sucesso) {
+        const checkoutUrl = data.checkoutUrl || data.invoiceUrl || null;
+        if ((cleanMetodo === 'credito' || cleanMetodo === 'debito')) {
+          if (!checkoutUrl || !checkoutUrl.startsWith('http') || checkoutUrl.endsWith('/i/') || checkoutUrl.endsWith('/c/') || checkoutUrl.includes('/login') || checkoutUrl.includes('/cadastro')) {
+            throw new Error(data.error || 'O Asaas não retornou uma URL válida de fatura/checkout para pagamento com cartão.');
+          }
+        }
+
         return {
           gateway: 'asaas',
           transacaoId: data.pagamentoId,
@@ -110,50 +117,24 @@ export async function createPaymentSession({
           ambiente,
           pixCopiaECola: data.pixCopiaECola || null,
           pixQrCodeBase64: data.pixQrCodeBase64 || null,
-          checkoutUrl: data.invoiceUrl || `https://sandbox.asaas.com/checkout/${data.pagamentoId}`,
-          ambienteAsaas: data.ambiente
+          checkoutUrl,
+          ambienteAsaas: data.ambiente,
+          sandboxNotice: data.sandboxNotice || null
         };
+      } else {
+        throw new Error(data.error || 'Falha ao processar cobrança oficial no Asaas.');
       }
     } else {
       const errData = await res.json().catch(() => null);
-      if (errData?.error) {
-        throw new Error(errData.error);
-      }
+      const errMsg = errData?.mensagem || errData?.error || `Erro de comunicação com o Asaas (HTTP ${res.status}).`;
+      throw new Error(errMsg);
     }
   } catch (apiErr) {
-    console.warn('Aviso ao gerar cobrança no servidor Asaas:', apiErr.message);
-    if (apiErr.message.includes('Tentativa de alteração de preço') || apiErr.message.includes('bloqueada')) {
-      throw apiErr;
-    }
+    console.error('[Asaas Checkout] Erro ao gerar cobrança oficial:', apiErr.message);
+    throw apiErr;
   }
-
-  // 2. Fallback resiliente caso ASAAS_API_KEY ainda não tenha sido inserida
-  const transacaoId = 'asaas_pay_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
-  const pixCopiaECola = `00020126580014br.gov.bcb.pix0136${codigoReserva || 'BK-2026'}5204000053039865405${Number(valor).toFixed(2)}5802BR5917Backstage Karaoke6008Brasilia62070503***6304`;
-
-  return {
-    gateway: 'asaas',
-    transacaoId,
-    reservaId,
-    codigoReserva,
-    valor: Number(valor),
-    metodo: cleanMetodo,
-    asaasBillingType,
-    status: PAYMENT_STATUS.PENDING,
-    criadoEm: new Date().toISOString(),
-    expiraEm: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-    comprador: {
-      nome: comprador.nome,
-      email: comprador.email,
-      whatsapp: cleanPhone
-    },
-    ambiente,
-    pixCopiaECola: cleanMetodo === 'pix' ? pixCopiaECola : null,
-    pixQrCodeBase64: null,
-    checkoutUrl: `https://sandbox.asaas.com/checkout/${transacaoId}`,
-    ambienteAsaas: 'sandbox'
-  };
 }
+
 
 /**
  * Consulta o status atual de uma cobrança no Asaas via backend seguro
