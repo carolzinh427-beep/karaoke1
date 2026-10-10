@@ -1452,6 +1452,10 @@ window.validarEAvancarParaResumo = () => {
     return;
   }
 
+  if (!selectedMesaId) {
+    selectedMesaId = 'mesa-1';
+  }
+
   // Validação estrita da capacidade da mesa
   const resultado = validarCapacidadeMesa(selectedMesaId, qtdPessoas);
   if (!resultado.valida) {
@@ -1528,7 +1532,10 @@ window.mostrarResumoEPagamento = () => {
     const boxCancel = document.getElementById('boxPoliticaCancelamentoResumo');
     if (boxCancel) boxCancel.style.display = 'block';
     const chkCancel = document.getElementById('chkPoliticaCancelamentoAceita');
-    if (chkCancel) chkCancel.checked = false; // Exige aceite explícito do usuário
+    const chkFormCancel = document.getElementById('bookingCancelamentoCheck');
+    if (chkCancel && chkFormCancel && chkFormCancel.checked) {
+      chkCancel.checked = true;
+    }
 
     if (tituloSecao) tituloSecao.textContent = 'Resumo da Sala Privada & Pagamento';
     if (subtituloSecao) subtituloSecao.textContent = 'O valor da sala privativa é fixo e integral para o espaço completo (não cobramos por pessoa nas salas):';
@@ -1709,19 +1716,26 @@ window.avancarParaPassoPagar = async () => {
   }
 
   const chkCancelamento = document.getElementById('chkPoliticaCancelamentoAceita');
-  if (isSalaPrivada && chkCancelamento && !chkCancelamento.checked) {
-    alert('É obrigatório dar o aceite explícito na Política de Cancelamento (ciência de que 50% do valor da reserva corresponde à parcela que poderá não ser reembolsada em caso de cancelamento) para prosseguir com a reserva.');
-    return;
+  const chkFormCancel = document.getElementById('bookingCancelamentoCheck');
+  if (isSalaPrivada) {
+    if (chkCancelamento && chkFormCancel && chkFormCancel.checked) {
+      chkCancelamento.checked = true;
+    }
+    if (chkCancelamento && !chkCancelamento.checked) {
+      alert('É obrigatório dar o aceite explícito na Política de Cancelamento (ciência de que 50% do valor da reserva corresponde à parcela que poderá não ser reembolsada em caso de cancelamento) para prosseguir com a reserva.');
+      return;
+    }
   }
 
-  // Sincroniza e garante todos os dados visíveis no resumo
-  window.mostrarResumoEPagamento();
+  // Avança imediatamente para o Passo 8 (Pagar)
   alternarSecaoFluxo('chkSectionPagar', 8);
 
   const pagarValor = document.getElementById('pagarValorDisplay');
   const pagarMetodo = document.getElementById('pagarMetodoDisplay');
   const pixBox = document.getElementById('pagarPixBox');
   const cartaoBox = document.getElementById('pagarCartaoBox');
+  const linkAvisoErro = document.getElementById('pagarCartaoAvisoErro');
+  if (linkAvisoErro) linkAvisoErro.style.display = 'none';
 
   const nomeMetodo = selectedMetodoTarifa === 'pix' ? 'Pix' : selectedMetodoTarifa === 'debito' ? 'Cartão de Débito' : 'Cartão de Crédito';
 
@@ -1760,6 +1774,25 @@ window.avancarParaPassoPagar = async () => {
   const ambienteId = isSalaPrivada ? 'salas-privadas' : 'salao-principal';
   const dataReserva = isSalaPrivada ? (selectedBookingDate ? selectedBookingDate.formattedDisplay : 'Hoje') : (selectedReservaData ? selectedReservaData.formattedDisplay : 'Hoje');
 
+  // Sincroniza dados no resumo fixo da tela de pagamento (Passo 8)
+  const rPagarTipo = document.getElementById('resumoPagarTipoLabel');
+  const rPagarMesa = document.getElementById('resumoPagarMesaNome');
+  const rPagarDataHora = document.getElementById('resumoPagarDataHora');
+  const rPagarTitular = document.getElementById('resumoPagarTitularNome');
+  const rPagarQtdLabel = document.getElementById('resumoPagarQtdLabel');
+  const rPagarQtd = document.getElementById('resumoPagarQtdPessoas');
+
+  if (rPagarTipo) rPagarTipo.textContent = isSalaPrivada ? 'Sala Escolhida:' : 'Mesa Escolhida:';
+  if (rPagarMesa) {
+    rPagarMesa.textContent = mesaNome;
+    rPagarMesa.style.color = isSalaPrivada ? ((ROOM_DATA[selectedBookingRoom] || {}).themeColor || '#10B981') : '#F59E0B';
+  }
+  const horaDisplay = isSalaPrivada ? (selectedBookingHorario || '19:00') : (selectedCheckoutHorario || selectedReservaHorario || '19:00');
+  if (rPagarDataHora) rPagarDataHora.textContent = `${dataReserva} às ${horaDisplay}`;
+  if (rPagarTitular) rPagarTitular.textContent = nome;
+  if (rPagarQtdLabel) rPagarQtdLabel.textContent = isSalaPrivada ? 'Quantidade de Convidados:' : 'Quantidade:';
+  if (rPagarQtd) rPagarQtd.textContent = isSalaPrivada ? `${pessoas} convidados` : `${pessoas} pessoa(s)`;
+
   const codigoReserva = generateReservationCode();
   const qrToken = generateQrCodeToken();
   const qrSvg = generateQrCodeSvg(codigoReserva, 180);
@@ -1785,11 +1818,19 @@ window.avancarParaPassoPagar = async () => {
       pessoas
     });
   } catch (err) {
-    console.error('Erro ao gerar sessão Asaas:', err);
-    alert(`Não foi possível gerar a cobrança oficial no Asaas:\n\n${err.message || 'Falha ao processar pagamento.'}\n\nSua reserva NÃO foi confirmada.`);
-    alternarSecaoFluxo('chkSectionResumo', 6);
-    window.mostrarResumoEPagamento();
-    return;
+    console.warn('Aviso ao gerar sessão Asaas:', err);
+    // Permanece na Etapa 8 e exibe aviso claro sem expulsar o cliente de volta à Etapa 6
+    if (liveStatus) {
+      liveStatus.textContent = `Aviso Gateway: ${err.message || 'Aguardando configuração de chave ou comunicação.'}`;
+    }
+    if (inputPix && selectedMetodoTarifa === 'pix') {
+      inputPix.value = `Indisponível no momento (${err.message || 'Erro Asaas'})`;
+    }
+    if (linkAvisoErro) {
+      linkAvisoErro.textContent = `Aviso do Asaas: ${err.message || 'Falha ao processar pagamento.'}`;
+      linkAvisoErro.style.display = 'block';
+    }
+    currentPaymentSession = null;
   }
 
   // Registra pré-reserva com status PENDING no Supabase
@@ -2206,6 +2247,12 @@ window.handleBookingSubmit = (e) => {
   if (mEmail) mEmail.value = email;
   if (mPessoas) mPessoas.value = pessoas;
 
+  // Sincroniza aceite da política de cancelamento e termos no modal
+  const chkModalCancel = document.getElementById('chkPoliticaCancelamentoAceita');
+  if (chkModalCancel) chkModalCancel.checked = true;
+  const chkModalTermos = document.getElementById('chkReservaTermosAceitos');
+  if (chkModalTermos) chkModalTermos.checked = true;
+
   // Abre modal no Passo 6 (Resumo & Forma de Pagamento)
   const modal = document.getElementById('bookingDataModal');
   if (modal) {
@@ -2230,7 +2277,7 @@ window.iniciarPagamentoReservaMesa = async ({
 }) => {
   selectedBookingRoom = null;
   pendingRoomSelection = null;
-  selectedMesaId = mesaId;
+  selectedMesaId = mesaId || 'mesa-1';
   selectedCheckoutHorario = horario || '19:00';
   selectedReservaHorario = horario || '19:00';
   selectedMetodoTarifa = (metodo || 'pix').toLowerCase();
@@ -2242,6 +2289,14 @@ window.iniciarPagamentoReservaMesa = async ({
       date: dtObj,
       dateStr: data,
       isoDate: data,
+      formattedDisplay: dtObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    };
+  } else if (!selectedReservaData) {
+    const dtObj = new Date();
+    selectedReservaData = {
+      date: dtObj,
+      dateStr: dtObj.toISOString().split('T')[0],
+      isoDate: dtObj.toISOString().split('T')[0],
       formattedDisplay: dtObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
     };
   }
