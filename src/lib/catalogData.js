@@ -216,7 +216,6 @@ export async function seedDatabaseIfNeeded(db) {
     try {
       const snapSalas = await getDocs(collection(db, 'salas'));
       if (snapSalas.empty) {
-        console.log('Populando Firestore com as salas padrão...');
         const batch = writeBatch(db);
         DEFAULT_SALAS.forEach(s => {
           batch.set(doc(db, 'salas', s.id), s);
@@ -231,7 +230,6 @@ export async function seedDatabaseIfNeeded(db) {
     try {
       const snapCats = await getDocs(collection(db, 'categorias_cardapio'));
       if (snapCats.empty) {
-        console.log('Populando categorias do cardápio...');
         const batch = writeBatch(db);
         DEFAULT_CATEGORIAS.forEach(c => {
           batch.set(doc(db, 'categorias_cardapio', c.id), c);
@@ -246,7 +244,6 @@ export async function seedDatabaseIfNeeded(db) {
     try {
       const snapCardapio = await getDocs(collection(db, 'cardapio'));
       if (snapCardapio.empty || snapCardapio.docs.length < 5) {
-        console.log('Populando catálogo de 77 itens do cardápio via batch...');
         const batch = writeBatch(db);
         DEFAULT_CARDAPIO.forEach(item => {
           batch.set(doc(db, 'cardapio', item.id), item);
@@ -261,7 +258,6 @@ export async function seedDatabaseIfNeeded(db) {
     try {
       const docConf = await getDoc(doc(db, 'configuracoes', 'geral'));
       if (!docConf.exists()) {
-        console.log('Populando configurações gerais...');
         await setDoc(doc(db, 'configuracoes', 'geral'), DEFAULT_CONFIGURACOES);
       }
     } catch(err) {
@@ -272,7 +268,6 @@ export async function seedDatabaseIfNeeded(db) {
     try {
       const docPromos = await getDoc(doc(db, 'configuracoes', 'promocoes'));
       if (!docPromos.exists()) {
-        console.log('Populando promoções e destaques padrão...');
         await setDoc(doc(db, 'configuracoes', 'promocoes'), {
           cards: DEFAULT_PROMOCOES,
           criadoEm: new Date().toISOString()

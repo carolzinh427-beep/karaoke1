@@ -7,8 +7,12 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   Object.assign(process.env, env);
 
+  const isProd = mode === 'production';
+
   return {
     build: {
+      sourcemap: false,
+      minify: 'esbuild',
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html'),
@@ -17,6 +21,10 @@ export default defineConfig(({ mode }) => {
           admin: resolve(__dirname, 'admin/index.html'),
         },
       },
+    },
+    esbuild: {
+      drop: isProd ? ['console', 'debugger'] : [],
+      legalComments: 'none',
     },
     plugins: [
       {

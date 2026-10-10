@@ -39,8 +39,8 @@ export class KaraokeMap {
 
     // Instância do Modal de Reserva
     this.modal = new ReservationModal({
-      onContinue: (resData) => {
-        console.log('Reserva continuada no fluxo visual:', resData);
+      onContinue: () => {
+        // Fluxo de reserva continuado com segurança sem expor dados no console
       },
       onClose: (table) => {
         // Mantém a mesa selecionada destacada no mapa

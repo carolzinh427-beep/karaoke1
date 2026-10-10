@@ -747,6 +747,7 @@ body.admin-body {
   width: 100%;
   overflow-x: auto;
   border-radius: var(--admin-radius-sm);
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-table {
@@ -886,8 +887,10 @@ body.admin-body {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.1);
   overflow: hidden;
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
+  overscroll-behavior: contain;
 }
 
 .admin-modal-header {
@@ -915,6 +918,8 @@ body.admin-body {
 .admin-modal-body {
   padding: 24px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-modal-footer {
@@ -1437,6 +1442,28 @@ body.admin-body {
   .cardapio-page-nav {
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  .admin-modal-overlay {
+    padding: 10px;
+  }
+
+  .admin-modal-card {
+    border-radius: 16px;
+    max-height: 94dvh;
+    width: 100%;
+  }
+
+  .admin-modal-header {
+    padding: 14px 16px;
+  }
+
+  .admin-modal-body {
+    padding: 16px 14px;
+  }
+
+  .admin-modal-footer {
+    padding: 12px 16px;
   }
 }
 

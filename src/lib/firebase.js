@@ -52,7 +52,6 @@ export async function salvarAgendamento(dados) {
       const res = await saveReservaSupabase(dados);
       if (res && res.id) {
         supabaseId = res.id;
-        console.log('Reserva registrada no Supabase com ID:', supabaseId);
       }
     } catch (supaErr) {
       console.warn('Aviso ao registrar reserva no Supabase, prosseguindo com Firestore:', supaErr);
@@ -80,7 +79,6 @@ export async function salvarAgendamento(dados) {
         console.warn('Sync legada agendamentos:', syncErr);
       }
       
-      console.log('Reserva registrada no Firestore com ID:', docRef.id);
       return { success: true, id: supabaseId || docRef.id };
     }
   } catch (error) {
