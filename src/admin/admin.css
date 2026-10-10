@@ -31,6 +31,13 @@
   --admin-transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+html {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -43,8 +50,19 @@ body.admin-body {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100vw;
   overflow-x: hidden;
+  position: relative;
   -webkit-font-smoothing: antialiased;
+}
+
+#adminApp {
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* Background Ambient Glow */
@@ -368,12 +386,17 @@ body.admin-body {
 
 /* Main Content Area */
 .admin-main {
-  flex: 1;
+  flex: 1 1 auto;
   margin-left: var(--admin-sidebar-width);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: transparent;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Topbar Header */
@@ -389,12 +412,18 @@ body.admin-body {
   position: sticky;
   top: 0;
   z-index: 50;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .topbar-left {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
+  flex: 1;
 }
 
 .sidebar-toggle-btn {
@@ -406,12 +435,17 @@ body.admin-body {
   border-radius: var(--admin-radius-sm);
   cursor: pointer;
   font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .topbar-page-title {
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.01em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar-right {
@@ -723,6 +757,10 @@ body.admin-body {
   padding: 24px;
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
   margin-bottom: 24px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-card-header {
@@ -732,6 +770,9 @@ body.admin-body {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--admin-border);
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .admin-card-title {
@@ -740,14 +781,63 @@ body.admin-body {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+/* Linha com rolagem horizontal suave para pílulas de filtros no celular */
+.admin-filter-scroll-row {
+  display: flex !important;
+  gap: 8px;
+  overflow-x: auto !important;
+  flex-wrap: nowrap !important;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: thin;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.admin-filter-scroll-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.admin-filter-scroll-row::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+}
+
+.admin-filter-scroll-row .btn-admin {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
 }
 
 /* Tables */
 .table-responsive {
-  width: 100%;
-  overflow-x: auto;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
-  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.35);
+  border-radius: 4px;
 }
 
 .admin-table {
@@ -862,7 +952,8 @@ body.admin-body {
 }
 
 /* Modals */
-.admin-modal-overlay {
+.admin-modal-overlay,
+.admin-modal-backdrop {
   display: none;
   position: fixed;
   inset: 0;
@@ -874,11 +965,15 @@ body.admin-body {
   padding: 20px;
 }
 
-.admin-modal-overlay.open {
+.admin-modal-overlay.open,
+.admin-modal-overlay.active,
+.admin-modal-backdrop.open,
+.admin-modal-backdrop.active {
   display: flex;
 }
 
-.admin-modal-card {
+.admin-modal-card,
+.admin-modal-dialog {
   width: 100%;
   max-width: 560px;
   background: var(--admin-bg-surface);
@@ -1709,63 +1804,446 @@ body.admin-body {
   border: 1px solid var(--admin-border);
 }
 
+/* ==========================================================================
+   ARQUITETURA RESPONSIVA ULTRA-OTIMIZADA PARA CELULARES E TABLETS
+   Compatibilidade total: Motorola, Samsung, iPhone, iPads e Tablets
+   Elimina qualquer transbordamento lateral ("sambando") e garante toque fluido
+   ========================================================================== */
+
+/* Prevenção de Auto-Zoom no iOS Safari (iPhone) */
+@media (max-width: 768px) {
+  .form-input,
+  .form-select,
+  .form-textarea,
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important; /* Tamanho mínimo de 16px para iOS não aplicar zoom indesejado ao focar */
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Tablets e Telas Médias (<= 992px) */
+@media (max-width: 992px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    width: min(290px, 85vw);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.85);
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay.open {
+    display: block;
+  }
+
+  .sidebar-close-btn,
+  .sidebar-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .admin-content-view {
+    padding: 18px 14px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .admin-topbar {
+    padding: 0 16px;
+    height: 62px;
+  }
+}
+
+/* Smartphones em Geral e Tablets Pequenos (<= 768px) */
+@media (max-width: 768px) {
+  .admin-content-view {
+    padding: 14px 10px !important;
+  }
+
+  .admin-topbar {
+    padding: 0 12px !important;
+    height: 58px !important;
+  }
+
+  .topbar-left {
+    gap: 10px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+  }
+
+  .topbar-page-title {
+    font-size: 1rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+  }
+
+  .topbar-badge {
+    font-size: 0.72rem !important;
+    padding: 4px 8px !important;
+    white-space: nowrap !important;
+  }
+
+  .admin-card {
+    padding: 16px 12px !important;
+    border-radius: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .view-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+    width: 100% !important;
+  }
+
+  .view-headline h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.25 !important;
+    word-break: break-word !important;
+  }
+
+  .view-headline p {
+    font-size: 0.82rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .view-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .view-actions button,
+  .view-actions a {
+    width: 100% !important;
+    min-height: 44px !important;
+    font-size: 0.92rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Filtros e Busca de Reservas */
+  .reservas-filters-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .reservas-search-box-wrap {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Grids de Salas, Galeria e Promoções */
+  .admin-items-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+  }
+
+  .admin-item-thumb {
+    height: 160px !important;
+  }
+
+  .admin-item-body {
+    padding: 14px 12px !important;
+  }
+
+  .admin-item-footer {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .admin-item-footer button,
+  .admin-item-footer a {
+    flex: 1 1 auto !important;
+    min-height: 40px !important;
+    justify-content: center !important;
+  }
+}
+
+/* Celulares (Motorola, Samsung, iPhone) (<= 640px) */
 @media (max-width: 640px) {
+  /* Dashboard Stat Cards em 2x2 perfeitamente ajustado */
+  .admin-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+    width: 100% !important;
+  }
+
+  .stat-card {
+    padding: 10px 8px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+    min-width: 0 !important;
+  }
+
+  .stat-icon {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+  }
+
+  .stat-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .stat-meta {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .stat-title {
+    font-size: 0.65rem !important;
+    margin-bottom: 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .stat-value {
+    font-size: 1.3rem !important;
+  }
+
+  /* Calendário Compacto e Responsivo */
+  .admin-cal-wrapper {
+    padding: 10px 6px !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .cal-header-bar {
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .cal-title-month {
+    font-size: 1.05rem !important;
+    text-align: center !important;
+  }
+
+  .cal-nav-buttons {
+    width: 100% !important;
+    justify-content: center !important;
+    gap: 6px !important;
+  }
+
+  .cal-nav-buttons button {
+    flex: 1 1 0 !important;
+    max-width: 90px !important;
+    padding: 6px 4px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .cal-grid {
+    gap: 2px !important;
+    width: 100% !important;
+  }
+
+  .cal-day-label {
+    font-size: 0.65rem !important;
+    padding: 3px 0 !important;
+    font-weight: 800 !important;
+  }
+
+  .cal-cell {
+    min-height: 48px !important;
+    padding: 3px 2px !important;
+    border-radius: 6px !important;
+    min-width: 0 !important;
+  }
+
+  .cal-cell-num {
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Oculta textos como FECHADO dentro da célula do calendário */
+  .cal-cell span:not(.cal-cell-num) {
+    display: none !important;
+  }
+
+  .cal-mini-badge {
+    display: none !important;
+  }
+
+  .cal-cell-badges {
+    margin-top: 1px !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .cal-cell-badges::after {
+    content: '•';
+    color: var(--admin-cyan);
+    font-size: 1.1rem;
+    line-height: 1;
+    display: block;
+    text-align: center;
+  }
+
+  /* Cardápio Cards */
   .cardapio-cards-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
   }
 
   .cardapio-item-img-wrap {
-    height: 160px;
+    height: 160px !important;
   }
 
   .btn-add-item-top {
-    width: 100%;
-    justify-content: center;
-    padding: 14px;
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 13px !important;
+    font-size: 0.95rem !important;
   }
 
   .card-action-btn {
-    min-height: 46px; /* Mais fácil de tocar no celular */
+    min-height: 44px !important;
+    font-size: 0.85rem !important;
   }
 
-  /* Otimizações dos Modais Administrativos em Mobile */
-  .admin-modal-overlay {
-    padding: 10px 8px;
-    align-items: center;
+  /* Força todos os grids inline do formulário de Configurações a 1 coluna */
+  .admin-card form div[style*="grid-template-columns"],
+  div[style*="grid-template-columns"]:not(.cal-grid):not(.admin-stats-grid) {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
   }
 
-  .admin-modal-card {
-    max-height: 94vh;
-    max-height: 94dvh;
-    border-radius: 16px;
-    width: 100%;
+  /* Modais Gerais e Diálogos no Celular */
+  .admin-modal-overlay,
+  .admin-modal-backdrop {
+    padding: 8px !important;
+    align-items: center !important;
+  }
+
+  .admin-modal-card,
+  .admin-modal-dialog {
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
+    border-radius: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-modal-dialog {
+    padding: 16px 12px !important;
   }
 
   .admin-modal-header {
-    padding: 14px 16px;
+    padding: 14px 16px !important;
   }
 
   .admin-modal-title {
-    font-size: 1.05rem;
+    font-size: 1.05rem !important;
   }
 
   .admin-modal-body {
-    padding: 14px 14px 20px 14px;
+    padding: 14px 14px 20px 14px !important;
   }
 
   .admin-modal-footer {
-    padding: 12px 14px;
-    gap: 10px;
-    background: #080c18;
-    border-top: 1px solid rgba(0, 240, 255, 0.2);
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7);
+    padding: 12px 14px !important;
+    gap: 10px !important;
+    background: #080c18 !important;
+    border-top: 1px solid rgba(0, 240, 255, 0.2) !important;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7) !important;
   }
 
   .admin-modal-footer button {
-    flex: 1 1 0;
-    min-height: 44px;
-    font-size: 0.92rem;
-    font-weight: 800;
+    flex: 1 1 0 !important;
+    min-height: 44px !important;
+    font-size: 0.92rem !important;
+    font-weight: 800 !important;
+  }
+
+  /* Botões de Ação de Formulários (Salvar Configurações, Promoções, Bloqueios) ocupam 100% no celular */
+  .admin-card form div[style*="justify-content: flex-end"],
+  .admin-card form div[style*="justify-content:flex-end"] {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .admin-card form div[style*="justify-content: flex-end"] button,
+  .admin-card form div[style*="justify-content:flex-end"] button,
+  .admin-card form div[style*="justify-content: flex-end"] a,
+  .admin-card form div[style*="justify-content:flex-end"] a {
+    width: 100% !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+  }
+}
+
+/* Celulares Mais Estreitos (Motorola Moto E, Samsung Galaxy A, telas <= 400px) */
+@media (max-width: 400px) {
+  .admin-topbar {
+    padding: 0 8px !important;
+  }
+
+  .topbar-page-title {
+    font-size: 0.88rem !important;
+  }
+
+  .topbar-badge {
+    display: none !important; /* Libera espaço total para o título */
+  }
+
+  .admin-content-view {
+    padding: 10px 6px !important;
+  }
+
+  .admin-card {
+    padding: 12px 8px !important;
+  }
+
+  .admin-stats-grid {
+    gap: 6px !important;
+  }
+
+  .stat-card {
+    padding: 8px 6px !important;
+    gap: 6px !important;
+  }
+
+  .stat-value {
+    font-size: 1.18rem !important;
+  }
+
+  .card-action-btn {
+    font-size: 0.78rem !important;
+    padding: 6px 4px !important;
   }
 }

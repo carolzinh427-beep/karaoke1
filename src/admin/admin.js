@@ -220,6 +220,7 @@ export function navigate(path, replace = false) {
   }
 
   state.currentRoute = target;
+  try { window.toggleAdminSidebar(false); } catch(e) {}
   if (replace) {
     history.replaceState({ path: target }, '', target);
   } else {
@@ -227,6 +228,7 @@ export function navigate(path, replace = false) {
   }
 
   renderApp();
+  try { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); } catch(e) {}
 }
 
 window.addEventListener('popstate', (e) => {
@@ -1053,9 +1055,9 @@ function renderReservasView() {
     </div>
 
     <!-- Barra de Filtros e Busca -->
-    <div class="admin-card" style="padding: 16px 20px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <div class="admin-card card-filters-reservas" style="padding: 16px 20px;">
+      <div class="reservas-filters-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+        <div class="admin-filter-scroll-row" style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'todas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('todas')">Todas (${state.reservas.length})</button>
           <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'pendentes' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('pendentes')">Pendentes (${countPendentes})</button>
           <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'conferencia' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('conferencia')">Em Conferência (${countConferencia})</button>
@@ -1063,7 +1065,7 @@ function renderReservasView() {
           <button type="button" class="btn-admin btn-admin-sm ${state.activeFilterReservas === 'canceladas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.filterReservas('canceladas')">Canceladas (${countCanceladas})</button>
         </div>
 
-        <div style="max-width: 320px; width: 100%;">
+        <div class="reservas-search-box-wrap" style="max-width: 320px; width: 100%;">
           <input type="text" class="form-input" placeholder="Buscar por código, cliente ou WhatsApp..." value="${state.searchTermReservas}" oninput="window.searchReservas(this.value)">
         </div>
       </div>
@@ -2009,9 +2011,9 @@ function renderGaleriaView() {
     </div>
 
     <!-- Filtros de Salas da Galeria -->
-    <div class="admin-card" style="margin-bottom: 24px; padding: 14px 20px;">
-      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-        <span style="font-size: 0.85rem; color: var(--admin-text-muted); margin-right: 8px; font-weight: 600;">Filtrar por Sala:</span>
+    <div class="admin-card card-filters-galeria" style="margin-bottom: 24px; padding: 14px 20px;">
+      <div class="admin-filter-scroll-row" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <span style="font-size: 0.85rem; color: var(--admin-text-muted); margin-right: 8px; font-weight: 600; flex-shrink: 0;">Filtrar por Sala:</span>
         <button type="button" class="btn-admin btn-admin-xs ${currentFilter === 'todas' ? 'btn-admin-primary' : 'btn-admin-outline'}" onclick="window.setGaleriaFilter('todas')">
           Todas (${countTotal})
         </button>
@@ -2540,7 +2542,7 @@ window.abrirModalFinanceiroReserva = (id) => {
             <textarea id="modalFinObs" class="form-input" rows="2" placeholder="Ex: Recebido comprovante Pix de R$ 450,00 via WhatsApp. Restante na recepção.">${r.observacoes || ''}</textarea>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <div class="admin-modal-footer">
             <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.fecharModalFinanceiroReserva()">Cancelar</button>
             <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarFin">Salvar Alterações</button>
           </div>
@@ -2744,13 +2746,19 @@ window.openModalValidarCheckIn = () => {
     resultBox.style.display = 'none';
     resultBox.innerHTML = '';
   }
-  if (modal) modal.classList.add('active');
+  if (modal) {
+    modal.classList.add('open');
+    modal.classList.add('active');
+  }
   if (input) setTimeout(() => input.focus(), 150);
 };
 
 window.closeCheckInModal = () => {
   const modal = document.getElementById('adminCheckInModal');
-  if (modal) modal.classList.remove('active');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.classList.remove('active');
+  }
 };
 
 window.processarCheckInCode = async () => {
