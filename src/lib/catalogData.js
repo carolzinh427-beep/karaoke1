@@ -187,6 +187,11 @@ export const DEFAULT_CONFIGURACOES = {
   contatoEmail: 'contato@barbackstagekaraoke.com.br',
   endereco: 'CLN 307, Bloco A, Subsolo - Asa Norte, Brasília - DF',
   pdfUrl: '/cardapio-oficial.pdf',
+  pixChave: '',
+  pixTipoChave: 'Chave Aleatória',
+  pixTitular: '',
+  pixCopiaCola: '',
+  pixQrcodeUrl: '',
   horarios: {
     terca: '19:00 → 02:30 (madrugada de quarta)',
     quarta: '19:00 → 03:30 (madrugada de quinta)',

@@ -2242,9 +2242,47 @@ function renderConfiguracoesView() {
               <input type="text" id="confPixTitular" class="form-input" placeholder="Ex: Backstage Bar e Karaokê Ltda" value="${conf.pixTitular || ''}">
             </div>
 
-            <div class="form-group">
-              <label class="form-label" for="confPixQrcode">URL da Imagem do QR Code Estático</label>
-              <input type="url" id="confPixQrcode" class="form-input" placeholder="https://... (URL pública da imagem do QR Code)" value="${conf.pixQrcodeUrl || ''}">
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Imagem do QR Code Estático (Upload)</span>
+                <span style="font-size: 0.72rem; color: var(--admin-cyan);">Armazenado no Supabase Storage</span>
+              </label>
+
+              <div style="display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap;">
+                <!-- Botão de Upload -->
+                <div>
+                  <label class="btn-admin btn-admin-primary btn-admin-sm" id="btnUploadPixQrcodeLabel" style="cursor: pointer; display: inline-flex; align-items: center; gap: 7px; padding: 9px 15px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span>📤 Fazer Upload do QR Code</span>
+                    <input type="file" id="inputUploadPixQrcode" accept="image/*" style="display: none;" onchange="window.handlePixQrcodeUpload(event)">
+                  </label>
+                  <div id="pixQrcodeUploadStatus" style="display: none; font-size: 0.76rem; color: var(--admin-cyan); margin-top: 6px;">Enviando ao Supabase Storage... ⏳</div>
+                </div>
+
+                <!-- Preview Visual do QR Code -->
+                <div id="pixQrcodePreviewBox" style="display: ${conf.pixQrcodeUrl ? 'flex' : 'none'}; align-items: center; gap: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--admin-border); border-radius: 8px; padding: 8px 12px;">
+                  <img id="pixQrcodePreviewImg" src="${conf.pixQrcodeUrl || ''}" alt="QR Code Pix" style="width: 75px; height: 75px; object-fit: contain; background: #FFFFFF; border-radius: 6px; padding: 4px;">
+                  <div>
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #FFFFFF;">QR Code Carregado</div>
+                    <div style="font-size: 0.70rem; color: #10B981; margin-top: 2px;">✓ Pronto para o checkout</div>
+                    <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" style="margin-top: 6px; color: #FF4D4D; border-color: rgba(255,77,77,0.4);" onclick="window.removerPixQrcode()">Remover Imagem</button>
+                  </div>
+                </div>
+
+                <div id="pixQrcodeEmptyNotice" style="display: ${conf.pixQrcodeUrl ? 'none' : 'block'}; font-size: 0.78rem; color: var(--admin-text-muted); padding: 8px 0;">
+                  Nenhum QR Code enviado ainda. Clique no botão acima para fazer o upload da imagem do QR Code Pix (PNG ou JPG) gerada pelo seu banco.
+                </div>
+              </div>
+
+              <!-- Input da URL pública gerada no Supabase -->
+              <input type="hidden" id="confPixQrcode" value="${conf.pixQrcodeUrl || ''}">
+              <div style="margin-top: 8px;">
+                <input type="url" id="confPixQrcodeDisplay" class="form-input" style="font-size: 0.75rem; color: var(--admin-text-muted); background: rgba(0,0,0,0.25);" placeholder="URL pública da imagem gerada automaticamente após o upload" value="${conf.pixQrcodeUrl || ''}" oninput="window.handlePixQrcodeUrlManual(this.value)">
+              </div>
             </div>
 
             <div class="form-group" style="grid-column: 1 / -1;">
@@ -4692,6 +4730,185 @@ async function compressImageIfNeeded(file, maxDimension = 1920, quality = 0.85) 
     img.src = url;
   });
 }
+
+// ============================================================================
+// 8.8.1 GERENCIAMENTO E UPLOAD DO QR CODE PIX ESTÁTICO (SUPABASE STORAGE)
+// ============================================================================
+export const handlePixQrcodeUpload = async (event) => {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+
+  const val = validateMediaFile(file, 'imagem');
+  if (!val.ok) {
+    alert(val.error);
+    if (event?.target) event.target.value = '';
+    return;
+  }
+
+  const statusEl = document.getElementById('pixQrcodeUploadStatus');
+  const btnLabel = document.getElementById('btnUploadPixQrcodeLabel');
+  const hiddenInput = document.getElementById('confPixQrcode');
+  const displayInput = document.getElementById('confPixQrcodeDisplay');
+  const previewBox = document.getElementById('pixQrcodePreviewBox');
+  const previewImg = document.getElementById('pixQrcodePreviewImg');
+  const emptyNotice = document.getElementById('pixQrcodeEmptyNotice');
+
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.style.color = 'var(--admin-cyan)';
+    statusEl.textContent = 'Enviando ao Supabase Storage... ⏳ (0%)';
+  }
+  if (btnLabel) {
+    btnLabel.style.opacity = '0.6';
+    btnLabel.style.pointerEvents = 'none';
+  }
+
+  showToast('Enviando QR Code Pix ao Supabase Storage...', 'info');
+
+  try {
+    let fileToUpload = file;
+    try {
+      fileToUpload = await compressImageIfNeeded(file, 2048, 0.90);
+    } catch (compErr) {
+      console.warn('Compressão opcional ignorada:', compErr);
+    }
+
+    let finalUrl = '';
+
+    if (isSupabaseConfigured) {
+      const sRes = await uploadFileSupabaseStorage({
+        file: fileToUpload,
+        folder: 'pix',
+        tipo: 'imagem',
+        onProgress: (pct) => {
+          if (statusEl) {
+            statusEl.textContent = `Enviando ao Supabase Storage... ⏳ (${pct}%)`;
+          }
+        }
+      });
+      finalUrl = sRes.url;
+    } else {
+      // Fallback Cloudinary ou Base64 se Supabase não estiver configurado
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        const cRes = await uploadToCloudinary({
+          file: fileToUpload,
+          folder: 'backstage/pix',
+          idToken
+        });
+        finalUrl = cRes.url;
+      } catch (cErr) {
+        finalUrl = await new Promise((res, rej) => {
+          const reader = new FileReader();
+          reader.onload = () => res(reader.result);
+          reader.onerror = rej;
+          reader.readAsDataURL(fileToUpload);
+        });
+      }
+    }
+
+    if (!finalUrl) {
+      throw new Error('Não foi possível obter o link do arquivo enviado.');
+    }
+
+    // Atualiza os inputs e previews visuais no DOM
+    if (hiddenInput) hiddenInput.value = finalUrl;
+    if (displayInput) displayInput.value = finalUrl;
+    if (previewImg) previewImg.src = finalUrl;
+    if (previewBox) previewBox.style.display = 'flex';
+    if (emptyNotice) emptyNotice.style.display = 'none';
+
+    // Atualiza o estado em memória para manter consistência imediata
+    if (!state.configuracoes) state.configuracoes = {};
+    state.configuracoes.pixQrcodeUrl = finalUrl;
+
+    if (statusEl) {
+      statusEl.textContent = '✓ Upload concluído com sucesso!';
+      statusEl.style.color = '#10B981';
+      setTimeout(() => {
+        if (statusEl) statusEl.style.display = 'none';
+      }, 3500);
+    }
+
+    showToast('QR Code Pix carregado com sucesso! Clique em "Salvar Configurações" para publicar.', 'success');
+  } catch (err) {
+    console.error('Erro no upload do QR Code Pix:', err);
+    if (statusEl) {
+      statusEl.textContent = '❌ Erro no upload: ' + (err.message || 'Falha ao enviar arquivo');
+      statusEl.style.color = '#EF4444';
+    }
+    showToast('Falha no upload do QR Code: ' + (err.message || 'Erro desconhecido'), 'error');
+  } finally {
+    if (btnLabel) {
+      btnLabel.style.opacity = '1';
+      btnLabel.style.pointerEvents = 'auto';
+    }
+    if (event?.target) event.target.value = '';
+  }
+};
+window.handlePixQrcodeUpload = handlePixQrcodeUpload;
+
+export const removerPixQrcode = async () => {
+  showConfirmModal({
+    title: 'Remover Imagem do QR Code Pix',
+    message: 'Tem certeza de que deseja remover a imagem do QR Code Pix? O sistema continuará exibindo a Chave Pix Copia e Cola para pagamento.',
+    confirmText: 'Sim, Remover',
+    confirmBtnClass: 'btn-admin-danger',
+    onConfirm: async () => {
+      const hiddenInput = document.getElementById('confPixQrcode');
+      const displayInput = document.getElementById('confPixQrcodeDisplay');
+      const previewBox = document.getElementById('pixQrcodePreviewBox');
+      const previewImg = document.getElementById('pixQrcodePreviewImg');
+      const emptyNotice = document.getElementById('pixQrcodeEmptyNotice');
+
+      const urlAntiga = hiddenInput?.value || state.configuracoes?.pixQrcodeUrl || '';
+
+      if (hiddenInput) hiddenInput.value = '';
+      if (displayInput) displayInput.value = '';
+      if (previewImg) previewImg.src = '';
+      if (previewBox) previewBox.style.display = 'none';
+      if (emptyNotice) emptyNotice.style.display = 'block';
+
+      if (state.configuracoes) {
+        state.configuracoes.pixQrcodeUrl = '';
+      }
+
+      // Se for imagem no Supabase Storage, tenta remover do bucket em background
+      if (urlAntiga && isSupabaseConfigured && urlAntiga.includes('supabase.co/storage')) {
+        try {
+          await deleteFileSupabaseStorage(urlAntiga);
+        } catch (delErr) {
+          console.warn('Aviso ao remover QR Code do Supabase Storage:', delErr);
+        }
+      }
+
+      showToast('Imagem do QR Code removida. Clique em "Salvar Configurações" para confirmar.', 'info');
+    }
+  });
+};
+window.removerPixQrcode = removerPixQrcode;
+
+export const handlePixQrcodeUrlManual = (url) => {
+  const cleanUrl = String(url || '').trim();
+  const hiddenInput = document.getElementById('confPixQrcode');
+  const previewBox = document.getElementById('pixQrcodePreviewBox');
+  const previewImg = document.getElementById('pixQrcodePreviewImg');
+  const emptyNotice = document.getElementById('pixQrcodeEmptyNotice');
+
+  if (hiddenInput) hiddenInput.value = cleanUrl;
+  if (state.configuracoes) state.configuracoes.pixQrcodeUrl = cleanUrl;
+
+  if (cleanUrl) {
+    if (previewImg) previewImg.src = cleanUrl;
+    if (previewBox) previewBox.style.display = 'flex';
+    if (emptyNotice) emptyNotice.style.display = 'none';
+  } else {
+    if (previewImg) previewImg.src = '';
+    if (previewBox) previewBox.style.display = 'none';
+    if (emptyNotice) emptyNotice.style.display = 'block';
+  }
+};
+window.handlePixQrcodeUrlManual = handlePixQrcodeUrlManual;
 
 window.handlePromoUrlChange = (idx, value) => {
   const preview = document.getElementById(`promoPreview_${idx}`);
