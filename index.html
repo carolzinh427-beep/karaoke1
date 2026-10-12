@@ -114,60 +114,68 @@
         <img src="/assets/brand/logo.svg" alt="Backstage Karaokê" class="welcome-logo-img" width="340" height="74">
       </div>
 
-      <!-- Button stack matching screenshot with alternating speed-lines -->
-      <div class="welcome-buttons-list">
-        <!-- 1. Clique aqui antes (Linhas na Esquerda) -->
-        <button type="button" 
-                class="welcome-btn welcome-btn-left welcome-btn-has-sub" 
-                id="welcomeAntesBtn"
-                onclick="openInfoAntesModal(event)">
-          <div class="welcome-btn-content">
-            <span class="welcome-btn-main">Clique aqui antes</span>
-            <span class="welcome-btn-sub">Importante</span>
-          </div>
-        </button>
+      <!-- FadeContent (React Bits: blur=true, duration=1000, easing="ease-out", initialOpacity=0) -->
+      <div class="fade-content fade-content-blur fade-content-auto-animate"
+           id="welcomeFadeContent"
+           data-blur="true"
+           data-duration="1000"
+           data-easing="ease-out"
+           data-initial-opacity="0">
+        <!-- Button stack matching screenshot with alternating speed-lines -->
+        <div class="welcome-buttons-list">
+          <!-- 1. Clique aqui antes (Linhas na Esquerda) -->
+          <button type="button" 
+                  class="welcome-btn welcome-btn-left welcome-btn-has-sub" 
+                  id="welcomeAntesBtn"
+                  onclick="openInfoAntesModal(event)">
+            <div class="welcome-btn-content">
+              <span class="welcome-btn-main">Clique aqui antes</span>
+              <span class="welcome-btn-sub">Importante</span>
+            </div>
+          </button>
 
-        <!-- 2. Reservar pelo site (Linhas na Direita) - Direciona ao Hero (#inicio) -->
-        <a href="#inicio" 
-           class="welcome-btn welcome-btn-right" 
-           id="enterSiteBtn"
-           onclick="if(window.dismissWelcome){window.dismissWelcome(event,'inicio');}else{document.getElementById('welcomeScreen').style.display='none';try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','false');sessionStorage.setItem('backstage_last_section','inicio');}catch(e){}}">
-          <span>Reservar pelo site</span>
-        </a>
+          <!-- 2. Reservar pelo site (Linhas na Direita) - Direciona ao Hero (#inicio) -->
+          <a href="#inicio" 
+             class="welcome-btn welcome-btn-right" 
+             id="enterSiteBtn"
+             onclick="if(window.dismissWelcome){window.dismissWelcome(event,'inicio');}else{document.getElementById('welcomeScreen').style.display='none';try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','false');sessionStorage.setItem('backstage_last_section','inicio');}catch(e){}}">
+            <span>Reservar pelo site</span>
+          </a>
 
-        <!-- 3. Galeria das salas (Linhas na Esquerda) -->
-        <a href="/salas.html" 
-           class="welcome-btn welcome-btn-left" 
-           id="welcomeSalasBtn"
-           onclick="try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','true');sessionStorage.setItem('backstage_last_section','welcome');}catch(e){}">
-          <span>Galeria das salas</span>
-        </a>
+          <!-- 3. Galeria das salas (Linhas na Esquerda) -->
+          <a href="/salas.html" 
+             class="welcome-btn welcome-btn-left" 
+             id="welcomeSalasBtn"
+             onclick="try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','true');sessionStorage.setItem('backstage_last_section','welcome');}catch(e){}">
+            <span>Galeria das salas</span>
+          </a>
 
-        <!-- 4. Cardápio (Linhas na Direita) -->
-        <a href="/cardapio.html" 
-           class="welcome-btn welcome-btn-right" 
-           id="welcomeCardapioBtn"
-           onclick="try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','true');sessionStorage.setItem('backstage_last_section','welcome');}catch(e){}">
-          <span>Cardápio</span>
-        </a>
+          <!-- 4. Cardápio (Linhas na Direita) -->
+          <a href="/cardapio.html" 
+             class="welcome-btn welcome-btn-right" 
+             id="welcomeCardapioBtn"
+             onclick="try{sessionStorage.setItem('backstage_entered','true');sessionStorage.setItem('backstage_from_welcome','true');sessionStorage.setItem('backstage_last_section','welcome');}catch(e){}">
+            <span>Cardápio</span>
+          </a>
 
-        <!-- 5. Localização (Linhas na Esquerda) -->
-        <a href="https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6" 
-           class="welcome-btn welcome-btn-left" 
-           target="_blank" 
-           rel="noopener noreferrer"
-           id="welcomeMapsBtn">
-          <span>Localização</span>
-        </a>
+          <!-- 5. Localização (Linhas na Esquerda) -->
+          <a href="https://maps.app.goo.gl/AwFhL4Z4Au6cqu4v6" 
+             class="welcome-btn welcome-btn-left" 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             id="welcomeMapsBtn">
+            <span>Localização</span>
+          </a>
 
-        <!-- 6. Instagram (Linhas na Direita) -->
-        <a href="https://www.instagram.com/barbackstagekaraoke" 
-           class="welcome-btn welcome-btn-right" 
-           target="_blank" 
-           rel="noopener noreferrer"
-           id="welcomeInstaBtn">
-          <span>Instagram</span>
-        </a>
+          <!-- 6. Instagram (Linhas na Direita) -->
+          <a href="https://www.instagram.com/barbackstagekaraoke" 
+             class="welcome-btn welcome-btn-right" 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             id="welcomeInstaBtn">
+            <span>Instagram</span>
+          </a>
+        </div>
       </div>
 
       <!-- Bottom Stylized Neon KARAOKE -->

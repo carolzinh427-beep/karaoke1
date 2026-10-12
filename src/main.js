@@ -52,6 +52,7 @@ import {
   ROOM_DATA,
   calcularPrecoSalaPrivada
 } from './lib/salasPrivadas.js';
+import { triggerFadeContent, initFadeContent } from './lib/FadeContent.js';
 
 export { ROOM_DATA, calcularPrecoSalaPrivada };
 
@@ -117,6 +118,7 @@ export function createWhatsAppUrl(message) {
 
 function bootstrap() {
   try { initWelcomeScreen(); } catch(e) { console.warn('initWelcomeScreen error:', e); }
+  try { initFadeContent(); } catch(e) { console.warn('initFadeContent error:', e); }
   try { initHeader(); } catch(e) { console.warn('initHeader error:', e); }
   try { initMobileMenu(); } catch(e) { console.warn('initMobileMenu error:', e); }
   try { initSplitCalculator(); } catch(e) { console.warn('initSplitCalculator error:', e); }
@@ -139,6 +141,8 @@ function initWelcomeScreen() {
   const welcomeScreen = document.getElementById('welcomeScreen');
   if (!welcomeScreen) return;
 
+  const welcomeFade = document.getElementById('welcomeFadeContent');
+
   const hash = window.location.hash;
   if (!hash || hash === '#welcome' || hash === '#' || sessionStorage.getItem('backstage_show_welcome') === 'true') {
     try {
@@ -147,6 +151,9 @@ function initWelcomeScreen() {
     } catch(e) {}
     welcomeScreen.style.display = 'flex';
     welcomeScreen.classList.remove('fade-out');
+    if (welcomeFade) {
+      triggerFadeContent(welcomeFade, { blur: true, duration: 1000, initialOpacity: 0 });
+    }
     window.scrollTo(0, 0);
   } else if (sessionStorage.getItem('backstage_entered') === 'true') {
     welcomeScreen.style.display = 'none';
@@ -160,6 +167,9 @@ function initWelcomeScreen() {
       } catch(e) {}
       welcomeScreen.style.display = 'flex';
       welcomeScreen.classList.remove('fade-out');
+      if (welcomeFade) {
+        triggerFadeContent(welcomeFade, { blur: true, duration: 1000, initialOpacity: 0 });
+      }
       window.scrollTo(0, 0);
     }
   });

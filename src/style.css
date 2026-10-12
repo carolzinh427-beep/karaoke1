@@ -3184,11 +3184,48 @@ img, video {
   filter: drop-shadow(0 0 18px rgba(255, 0, 122, 0.75));
 }
 
+/* ==========================================================================
+   REACT BITS — <FadeContent /> COMPONENT (CSS + JS)
+   Spec: blur={true} duration={1000} easing="ease-out" initialOpacity={0}
+   ========================================================================== */
+.fade-content {
+  width: 100%;
+  opacity: 0;
+  will-change: opacity, filter, transform;
+}
+
+.fade-content-blur {
+  filter: blur(10px);
+}
+
+.fade-content-auto-animate {
+  animation: reactBitsFadeContent 1000ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes reactBitsFadeContent {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fade-content.is-visible {
+  opacity: 1;
+  filter: blur(0px);
+  transform: translateY(0) scale(1);
+}
+
 .welcome-container {
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: min(92vw, 420px);
+  max-width: min(94vw, 500px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3205,8 +3242,8 @@ img, video {
 }
 
 .welcome-logo-img {
-  width: min(340px, 86vw);
-  max-width: 360px;
+  width: min(350px, 88vw);
+  max-width: 380px;
   height: auto;
   filter: drop-shadow(0 0 18px rgba(0, 240, 255, 0.5));
 }
@@ -3215,31 +3252,31 @@ img, video {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
 }
 
-/* Speed-lines capsule buttons */
+/* Speed-lines capsule buttons - AMPLIADOS */
 .welcome-btn {
   position: relative;
   width: 100%;
-  min-height: 56px;
+  min-height: 68px;
   background: #009bbd;
   color: #FFFFFF;
   border-radius: 9999px;
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: clamp(1.06rem, 4.2vw, 1.25rem);
+  font-size: clamp(1.2rem, 4.8vw, 1.45rem);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-decoration: none;
-  padding: 14px 28px;
+  padding: 18px 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   cursor: pointer;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), 0 0 15px rgba(0, 155, 189, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 155, 189, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.4);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -3249,7 +3286,7 @@ img, video {
 .welcome-btn:hover {
   background: #00add4;
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(0, 173, 212, 0.5);
+  box-shadow: 0 14px 32px rgba(0, 173, 212, 0.55);
 }
 
 .welcome-btn:active {
@@ -3266,7 +3303,7 @@ img, video {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 68px;
+  width: 84px;
   pointer-events: none;
   background: repeating-linear-gradient(
     180deg,
@@ -3310,12 +3347,11 @@ img, video {
   white-space: nowrap;
 }
 
-
 /* Bottom Stylized Neon KARAOKE matching user screenshot */
 .welcome-footer-neon {
   margin-top: 26px;
   font-family: 'Outfit', 'Montserrat', sans-serif;
-  font-size: clamp(2.2rem, 7.5vw, 2.7rem);
+  font-size: clamp(2.3rem, 7.8vw, 2.85rem);
   font-weight: 900;
   letter-spacing: 0.18em;
   color: transparent;
@@ -3331,15 +3367,45 @@ img, video {
   }
 
   .welcome-container {
-    max-width: min(94vw, 380px);
+    max-width: min(96vw, 450px);
   }
 
   .welcome-logo-box {
-    margin-bottom: 20px;
+    margin-bottom: 22px;
   }
 
   .welcome-logo-img {
-    width: min(310px, 82vw);
+    width: min(330px, 86vw);
+  }
+
+  .welcome-buttons-list {
+    gap: 14px;
+  }
+
+  .welcome-btn {
+    min-height: 64px;
+    padding: 16px 26px;
+    font-size: clamp(1.15rem, 4.8vw, 1.32rem);
+  }
+
+  .welcome-btn::before,
+  .welcome-btn::after {
+    width: 74px;
+  }
+
+  .welcome-footer-neon {
+    margin-top: 22px;
+    font-size: 2.3rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .welcome-screen {
+    padding: 16px 8px;
+  }
+
+  .welcome-container {
+    max-width: 98vw;
   }
 
   .welcome-buttons-list {
@@ -3347,44 +3413,14 @@ img, video {
   }
 
   .welcome-btn {
-    min-height: 52px;
-    padding: 13px 22px;
-    font-size: clamp(1.02rem, 4.2vw, 1.18rem);
+    min-height: 58px;
+    padding: 14px 20px;
+    font-size: 1.06rem;
   }
 
   .welcome-btn::before,
   .welcome-btn::after {
-    width: 58px;
-  }
-
-  .welcome-footer-neon {
-    margin-top: 20px;
-    font-size: 2.1rem;
-  }
-}
-
-@media (max-width: 360px) {
-  .welcome-screen {
-    padding: 16px 10px;
-  }
-
-  .welcome-container {
-    max-width: 96vw;
-  }
-
-  .welcome-buttons-list {
-    gap: 10px;
-  }
-
-  .welcome-btn {
-    min-height: 48px;
-    padding: 11px 16px;
-    font-size: 0.95rem;
-  }
-
-  .welcome-btn::before,
-  .welcome-btn::after {
-    width: 48px;
+    width: 62px;
   }
 }
 
@@ -4162,8 +4198,8 @@ img, video {
    WELCOME SCREEN BUTTON SUBTITLE
    ========================================================================== */
 .welcome-btn.welcome-btn-has-sub {
-  min-height: 56px;
-  padding: 10px 24px;
+  min-height: 68px;
+  padding: 12px 28px;
 }
 
 .welcome-btn-content {
@@ -4177,15 +4213,15 @@ img, video {
 }
 
 .welcome-btn-main {
-  font-size: clamp(1.02rem, 4.0vw, 1.22rem);
+  font-size: clamp(1.15rem, 4.4vw, 1.38rem);
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .welcome-btn-sub {
-  font-size: 0.70rem;
+  font-size: 0.76rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #FFDE00;
   text-shadow: 0 0 10px rgba(255, 222, 0, 0.75);
@@ -4194,31 +4230,31 @@ img, video {
 
 @media (max-width: 480px) {
   .welcome-btn.welcome-btn-has-sub {
-    min-height: 52px;
-    padding: 8px 20px;
+    min-height: 64px;
+    padding: 10px 22px;
   }
 
   .welcome-btn-main {
-    font-size: clamp(0.98rem, 3.8vw, 1.12rem);
+    font-size: clamp(1.08rem, 4.4vw, 1.25rem);
   }
 
   .welcome-btn-sub {
-    font-size: 0.67rem;
+    font-size: 0.72rem;
   }
 }
 
 @media (max-width: 360px) {
   .welcome-btn.welcome-btn-has-sub {
-    min-height: 48px;
-    padding: 7px 16px;
+    min-height: 58px;
+    padding: 9px 16px;
   }
 
   .welcome-btn-main {
-    font-size: 0.92rem;
+    font-size: 1.02rem;
   }
 
   .welcome-btn-sub {
-    font-size: 0.62rem;
+    font-size: 0.66rem;
   }
 }
 
