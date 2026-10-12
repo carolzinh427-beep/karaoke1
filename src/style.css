@@ -671,6 +671,37 @@ img, video {
   box-sizing: border-box;
 }
 
+.hero-grand-logo-box {
+  width: 100%;
+  max-width: 860px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.hero-grand-logo-img {
+  width: 100%;
+  max-width: min(88vw, 820px);
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 0 35px rgba(0, 240, 255, 0.45)) drop-shadow(0 0 70px rgba(255, 0, 122, 0.35));
+  animation: heroLogoGlow 4s infinite alternate ease-in-out;
+}
+
+@keyframes heroLogoGlow {
+  0% {
+    filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.35)) drop-shadow(0 0 50px rgba(255, 0, 122, 0.25));
+    transform: scale(1);
+  }
+  100% {
+    filter: drop-shadow(0 0 45px rgba(0, 240, 255, 0.6)) drop-shadow(0 0 80px rgba(255, 0, 122, 0.45));
+    transform: scale(1.02);
+  }
+}
+
 .hero-action-buttons {
   display: flex;
   align-items: center;
@@ -741,63 +772,125 @@ img, video {
   color: #FFFFFF !important;
 }
 
+/* Hero Mobile & Tablet Adaptations */
 @media (max-width: 768px) {
-  .hero-action-buttons {
-    margin-top: 18px;
-    gap: 10px;
-    width: 100%;
-    max-width: 500px;
+  .hero-section {
+    min-height: auto;
+    padding-top: calc(var(--header-height) + 18px);
+    padding-bottom: 28px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
+
+  .hero-bottom-fade {
+    height: 60px;
+  }
+
+  .hero-grand-logo-box {
+    max-width: 310px;
+  }
+
+  .hero-grand-logo-img {
+    max-width: min(74vw, 290px);
+    filter: drop-shadow(0 0 18px rgba(0, 240, 255, 0.4)) drop-shadow(0 0 36px rgba(255, 0, 122, 0.3));
+  }
+
+  .hero-action-buttons {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 310px;
+    margin-top: 16px;
+    gap: 10px;
+  }
+
   .hero-cta-btn {
-    padding: 11px 18px;
-    font-size: 0.88rem;
-    flex: 1 1 auto;
-    min-width: 150px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 12px 20px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    justify-content: center;
+    text-align: center;
+    min-height: 46px;
+    touch-action: manipulation;
+  }
+
+  .hero-cta-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 480px) {
+  .hero-section {
+    min-height: auto;
+    padding-top: calc(var(--header-height) + 14px);
+    padding-bottom: 22px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .hero-bottom-fade {
+    height: 50px;
+  }
+
+  .hero-grand-logo-box {
+    max-width: 260px;
+  }
+
+  .hero-grand-logo-img {
+    max-width: min(72vw, 250px);
+    filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.35)) drop-shadow(0 0 28px rgba(255, 0, 122, 0.25));
+  }
+
   .hero-action-buttons {
-    flex-direction: column;
-    max-width: 290px;
+    max-width: 280px;
+    margin-top: 13px;
+    gap: 9px;
+  }
+
+  .hero-cta-btn {
+    padding: 11px 18px;
+    font-size: 0.88rem;
+    min-height: 44px;
+  }
+
+  .hero-cta-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+@media (max-width: 360px) {
+  .hero-section {
+    padding-top: calc(var(--header-height) + 10px);
+    padding-bottom: 18px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .hero-grand-logo-box {
+    max-width: 230px;
+  }
+
+  .hero-grand-logo-img {
+    max-width: min(72vw, 220px);
+  }
+
+  .hero-action-buttons {
+    max-width: 250px;
+    margin-top: 11px;
     gap: 8px;
   }
+
   .hero-cta-btn {
-    width: 100%;
-    max-width: 100%;
-    padding: 12px 20px;
-    font-size: 0.90rem;
-  }
-}
-
-.hero-grand-logo-box {
-  width: 100%;
-  max-width: 860px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-.hero-grand-logo-img {
-  width: 100%;
-  max-width: min(88vw, 820px);
-  height: auto;
-  object-fit: contain;
-  display: block;
-  margin: 0 auto;
-  filter: drop-shadow(0 0 35px rgba(0, 240, 255, 0.45)) drop-shadow(0 0 70px rgba(255, 0, 122, 0.35));
-  animation: heroLogoGlow 4s infinite alternate ease-in-out;
-}
-
-@keyframes heroLogoGlow {
-  0% {
-    filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.35)) drop-shadow(0 0 50px rgba(255, 0, 122, 0.25));
-    transform: scale(1);
-  }
-  100% {
-    filter: drop-shadow(0 0 45px rgba(0, 240, 255, 0.6)) drop-shadow(0 0 80px rgba(255, 0, 122, 0.45));
-    transform: scale(1.02);
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    min-height: 42px;
   }
 }
 
@@ -3091,7 +3184,7 @@ img, video {
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 340px;
+  max-width: min(92vw, 420px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3104,52 +3197,55 @@ img, video {
   display: flex;
   justify-content: center;
   margin-top: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 26px;
 }
 
 .welcome-logo-img {
-  width: min(300px, 82vw);
+  width: min(340px, 86vw);
+  max-width: 360px;
   height: auto;
-  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.45));
+  filter: drop-shadow(0 0 18px rgba(0, 240, 255, 0.5));
 }
 
 .welcome-buttons-list {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 15px;
 }
 
 /* Speed-lines capsule buttons */
 .welcome-btn {
   position: relative;
   width: 100%;
+  min-height: 56px;
   background: #009bbd;
   color: #FFFFFF;
   border-radius: 9999px;
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: clamp(0.95rem, 3.6vw, 1.15rem);
+  font-size: clamp(1.06rem, 4.2vw, 1.25rem);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   text-decoration: none;
-  padding: 13px 24px;
+  padding: 14px 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   cursor: pointer;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), 0 0 15px rgba(0, 155, 189, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.35);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .welcome-btn:hover {
   background: #00add4;
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 173, 212, 0.45);
+  box-shadow: 0 12px 28px rgba(0, 173, 212, 0.5);
 }
 
 .welcome-btn:active {
@@ -3166,7 +3262,7 @@ img, video {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 58px;
+  width: 68px;
   pointer-events: none;
   background: repeating-linear-gradient(
     180deg,
@@ -3215,14 +3311,77 @@ img, video {
 .welcome-footer-neon {
   margin-top: 26px;
   font-family: 'Outfit', 'Montserrat', sans-serif;
-  font-size: 2.2rem;
+  font-size: clamp(2.2rem, 7.5vw, 2.7rem);
   font-weight: 900;
   letter-spacing: 0.18em;
   color: transparent;
-  -webkit-text-stroke: 1.5px #FF007A;
-  text-shadow: 0 0 16px rgba(255, 0, 122, 0.45);
+  -webkit-text-stroke: 1.6px #FF007A;
+  text-shadow: 0 0 18px rgba(255, 0, 122, 0.5);
   text-transform: uppercase;
   pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .welcome-screen {
+    padding: 20px 14px;
+  }
+
+  .welcome-container {
+    max-width: min(94vw, 380px);
+  }
+
+  .welcome-logo-box {
+    margin-bottom: 20px;
+  }
+
+  .welcome-logo-img {
+    width: min(310px, 82vw);
+  }
+
+  .welcome-buttons-list {
+    gap: 12px;
+  }
+
+  .welcome-btn {
+    min-height: 52px;
+    padding: 13px 22px;
+    font-size: clamp(1.02rem, 4.2vw, 1.18rem);
+  }
+
+  .welcome-btn::before,
+  .welcome-btn::after {
+    width: 58px;
+  }
+
+  .welcome-footer-neon {
+    margin-top: 20px;
+    font-size: 2.1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .welcome-screen {
+    padding: 16px 10px;
+  }
+
+  .welcome-container {
+    max-width: 96vw;
+  }
+
+  .welcome-buttons-list {
+    gap: 10px;
+  }
+
+  .welcome-btn {
+    min-height: 48px;
+    padding: 11px 16px;
+    font-size: 0.95rem;
+  }
+
+  .welcome-btn::before,
+  .welcome-btn::after {
+    width: 48px;
+  }
 }
 
 /* ==========================================================================
@@ -3999,7 +4158,8 @@ img, video {
    WELCOME SCREEN BUTTON SUBTITLE
    ========================================================================== */
 .welcome-btn.welcome-btn-has-sub {
-  padding: 8px 24px;
+  min-height: 56px;
+  padding: 10px 24px;
 }
 
 .welcome-btn-content {
@@ -4013,19 +4173,49 @@ img, video {
 }
 
 .welcome-btn-main {
-  font-size: clamp(0.92rem, 3.4vw, 1.1rem);
+  font-size: clamp(1.02rem, 4.0vw, 1.22rem);
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .welcome-btn-sub {
-  font-size: 0.65rem;
+  font-size: 0.70rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #FFDE00;
-  text-shadow: 0 0 10px rgba(255, 222, 0, 0.7);
-  margin-top: 2px;
+  text-shadow: 0 0 10px rgba(255, 222, 0, 0.75);
+  margin-top: 3px;
+}
+
+@media (max-width: 480px) {
+  .welcome-btn.welcome-btn-has-sub {
+    min-height: 52px;
+    padding: 8px 20px;
+  }
+
+  .welcome-btn-main {
+    font-size: clamp(0.98rem, 3.8vw, 1.12rem);
+  }
+
+  .welcome-btn-sub {
+    font-size: 0.67rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .welcome-btn.welcome-btn-has-sub {
+    min-height: 48px;
+    padding: 7px 16px;
+  }
+
+  .welcome-btn-main {
+    font-size: 0.92rem;
+  }
+
+  .welcome-btn-sub {
+    font-size: 0.62rem;
+  }
 }
 
 /* Header Termos Pill */
@@ -6646,13 +6836,15 @@ img, video {
   }
 
   /* Ações do hero */
-  .hero-actions {
+  .hero-actions,
+  .hero-action-buttons {
     flex-direction: column;
     width: 100%;
     align-items: stretch;
   }
 
-  .hero-actions .btn {
+  .hero-actions .btn,
+  .hero-action-buttons .hero-cta-btn {
     width: 100%;
     justify-content: center;
   }

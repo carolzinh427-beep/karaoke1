@@ -304,10 +304,10 @@
       <nav class="desktop-nav" aria-label="Menu principal">
         <ul class="nav-menu">
           <li><a href="#inicio" class="nav-link active">Início</a></li>
-          <li><a href="#agendamento" class="nav-link" style="color: var(--primary-cyan); font-weight: 800;">Agendar</a></li>
-          <li><a href="#aniversario" class="nav-link">Aniversário</a></li>
-          <li><a href="#salas" class="nav-link">Salas</a></li>
           <li><a href="#salao-principal" class="nav-link">Salão</a></li>
+          <li><a href="#aniversario" class="nav-link">Aniversário</a></li>
+          <li><a href="#agendamento" class="nav-link" style="color: var(--primary-cyan); font-weight: 800;">Agendar</a></li>
+          <li><a href="#salas" class="nav-link">Salas</a></li>
           <li><a href="/cardapio.html" class="nav-link" style="color: var(--primary-magenta); font-weight: 800;">Cardápio</a></li>
           <li><a href="#localizacao" class="nav-link">Localização</a></li>
         </ul>
@@ -358,10 +358,10 @@
 
     <ul class="mobile-nav-list">
       <li><a href="#inicio" class="mobile-nav-link" onclick="closeMobileMenu()">Início <span>→</span></a></li>
-      <li><a href="#agendamento" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--primary-cyan); font-weight: 800;">Agendar Sala <span>→</span></a></li>
-      <li><a href="#aniversario" class="mobile-nav-link" onclick="closeMobileMenu()">Aniversário <span>→</span></a></li>
-      <li><a href="#salas" class="mobile-nav-link" onclick="closeMobileMenu()">Salas Privadas <span>→</span></a></li>
       <li><a href="#salao-principal" class="mobile-nav-link" onclick="closeMobileMenu()">Salão Principal <span>→</span></a></li>
+      <li><a href="#aniversario" class="mobile-nav-link" onclick="closeMobileMenu()">Aniversário <span>→</span></a></li>
+      <li><a href="#agendamento" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--primary-cyan); font-weight: 800;">Agendar Sala <span>→</span></a></li>
+      <li><a href="#salas" class="mobile-nav-link" onclick="closeMobileMenu()">Salas Privadas <span>→</span></a></li>
       <li><a href="#termos" class="mobile-nav-link" onclick="closeMobileMenu(); openTermosModal(event)">Ciência das Responsabilidades <span>→</span></a></li>
       <li><a href="#regras" class="mobile-nav-link" onclick="closeMobileMenu(); openInfoAntesModal(event)">Regras & Avisos <span>→</span></a></li>
       <li><a href="/cardapio.html" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--primary-magenta);">Cardápio Oficial <span>→</span></a></li>
@@ -436,7 +436,70 @@
     </section>
 
     <!-- ========================================================================
-         6. SEÇÃO ANIVERSÁRIO
+         7. SALÃO PRINCIPAL (RESERVA DE MESAS)
+         ======================================================================== -->
+    <section class="salao-mapa-section" id="salao-principal">
+      <div class="container">
+        <!-- Cabeçalho Oficial do Salão Principal -->
+        <div class="mapa-header-title-box">
+          <h2 class="mapa-brand-tag" style="margin: 0; font-size: 1.15rem; text-transform: uppercase;">
+            Selecione a mesa para reserva
+          </h2>
+
+          <!-- Legenda de Status das Mesas -->
+          <div class="mapa-legend-bar">
+            <div class="mapa-legend-item">
+              <span class="legend-dot green"></span>
+              <span>Disponível</span>
+            </div>
+            <div class="mapa-legend-item">
+              <span class="legend-dot yellow"></span>
+              <span>Selecionada</span>
+            </div>
+            <div class="mapa-legend-item">
+              <span class="legend-dot red"></span>
+              <span>Reservada</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade com o Mapa Gráfico Interativo e Lista Sincronizada -->
+        <div class="mapa-layout-grid">
+          <!-- Coluna 1: Planta 2D Vetorial Interativa (SVG & CSS Puro) -->
+          <div class="karaoke-map-container" id="karaokeMapMount">
+            <!-- Renderizado dinamicamente pelo componente KaraokeMap -->
+          </div>
+
+          <!-- Coluna 2: Informações e Lista de Mesas (Ordem do Mapa / Capacidades) -->
+          <div class="mapa-tables-list-panel">
+
+            <!-- Taxas de Entrada do Salão -->
+            <div class="mapa-entry-rates">
+              <div class="mapa-entry-card">
+                <span class="entry-method">Pix / Débito</span>
+                <div class="entry-price" style="color: #10B981;">R$ 20<span style="font-size: 0.62rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+              </div>
+              <div class="mapa-entry-card">
+                <span class="entry-method">Crédito</span>
+                <div class="entry-price" style="color: var(--primary-cyan);">R$ 25<span style="font-size: 0.62rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
+              </div>
+            </div>
+
+            <!-- Lista Rápida das 11 Mesas -->
+            <div class="tables-list-scroll" id="mapaTablesListScroll">
+              <!-- Preenchido dinamicamente via JS -->
+            </div>
+
+            <div class="mapa-indicativa-box">
+              <strong>Classificação Indicativa (18+):</strong> Salão Principal exclusivo para maiores de 18 anos. Para trazer menores, reserve nossas Salas Privadas!
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         8. SEÇÃO ANIVERSÁRIO
          ======================================================================== -->
     <section class="birthday-section" id="aniversario">
       <div class="container">
@@ -790,68 +853,7 @@
       </div>
     </section>
 
-    <!-- ========================================================================
-         9. SALÃO PRINCIPAL (COMO FUNCIONA)
-         ======================================================================== -->
-    <section class="salao-mapa-section" id="salao-principal">
-      <div class="container">
-        <!-- Cabeçalho Oficial do Salão Principal -->
-        <div class="mapa-header-title-box">
-          <h2 class="mapa-brand-tag" style="margin: 0; font-size: 1.15rem; text-transform: uppercase;">
-            Selecione a mesa para reserva
-          </h2>
 
-          <!-- Legenda de Status das Mesas -->
-          <div class="mapa-legend-bar">
-            <div class="mapa-legend-item">
-              <span class="legend-dot green"></span>
-              <span>Disponível</span>
-            </div>
-            <div class="mapa-legend-item">
-              <span class="legend-dot yellow"></span>
-              <span>Selecionada</span>
-            </div>
-            <div class="mapa-legend-item">
-              <span class="legend-dot red"></span>
-              <span>Reservada</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Grade com o Mapa Gráfico Interativo e Lista Sincronizada -->
-        <div class="mapa-layout-grid">
-          <!-- Coluna 1: Planta 2D Vetorial Interativa (SVG & CSS Puro) -->
-          <div class="karaoke-map-container" id="karaokeMapMount">
-            <!-- Renderizado dinamicamente pelo componente KaraokeMap -->
-          </div>
-
-          <!-- Coluna 2: Informações e Lista de Mesas (Ordem do Mapa / Capacidades) -->
-          <div class="mapa-tables-list-panel">
-
-            <!-- Taxas de Entrada do Salão -->
-            <div class="mapa-entry-rates">
-              <div class="mapa-entry-card">
-                <span class="entry-method">Pix / Débito</span>
-                <div class="entry-price" style="color: #10B981;">R$ 20<span style="font-size: 0.62rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
-              </div>
-              <div class="mapa-entry-card">
-                <span class="entry-method">Crédito</span>
-                <div class="entry-price" style="color: var(--primary-cyan);">R$ 25<span style="font-size: 0.62rem; font-weight: normal; color: var(--text-muted);">/pessoa</span></div>
-              </div>
-            </div>
-
-            <!-- Lista Rápida das 11 Mesas -->
-            <div class="tables-list-scroll" id="mapaTablesListScroll">
-              <!-- Preenchido dinamicamente via JS -->
-            </div>
-
-            <div class="mapa-indicativa-box">
-              <strong>Classificação Indicativa (18+):</strong> Salão Principal exclusivo para maiores de 18 anos. Para trazer menores, reserve nossas Salas Privadas!
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
 
 
