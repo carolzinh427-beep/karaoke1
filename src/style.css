@@ -6229,7 +6229,7 @@ img, video {
 }
 
 .salao-mapa-section .container {
-  max-width: 860px;
+  max-width: 1240px !important;
 }
 
 .mapa-header-title-box {
@@ -6316,8 +6316,8 @@ img, video {
 @media (min-width: 1024px) {
   .mapa-layout-grid {
     display: grid !important;
-    grid-template-columns: 360px 450px !important;
-    gap: 18px !important;
+    grid-template-columns: minmax(0, 1fr) 380px !important;
+    gap: 24px !important;
     align-items: stretch !important;
     justify-content: center !important;
   }
@@ -6339,7 +6339,7 @@ img, video {
 
   .salao-mapa-section .container {
     max-width: 100% !important;
-    padding: 0 10px !important;
+    padding: 0 4px !important;
     width: 100% !important;
   }
 
@@ -6377,6 +6377,11 @@ img, video {
     margin: 0 !important;
   }
 
+  .kmap-viewport {
+    height: clamp(420px, 68vh, 600px) !important;
+    min-height: 400px !important;
+  }
+
   /* Painel lateral de mesas OMITIDO no mobile/tablet: reserva e dados abrem como popup ao tocar na mesa */
   .mapa-tables-list-panel,
   .desktop-only-panel,
@@ -6390,11 +6395,11 @@ img, video {
 
 .mapa-visual-container {
   position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1.5px solid rgba(0, 240, 255, 0.35);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.15);
-  background: #060913;
+  border-radius: 0;
+  overflow: visible;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 .mapa-img-element {

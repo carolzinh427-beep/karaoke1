@@ -189,34 +189,37 @@ export class KaraokeMap {
           </pattern>
         </defs>
 
-        <!-- 1. PAREDES EXTERNAS E ESTRUTURA DO EDIFÍCIO -->
-        <rect x="18" y="18" width="${width - 36}" height="${height - 36}" rx="14" 
-              fill="#060914" stroke="#1E293B" stroke-width="4" />
+        <!-- GRUPO PRINCIPAL ROTACIONADO 90 GRAUS PARA A ESQUERDA (-90 DEG) -->
+        <g class="kmap-main-rotated-plan" transform="translate(0, 1000) rotate(-90)">
+          <!-- 1. PAREDES EXTERNAS E ESTRUTURA DO EDIFÍCIO (SEM BORDA) -->
+          <rect x="18" y="18" width="964" height="1164" rx="14" 
+                fill="#060914" stroke="none" />
 
-        <!-- 2. PISO DO SALÃO PRINCIPAL COM TEXTURA DE ARDÓSIA -->
-        <rect x="22" y="22" width="${width - 44}" height="${height - 44}" rx="10" 
-              fill="url(#roomFloorGradient)" />
-        <rect x="22" y="22" width="${width - 44}" height="${height - 44}" rx="10" 
-              fill="url(#floorTilePattern)" />
+          <!-- 2. PISO DO SALÃO PRINCIPAL COM TEXTURA DE ARDÓSIA -->
+          <rect x="22" y="22" width="956" height="1156" rx="10" 
+                fill="url(#roomFloorGradient)" />
+          <rect x="22" y="22" width="956" height="1156" rx="10" 
+                fill="url(#floorTilePattern)" />
 
-        <!-- 3. DETALHES DE AMBIENTAÇÃO / ESPAÇO XADREZ (SUPERIOR DIREITO) -->
-        <g class="xadrez-room-perimeter">
-          <rect x="700" y="35" width="260" height="165" rx="8" 
-                fill="#0A0F22" stroke="rgba(234, 179, 8, 0.3)" stroke-width="1.6" />
-          <text x="830" y="65" text-anchor="middle" class="map-label-xadrez-title">ESPAÇO XADREZ</text>
-        </g>
+          <!-- 3. DETALHES DE AMBIENTAÇÃO / ESPAÇO XADREZ (SUPERIOR DIREITO) -->
+          <g class="xadrez-room-perimeter">
+            <rect x="700" y="35" width="260" height="165" rx="8" 
+                  fill="#0A0F22" stroke="rgba(234, 179, 8, 0.3)" stroke-width="1.6" />
+            <text x="830" y="65" text-anchor="middle" class="map-label-xadrez-title" transform="rotate(90, 830, 65)">ESPAÇO XADREZ</text>
+          </g>
 
-        <!-- 4. ESTRUTURAS FIXAS ARQUITETÔNICAS (PALCO, DJ, BAR, ENTRADA, LED, SOFÁS) -->
-        ${renderStage(ARCHITECTURAL_ELEMENTS.stage)}
-        ${renderDJBooth(ARCHITECTURAL_ELEMENTS.djBooth)}
-        ${renderBar(ARCHITECTURAL_ELEMENTS.bar)}
-        ${renderEntrance(ARCHITECTURAL_ELEMENTS.entrance)}
-        ${renderLEDFloor(ARCHITECTURAL_ELEMENTS.ledCross)}
-        ${renderSofas(ARCHITECTURAL_ELEMENTS.sofas)}
+          <!-- 4. ESTRUTURAS FIXAS ARQUITETÔNICAS (PALCO, DJ, BAR, ENTRADA, LED, SOFÁS) -->
+          ${renderStage(ARCHITECTURAL_ELEMENTS.stage)}
+          ${renderDJBooth(ARCHITECTURAL_ELEMENTS.djBooth)}
+          ${renderBar(ARCHITECTURAL_ELEMENTS.bar)}
+          ${renderEntrance(ARCHITECTURAL_ELEMENTS.entrance)}
+          ${renderLEDFloor(ARCHITECTURAL_ELEMENTS.ledCross)}
+          ${renderSofas(ARCHITECTURAL_ELEMENTS.sofas)}
 
-        <!-- 5. AS 11 MESAS INTERATIVAS INDEPENDENTES -->
-        <g class="kmap-tables-layer" id="kmapTablesLayer">
-          ${tablesSvg}
+          <!-- 5. AS 11 MESAS INTERATIVAS INDEPENDENTES -->
+          <g class="kmap-tables-layer" id="kmapTablesLayer">
+            ${tablesSvg}
+          </g>
         </g>
       </svg>
     `;

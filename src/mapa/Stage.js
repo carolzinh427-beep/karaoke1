@@ -79,8 +79,8 @@ export function renderStage(stageData) {
         <rect x="315" y="130" width="22" height="20" rx="3" fill="#140B26" stroke="rgba(168,85,247,0.4)" stroke-width="1" />
       </g>
 
-      <!-- Ícone de Microfone e Rótulo do Palco -->
-      <g transform="translate(${labelX}, ${labelY})">
+      <!-- Ícone de Microfone e Rótulo do Palco compensado +90deg -->
+      <g transform="translate(${labelX}, ${labelY}) rotate(90)">
         <!-- Ícone do microfone em SVG -->
         <g transform="translate(-14, -48)">
           <circle cx="14" cy="12" r="18" fill="rgba(168, 85, 247, 0.15)" stroke="rgba(168, 85, 247, 0.4)" stroke-width="1.2" />
