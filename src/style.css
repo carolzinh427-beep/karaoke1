@@ -1136,7 +1136,7 @@ img, video {
    6. SEÇÃO ANIVERSÁRIO
    ========================================================================== */
 .birthday-section {
-  padding: 32px 0 36px;
+  padding: 72px 0 80px;
   position: relative;
   overflow: hidden;
   background: radial-gradient(circle at 50% 30%, rgba(112, 26, 117, 0.28) 0%, var(--bg-deep) 70%);
@@ -1983,7 +1983,7 @@ img, video {
    12. GALERIA & VIBE BACKSTAGE
    ========================================================================== */
 .gallery-section {
-  padding: 36px 0 40px;
+  padding: 76px 0 84px;
   background-color: var(--bg-deep);
 }
 
@@ -2147,7 +2147,7 @@ img, video {
    13. LOCALIZAÇÃO & 14. HORÁRIOS (COMPACTO)
    ========================================================================== */
 .location-section {
-  padding: 32px 0 38px;
+  padding: 72px 0 82px;
   background-color: var(--bg-surface);
   position: relative;
 }
@@ -2698,9 +2698,9 @@ img, video {
    MOBILE-FIRST PERFECTION & 2-COLUMN MINIMUM FOR IMAGES
    ========================================================================== */
 @media (max-width: 768px) {
-  /* Redução de paddings de seções no mobile para evitar scroll infinito */
+  /* Espaçamento generoso e agradável entre seções no mobile */
   section {
-    padding: 50px 0 !important;
+    padding: 68px 0 !important;
   }
 
   .hero-section {
@@ -4301,7 +4301,7 @@ img, video {
    AGENDAMENTO ONLINE DAS SALAS COM CALENDÁRIO INTERATIVO
    ========================================================================== */
 .booking-section {
-  padding: 28px 0 32px;
+  padding: 76px 0 84px;
   position: relative;
   background: radial-gradient(ellipse at top, rgba(10, 16, 42, 0.6) 0%, var(--bg-deep) 70%);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -6197,15 +6197,39 @@ img, video {
    15. MAPA INTERATIVO DO SALÃO PRINCIPAL (LOTAÇÃO MÁXIMA: 184 PESSOAS)
    ========================================================================== */
 .salao-mapa-section {
-  padding: 20px 0 24px;
+  padding: 75px 0 85px;
   background: radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.05) 0%, rgba(5, 7, 15, 0.98) 70%);
   position: relative;
   overflow: hidden;
   scroll-margin-top: 80px;
 }
 
+.salao-mapa-section,
+.birthday-section,
+.booking-section,
+.gallery-section,
+.location-section {
+  position: relative;
+}
+
+.salao-mapa-section::before,
+.birthday-section::before,
+.booking-section::before,
+.gallery-section::before,
+.location-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 240, 255, 0.28) 25%, rgba(255, 0, 122, 0.22) 75%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
 .salao-mapa-section .container {
-  max-width: 820px;
+  max-width: 860px;
 }
 
 .mapa-header-title-box {
@@ -6217,8 +6241,8 @@ img, video {
   background: rgba(10, 16, 35, 0.85);
   border: 1px solid rgba(0, 240, 255, 0.3);
   border-radius: 12px;
-  padding: 8px 14px;
-  margin-bottom: 10px;
+  padding: 10px 16px;
+  margin-bottom: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
@@ -6294,8 +6318,8 @@ img, video {
 
 @media (min-width: 860px) {
   .mapa-layout-grid {
-    grid-template-columns: 350px 440px;
-    gap: 16px;
+    grid-template-columns: 360px 450px;
+    gap: 18px;
     align-items: stretch;
     justify-content: center;
   }
@@ -6303,11 +6327,65 @@ img, video {
 
 .karaoke-map-container {
   width: 100%;
-  max-width: 350px;
+  max-width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .salao-mapa-section {
+    padding: 60px 0 70px !important;
+  }
+
+  .salao-mapa-section .container {
+    max-width: 100% !important;
+    padding: 0 10px !important;
+    width: 100% !important;
+  }
+
+  .mapa-header-title-box {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+    margin-bottom: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .mapa-brand-tag {
+    font-size: 1.1rem !important;
+    letter-spacing: 0.04em !important;
+    text-align: center !important;
+  }
+
+  .mapa-legend-bar {
+    justify-content: center !important;
+    gap: 14px !important;
+  }
+
+  .mapa-layout-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 20px !important;
+  }
+
+  .karaoke-map-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .mapa-tables-list-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 14px !important;
+  }
 }
 
 .mapa-visual-container {
