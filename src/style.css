@@ -6368,10 +6368,9 @@ img, video {
   }
 
   .mapa-layout-grid {
-    display: flex !important;
-    flex-direction: column !important;
+    display: block !important;
     width: 100% !important;
-    gap: 20px !important;
+    margin: 0 auto !important;
   }
 
   .karaoke-map-container {
@@ -6380,11 +6379,21 @@ img, video {
     margin: 0 !important;
   }
 
+  /* Painel lateral removido do mobile: informações e reserva abrem como popup ao tocar na mesa */
   .mapa-tables-list-panel {
+    display: none !important;
+  }
+}
+
+@media (max-width: 859px) {
+  .mapa-tables-list-panel {
+    display: none !important;
+  }
+
+  .mapa-layout-grid {
+    display: block !important;
     width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    border-radius: 14px !important;
+    margin: 0 auto !important;
   }
 }
 

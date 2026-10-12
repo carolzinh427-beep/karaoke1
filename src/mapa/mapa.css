@@ -545,6 +545,16 @@
   font-size: 0.85rem;
 }
 
+.kmodal-badge-rate {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10B981;
+  color: #10B981;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
 /* 9. FORMULÁRIO DO MODAL */
 .kmodal-form {
   display: flex;

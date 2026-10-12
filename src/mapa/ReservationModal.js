@@ -52,6 +52,10 @@ export class ReservationModal {
             <div class="kmodal-table-badges">
               <span class="kmodal-badge-name" id="kmodalTableName">Mesa</span>
               <span class="kmodal-badge-cap" id="kmodalTableCapacity">Capacidade</span>
+              <span class="kmodal-badge-rate">Pix/Débito: R$ 20/pessoa</span>
+            </div>
+            <div class="kmodal-age-alert" style="margin-top: 8px; font-size: 0.74rem; color: #FCA5A5; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 6px;">
+              <span>🔞 <strong>18+:</strong> Salão Principal exclusivo para maiores. Para menores, reserve Salas Privadas.</span>
             </div>
           </div>
 
@@ -276,7 +280,7 @@ export class ReservationModal {
       descEl.textContent = `${pessoas} ${pessoas === 1 ? 'pessoa' : 'pessoas'} × R$ ${tarifa},00 (${nomeMetodo})`;
     }
     if (btnTxt) {
-      btnTxt.textContent = `Prosseguir para Pagamento (${totalFormatado}) →`;
+      btnTxt.textContent = `Pagar via ${nomeMetodo} (${totalFormatado}) →`;
     }
   }
 
