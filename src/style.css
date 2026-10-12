@@ -6308,20 +6308,18 @@ img, video {
 .legend-dot.red { background-color: #EF4444; color: #EF4444; }
 
 .mapa-layout-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  align-items: stretch;
-  justify-content: center;
+  display: block;
+  width: 100%;
   margin: 0 auto;
 }
 
-@media (min-width: 860px) {
+@media (min-width: 1024px) {
   .mapa-layout-grid {
-    grid-template-columns: 360px 450px;
-    gap: 18px;
-    align-items: stretch;
-    justify-content: center;
+    display: grid !important;
+    grid-template-columns: 360px 450px !important;
+    gap: 18px !important;
+    align-items: stretch !important;
+    justify-content: center !important;
   }
 }
 
@@ -6334,7 +6332,7 @@ img, video {
   margin: 0 auto;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .salao-mapa-section {
     padding: 60px 0 70px !important;
   }
@@ -6379,21 +6377,14 @@ img, video {
     margin: 0 !important;
   }
 
-  /* Painel lateral removido do mobile: informações e reserva abrem como popup ao tocar na mesa */
-  .mapa-tables-list-panel {
+  /* Painel lateral de mesas OMITIDO no mobile/tablet: reserva e dados abrem como popup ao tocar na mesa */
+  .mapa-tables-list-panel,
+  .desktop-only-panel,
+  .tables-list-scroll,
+  #mapaTablesListScroll,
+  .mapa-entry-rates,
+  .mapa-indicativa-box {
     display: none !important;
-  }
-}
-
-@media (max-width: 859px) {
-  .mapa-tables-list-panel {
-    display: none !important;
-  }
-
-  .mapa-layout-grid {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 auto !important;
   }
 }
 
@@ -6571,7 +6562,7 @@ img, video {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   padding: 12px 14px;
-  display: flex;
+  display: none;
   flex-direction: column;
   justify-content: space-between;
   gap: 10px;
@@ -6580,6 +6571,12 @@ img, video {
   height: 100%;
   box-sizing: border-box;
   margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .mapa-tables-list-panel {
+    display: flex !important;
+  }
 }
 
 .mapa-entry-rates {

@@ -915,3 +915,13 @@
     font-size: 16px !important;
   }
 }
+
+/* Oculta lista lateral de mesas no mobile/tablet */
+@media (max-width: 1023px) {
+  .mapa-tables-list-panel,
+  .desktop-only-panel,
+  .tables-list-scroll,
+  #mapaTablesListScroll {
+    display: none !important;
+  }
+}
