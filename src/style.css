@@ -1980,11 +1980,50 @@ img, video {
 }
 
 /* ==========================================================================
-   12. GALERIA & VIBE BACKSTAGE
+   12. GALERIA & VIBE BACKSTAGE (VIVA O BACKSTAGE)
    ========================================================================== */
 .gallery-section {
-  padding: 76px 0 84px;
+  padding: 60px 0 70px;
   background-color: var(--bg-deep);
+  position: relative;
+  overflow: hidden;
+}
+
+.viva-flex-carousel-wrapper {
+  width: 100%;
+  height: 560px;
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  background: radial-gradient(circle at center, rgba(14, 22, 45, 0.75) 0%, rgba(5, 8, 19, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .viva-flex-carousel-wrapper {
+    height: 480px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gallery-section {
+    padding: 44px 0 52px;
+  }
+  .viva-flex-carousel-wrapper {
+    height: 400px !important;
+    border-radius: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .viva-flex-carousel-wrapper {
+    height: 360px !important;
+    border-radius: 12px !important;
+  }
 }
 
 .gallery-grid {
@@ -6979,5 +7018,34 @@ img, video {
   }
 }
 
+/* ==========================================================================
+   OTIMIZAÇÃO MOBILE: ESTABILIDADE DE TELA & ZERO SWAYING / JITTER
+   (Elimina qualquer balanço horizontal e jitter ao rolar no celular)
+   ========================================================================== */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+  position: relative !important;
+  touch-action: pan-y !important;
+  overscroll-behavior-x: none !important;
+  -webkit-overflow-scrolling: touch !important;
+}
 
+main, section, header, footer, .hero, .gallery-section, .salao-mapa-section, .container {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: clip !important;
+}
 
+.kmap-viewport, .viva-flex-carousel-wrapper {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  touch-action: pan-y !important;
+}
+
+.kmap-viewport canvas,
+.kmap-viewport svg,
+.viva-flex-carousel-wrapper canvas {
+  max-width: 100% !important;
+}

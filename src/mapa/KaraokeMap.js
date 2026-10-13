@@ -28,6 +28,7 @@ export class KaraokeMap {
     this.tables = JSON.parse(JSON.stringify(TABLES_DATA)); // Cópia independente de estado
     this.selectedTableId = null;
     this.currentFilter = 'todas'; // 'todas', 'disponiveis'
+    this.isFullscreen = false;
 
     // Estado de Zoom e Pan
     this.zoom = 1;
@@ -72,16 +73,25 @@ export class KaraokeMap {
             <button type="button" class="kmap-filter-btn" data-filter="disponiveis" id="kfilterDisponiveis">Disponíveis</button>
           </div>
 
-          <!-- Controles de Zoom e Pan -->
-          <div class="kmap-zoom-controls" aria-label="Controles de zoom">
+          <!-- Controles de Zoom, Pan e Tela Cheia -->
+          <div class="kmap-zoom-controls" aria-label="Controles de zoom e visualização">
             <button type="button" class="kmap-zoom-btn" id="kmapZoomIn" title="Aumentar zoom" aria-label="Aumentar zoom">+</button>
             <button type="button" class="kmap-zoom-btn" id="kmapZoomOut" title="Diminuir zoom" aria-label="Diminuir zoom">−</button>
             <button type="button" class="kmap-zoom-btn" id="kmapZoomReset" title="Ajustar à tela" aria-label="Resetar zoom">⟲</button>
+            <button type="button" class="kmap-zoom-btn kmap-fs-toggle-btn" id="kmapFullscreenBtn" title="Abrir na tela toda" aria-label="Abrir mapa na tela toda">⛶</button>
           </div>
         </div>
 
         <!-- ÁREA DO VIEWPORT SVG DO MAPA -->
         <div class="kmap-viewport" id="kmapViewport">
+          <!-- Botão Flutuante de Tela Toda -->
+          <button type="button" class="kmap-expand-pill-btn" id="kmapExpandPillBtn" aria-label="Abrir mapa na tela toda">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+            <span>Ver mapa na tela toda</span>
+          </button>
+
           <div class="kmap-pan-layer" id="kmapPanLayer">
             ${this.buildSvgMap()}
           </div>
@@ -189,37 +199,34 @@ export class KaraokeMap {
           </pattern>
         </defs>
 
-        <!-- GRUPO PRINCIPAL ROTACIONADO 90 GRAUS PARA A ESQUERDA (-90 DEG) -->
-        <g class="kmap-main-rotated-plan" transform="translate(0, 1000) rotate(-90)">
-          <!-- 1. PAREDES EXTERNAS E ESTRUTURA DO EDIFÍCIO (SEM BORDA) -->
-          <rect x="18" y="18" width="964" height="1164" rx="14" 
-                fill="#060914" stroke="none" />
+        <!-- 1. PAREDES EXTERNAS E ESTRUTURA DO EDIFÍCIO (SEM BORDA) -->
+        <rect x="18" y="18" width="${width - 36}" height="${height - 36}" rx="14" 
+              fill="#060914" stroke="none" />
 
-          <!-- 2. PISO DO SALÃO PRINCIPAL COM TEXTURA DE ARDÓSIA -->
-          <rect x="22" y="22" width="956" height="1156" rx="10" 
-                fill="url(#roomFloorGradient)" />
-          <rect x="22" y="22" width="956" height="1156" rx="10" 
-                fill="url(#floorTilePattern)" />
+        <!-- 2. PISO DO SALÃO PRINCIPAL COM TEXTURA DE ARDÓSIA -->
+        <rect x="22" y="22" width="${width - 44}" height="${height - 44}" rx="10" 
+              fill="url(#roomFloorGradient)" />
+        <rect x="22" y="22" width="${width - 44}" height="${height - 44}" rx="10" 
+              fill="url(#floorTilePattern)" />
 
-          <!-- 3. DETALHES DE AMBIENTAÇÃO / ESPAÇO XADREZ (SUPERIOR DIREITO) -->
-          <g class="xadrez-room-perimeter">
-            <rect x="700" y="35" width="260" height="165" rx="8" 
-                  fill="#0A0F22" stroke="rgba(234, 179, 8, 0.3)" stroke-width="1.6" />
-            <text x="830" y="65" text-anchor="middle" class="map-label-xadrez-title" transform="rotate(90, 830, 65)">ESPAÇO XADREZ</text>
-          </g>
+        <!-- 3. DETALHES DE AMBIENTAÇÃO / ESPAÇO XADREZ (SUPERIOR DIREITO) -->
+        <g class="xadrez-room-perimeter">
+          <rect x="700" y="35" width="260" height="165" rx="8" 
+                fill="#0A0F22" stroke="rgba(234, 179, 8, 0.3)" stroke-width="1.6" />
+          <text x="830" y="65" text-anchor="middle" class="map-label-xadrez-title">ESPAÇO XADREZ</text>
+        </g>
 
-          <!-- 4. ESTRUTURAS FIXAS ARQUITETÔNICAS (PALCO, DJ, BAR, ENTRADA, LED, SOFÁS) -->
-          ${renderStage(ARCHITECTURAL_ELEMENTS.stage)}
-          ${renderDJBooth(ARCHITECTURAL_ELEMENTS.djBooth)}
-          ${renderBar(ARCHITECTURAL_ELEMENTS.bar)}
-          ${renderEntrance(ARCHITECTURAL_ELEMENTS.entrance)}
-          ${renderLEDFloor(ARCHITECTURAL_ELEMENTS.ledCross)}
-          ${renderSofas(ARCHITECTURAL_ELEMENTS.sofas)}
+        <!-- 4. ESTRUTURAS FIXAS ARQUITETÔNICAS (PALCO, DJ, BAR, ENTRADA, LED, SOFÁS) -->
+        ${renderStage(ARCHITECTURAL_ELEMENTS.stage)}
+        ${renderDJBooth(ARCHITECTURAL_ELEMENTS.djBooth)}
+        ${renderBar(ARCHITECTURAL_ELEMENTS.bar)}
+        ${renderEntrance(ARCHITECTURAL_ELEMENTS.entrance)}
+        ${renderLEDFloor(ARCHITECTURAL_ELEMENTS.ledCross)}
+        ${renderSofas(ARCHITECTURAL_ELEMENTS.sofas)}
 
-          <!-- 5. AS 11 MESAS INTERATIVAS INDEPENDENTES -->
-          <g class="kmap-tables-layer" id="kmapTablesLayer">
-            ${tablesSvg}
-          </g>
+        <!-- 5. AS 11 MESAS INTERATIVAS INDEPENDENTES -->
+        <g class="kmap-tables-layer" id="kmapTablesLayer">
+          ${tablesSvg}
         </g>
       </svg>
     `;
@@ -251,7 +258,6 @@ export class KaraokeMap {
       }
     });
 
-    // Hover / Tooltip
     // Hover / Tooltip seguro sem jitter
     if (viewport && tooltip) {
       viewport.addEventListener('mousemove', (e) => {
@@ -281,14 +287,25 @@ export class KaraokeMap {
       });
     }
 
-    // Controles de Zoom (mantêm a estrutura fixa no centro)
+    // Controles de Zoom
     const zoomInBtn = document.getElementById('kmapZoomIn');
     const zoomOutBtn = document.getElementById('kmapZoomOut');
     const zoomResetBtn = document.getElementById('kmapZoomReset');
+    const fsToggleBtn = document.getElementById('kmapFullscreenBtn');
+    const expandPillBtn = document.getElementById('kmapExpandPillBtn');
 
     if (zoomInBtn) zoomInBtn.addEventListener('click', () => this.setZoom(this.zoom + 0.15));
     if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => this.setZoom(this.zoom - 0.15));
     if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => this.resetZoom());
+    if (fsToggleBtn) fsToggleBtn.addEventListener('click', () => this.toggleFullscreen());
+    if (expandPillBtn) expandPillBtn.addEventListener('click', () => this.toggleFullscreen());
+
+    // Tecla ESC para sair da tela cheia
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isFullscreen) {
+        this.toggleFullscreen(false);
+      }
+    });
 
     // Filtros de status (todas / disponíveis)
     const filterTodas = document.getElementById('kfilterTodas');
@@ -299,6 +316,31 @@ export class KaraokeMap {
     }
     if (filterDisp) {
       filterDisp.addEventListener('click', () => this.applyFilter('disponiveis'));
+    }
+  }
+
+  toggleFullscreen(forceState) {
+    const wrapper = this.container.querySelector('.kmap-wrapper');
+    if (!wrapper) return;
+
+    this.isFullscreen = forceState !== undefined ? forceState : !this.isFullscreen;
+    wrapper.classList.toggle('kmap-fullscreen-active', this.isFullscreen);
+    document.body.classList.toggle('kmap-body-locked', this.isFullscreen);
+
+    const fsBtn = document.getElementById('kmapFullscreenBtn');
+    const expandPill = document.getElementById('kmapExpandPillBtn');
+    if (fsBtn) {
+      fsBtn.innerHTML = this.isFullscreen ? '✕' : '⛶';
+      fsBtn.title = this.isFullscreen ? 'Fechar tela cheia (ESC)' : 'Abrir mapa na tela toda';
+    }
+    if (expandPill) {
+      expandPill.style.display = this.isFullscreen ? 'none' : 'inline-flex';
+    }
+
+    if (this.isFullscreen) {
+      this.setZoom(1.15);
+    } else {
+      this.resetZoom();
     }
   }
 

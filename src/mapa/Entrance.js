@@ -32,8 +32,8 @@ export function renderEntrance(entranceData) {
         <polyline points="-6,2 0,-5 6,2" fill="none" stroke="#00F0FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
       </g>
 
-      <!-- Rótulo ENTRADA compensado +90deg -->
-      <text x="${width / 2}" y="42" text-anchor="middle" class="map-label-entrance" transform="rotate(90, ${width / 2}, 42)">ENTRADA</text>
+      <!-- Rótulo ENTRADA -->
+      <text x="${width / 2}" y="42" text-anchor="middle" class="map-label-entrance">ENTRADA</text>
     </g>
   `;
 }

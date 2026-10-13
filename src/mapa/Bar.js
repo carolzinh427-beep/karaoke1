@@ -43,8 +43,8 @@ export function renderBar(barData) {
             stroke-linecap="round"
             filter="url(#neonGlowCyan)" />
 
-      <!-- Rótulo BAR compensado +90deg -->
-      <g transform="translate(${width / 2}, ${height / 2}) rotate(90)">
+      <!-- Rótulo BAR vertical -->
+      <g transform="translate(${width / 2}, ${height / 2})">
         <text x="0" y="-30" text-anchor="middle" class="map-label-bar-letter">B</text>
         <text x="0" y="0" text-anchor="middle" class="map-label-bar-letter">A</text>
         <text x="0" y="30" text-anchor="middle" class="map-label-bar-letter">R</text>

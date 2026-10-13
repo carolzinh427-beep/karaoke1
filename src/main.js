@@ -3,6 +3,7 @@
  */
 
 import { initKaraokeMap } from './mapa/KaraokeMap.js';
+import { initFlexCarousel } from './lib/FlexCarousel.js';
 import { salvarAgendamento, db } from './lib/firebase.js';
 import { collection, getDocs, doc, getDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { 
@@ -127,6 +128,7 @@ function bootstrap() {
   try { initSmoothScroll(); } catch(e) { console.warn('initSmoothScroll error:', e); }
   try { initSectionTracking(); } catch(e) { console.warn('initSectionTracking error:', e); }
   try { initBookingSystem(); } catch(e) { console.warn('initBookingSystem error:', e); }
+  try { initFlexCarousel(); } catch(e) { console.warn('initFlexCarousel error:', e); }
   try { initMapaSalaoPrincipal(); } catch(e) { console.warn('initMapaSalaoPrincipal error:', e); }
   try { handleInitialHashNavigation(); } catch(e) { console.warn('handleInitialHashNavigation error:', e); }
   try { initSalasGallery(); } catch(e) { console.warn('initSalasGallery error:', e); }

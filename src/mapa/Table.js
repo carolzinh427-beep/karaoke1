@@ -93,8 +93,8 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
               stroke="rgba(0, 240, 255, 0.35)" 
               stroke-width="1" />
 
-      <!-- Capacidade no centro (compensada +90deg para leitura horizontal) -->
-      <g class="table-cap-indicator" pointer-events="none" transform="rotate(90, ${cx}, ${cy})">
+      <!-- Capacidade no centro -->
+      <g class="table-cap-indicator" pointer-events="none">
         <circle cx="${cx}" cy="${cy}" r="14" fill="rgba(8, 14, 28, 0.92)" stroke="rgba(255,255,255,0.25)" stroke-width="1" />
         <text x="${cx}" y="${cy + 4}" text-anchor="middle" class="map-table-cap-text">${capacity}</text>
       </g>
@@ -128,8 +128,8 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
         <rect x="27" y="27" width="9" height="9" fill="#F59E0B" opacity="0.85" />
       </g>
 
-      <!-- Capacidade (compensada +90deg para leitura horizontal) -->
-      <g class="table-cap-indicator" pointer-events="none" transform="rotate(90, ${cx}, ${cy + halfH - 4.5})">
+      <!-- Capacidade -->
+      <g class="table-cap-indicator" pointer-events="none">
         <rect x="${cx - 15}" y="${cy + halfH - 12}" width="30" height="15" rx="4" fill="rgba(8, 14, 28, 0.95)" stroke="#F59E0B" stroke-width="1" />
         <text x="${cx}" y="${cy + halfH - 1}" text-anchor="middle" class="map-table-cap-text">${capacity}</text>
       </g>
@@ -165,8 +165,8 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
             stroke="rgba(255, 255, 255, 0.08)" 
             stroke-width="1" />
 
-      <!-- Emblema de Capacidade (22 Pessoas) compensado +90deg -->
-      <g class="table-cap-indicator" pointer-events="none" transform="rotate(90, ${cx - halfW + (w - 38)/2}, ${cy})">
+      <!-- Emblema de Capacidade (22 Pessoas) -->
+      <g class="table-cap-indicator" pointer-events="none">
         <rect x="${cx - halfW + (w - 38)/2 - 18}" y="${cy - 12}" width="36" height="24" rx="6" 
               fill="rgba(6, 12, 26, 0.94)" stroke="rgba(0, 240, 255, 0.5)" stroke-width="1.2" />
         <text x="${cx - halfW + (w - 38)/2}" y="${cy + 5}" text-anchor="middle" class="map-table-cap-text">${capacity}</text>
@@ -199,8 +199,8 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
       <line x1="${cx - halfW + 12}" y1="${cy}" x2="${cx + halfW - 12}" y2="${cy}" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1" />
     `}
 
-    <!-- Emblema de Capacidade no centro da mesa compensado +90deg -->
-    <g class="table-cap-indicator" pointer-events="none" transform="rotate(90, ${cx}, ${cy})">
+    <!-- Emblema de Capacidade no centro da mesa -->
+    <g class="table-cap-indicator" pointer-events="none">
       <rect x="${cx - 18}" y="${cy - 12}" width="36" height="24" rx="6" 
             fill="rgba(6, 12, 26, 0.94)" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1.2" />
       <text x="${cx}" y="${cy + 5}" text-anchor="middle" class="map-table-cap-text">${capacity}</text>

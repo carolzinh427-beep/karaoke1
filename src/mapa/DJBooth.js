@@ -69,8 +69,8 @@ export function renderDJBooth(djData) {
       <rect x="${width - 30}" y="18" width="18" height="28" rx="3" fill="#152140" stroke="rgba(0, 240, 255, 0.3)" stroke-width="1" />
       <circle cx="${width - 21}" cy="32" r="5" fill="#070C1A" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
 
-      <!-- Rótulo GABINE DJ compensado +90deg -->
-      <text x="${width / 2}" y="32" text-anchor="middle" class="map-label-dj-title" transform="rotate(90, ${width / 2}, 32)">GABINE DJ</text>
+      <!-- Rótulo GABINE DJ -->
+      <text x="${width / 2}" y="32" text-anchor="middle" class="map-label-dj-title">GABINE DJ</text>
     </g>
   `;
 }
