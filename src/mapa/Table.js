@@ -30,7 +30,7 @@ export function renderTable(table) {
   const chairsSvg = renderChairs(type, centerX, centerY, width, height, chairsConfig);
 
   // Renderiza o tampo da mesa conforme o tipo
-  const tabletopSvg = renderTabletop(type, centerX, centerY, width, height, capacity);
+  const tabletopSvg = renderTabletop(type, centerX, centerY, width, height, capacity, number);
 
   return `
     <g class="map-table-item ${status}" 
@@ -69,7 +69,7 @@ export function renderTable(table) {
 /**
  * Renderiza o tampo da mesa (retangular, bistrô redondo, xadrez ou mesa+sofá)
  */
-function renderTabletop(type, cx, cy, w, h, capacity) {
+function renderTabletop(type, cx, cy, w, h, capacity, number = 1) {
   const halfW = w / 2;
   const halfH = h / 2;
 
@@ -93,10 +93,13 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
               stroke="rgba(0, 240, 255, 0.35)" 
               stroke-width="1" />
 
-      <!-- Capacidade no centro -->
+      <!-- Número da Mesa e Capacidade no centro -->
       <g class="table-cap-indicator" pointer-events="none">
-        <circle cx="${cx}" cy="${cy}" r="14" fill="rgba(8, 14, 28, 0.92)" stroke="rgba(255,255,255,0.25)" stroke-width="1" />
-        <text x="${cx}" y="${cy + 4}" text-anchor="middle" class="map-table-cap-text">${capacity}</text>
+        <rect x="${cx - 28}" y="${cy - 20}" width="56" height="40" rx="8" 
+              fill="rgba(8, 14, 28, 0.94)" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" />
+        <text x="${cx}" y="${cy - 7}" text-anchor="middle" class="map-table-num-text" font-size="9.5" font-weight="900" fill="#00F0FF">Mesa ${number}</text>
+        <text x="${cx}" y="${cy + 3}" text-anchor="middle" class="map-table-sub-text" font-size="6" font-weight="700" fill="#94A3B8">Capacidade para</text>
+        <text x="${cx}" y="${cy + 14}" text-anchor="middle" class="map-table-cap-text" font-size="10.5" font-weight="900" fill="#FFFFFF">${capacity} pessoas</text>
       </g>
     `;
   }
@@ -115,7 +118,7 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
             stroke-width="1.6" />
 
       <!-- Tabuleiro de xadrez embutido (grade 4x4 estilizada) -->
-      <g transform="translate(${cx - 18}, ${cy - 18})">
+      <g transform="translate(${cx - 18}, ${cy - 22})">
         <rect x="0" y="0" width="36" height="36" fill="#1C1917" stroke="rgba(255,255,255,0.15)" stroke-width="0.8" />
         <!-- Casas claras -->
         <rect x="0" y="0" width="9" height="9" fill="#F59E0B" opacity="0.85" />
@@ -128,10 +131,13 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
         <rect x="27" y="27" width="9" height="9" fill="#F59E0B" opacity="0.85" />
       </g>
 
-      <!-- Capacidade -->
+      <!-- Número da Mesa e Capacidade -->
       <g class="table-cap-indicator" pointer-events="none">
-        <rect x="${cx - 15}" y="${cy + halfH - 12}" width="30" height="15" rx="4" fill="rgba(8, 14, 28, 0.95)" stroke="#F59E0B" stroke-width="1" />
-        <text x="${cx}" y="${cy + halfH - 1}" text-anchor="middle" class="map-table-cap-text">${capacity}</text>
+        <rect x="${cx - 28}" y="${cy + halfH - 22}" width="56" height="38" rx="6" 
+              fill="rgba(8, 14, 28, 0.95)" stroke="#F59E0B" stroke-width="1.2" />
+        <text x="${cx}" y="${cy + halfH - 10}" text-anchor="middle" class="map-table-num-text" font-size="9.5" font-weight="900" fill="#F59E0B">Mesa ${number}</text>
+        <text x="${cx}" y="${cy + halfH}" text-anchor="middle" class="map-table-sub-text" font-size="5.8" font-weight="700" fill="#94A3B8">Capacidade para</text>
+        <text x="${cx}" y="${cy + halfH + 11}" text-anchor="middle" class="map-table-cap-text" font-size="10" font-weight="900" fill="#FFFFFF">${capacity} pessoas</text>
       </g>
     `;
   }
@@ -165,16 +171,48 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
             stroke="rgba(255, 255, 255, 0.08)" 
             stroke-width="1" />
 
-      <!-- Emblema de Capacidade (22 Pessoas) -->
+      <!-- Emblema de Mesa + Capacidade -->
       <g class="table-cap-indicator" pointer-events="none">
-        <rect x="${cx - halfW + (w - 38)/2 - 18}" y="${cy - 12}" width="36" height="24" rx="6" 
+        <rect x="${cx - halfW + (w - 38)/2 - 32}" y="${cy - 24}" width="64" height="48" rx="8" 
               fill="rgba(6, 12, 26, 0.94)" stroke="rgba(0, 240, 255, 0.5)" stroke-width="1.2" />
-        <text x="${cx - halfW + (w - 38)/2}" y="${cy + 5}" text-anchor="middle" class="map-table-cap-text">${capacity}</text>
+        <text x="${cx - halfW + (w - 38)/2}" y="${cy - 9}" text-anchor="middle" class="map-table-num-text" font-size="10.5" font-weight="900" fill="#00F0FF">Mesa ${number}</text>
+        <text x="${cx - halfW + (w - 38)/2}" y="${cy + 4}" text-anchor="middle" class="map-table-sub-text" font-size="6.8" font-weight="700" fill="#94A3B8">Capacidade para</text>
+        <text x="${cx - halfW + (w - 38)/2}" y="${cy + 17}" text-anchor="middle" class="map-table-cap-text" font-size="11.5" font-weight="900" fill="#FFFFFF">${capacity} pessoas</text>
       </g>
     `;
   }
 
-  // 4. Mesa Retangular Padrão (Mesa Comprida ou Lounge Horizontal)
+  // 4. Mesa Lounge Horizontal (Mesa 8)
+  if (type === 'lounge_horizontal') {
+    return `
+      <!-- Sombra de profundidade -->
+      <rect x="${cx - halfW}" y="${cy - halfH}" width="${w}" height="${h}" rx="8" fill="#04060E" transform="translate(3, 4)" opacity="0.8" />
+      
+      <!-- Tampo principal de madeira maciça -->
+      <rect x="${cx - halfW}" y="${cy - halfH}" width="${w}" height="${h}" rx="8" 
+            class="table-surface" 
+            fill="url(#tableWoodGradient)" 
+            stroke="#2A3859" 
+            stroke-width="1.8" />
+
+      <!-- Moldura interna de chanfro -->
+      <rect x="${cx - halfW + 6}" y="${cy - halfH + 6}" width="${w - 12}" height="${h - 12}" rx="5" 
+            fill="none" 
+            stroke="rgba(255, 255, 255, 0.07)" 
+            stroke-width="1" />
+
+      <!-- Emblema Mesa + Capacidade -->
+      <g class="table-cap-indicator" pointer-events="none">
+        <rect x="${cx - 48}" y="${cy - 24}" width="96" height="48" rx="8" 
+              fill="rgba(6, 12, 26, 0.94)" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1.2" />
+        <text x="${cx}" y="${cy - 9}" text-anchor="middle" class="map-table-num-text" font-size="11" font-weight="900" fill="#00F0FF">Mesa ${number}</text>
+        <text x="${cx}" y="${cy + 4}" text-anchor="middle" class="map-table-sub-text" font-size="7" font-weight="700" fill="#94A3B8">Capacidade para</text>
+        <text x="${cx}" y="${cy + 17}" text-anchor="middle" class="map-table-cap-text" font-size="11.5" font-weight="900" fill="#FFFFFF">${capacity} pessoas</text>
+      </g>
+    `;
+  }
+
+  // 5. Mesa Retangular Padrão (Mesa Comprida Vertical)
   return `
     <!-- Sombra de profundidade -->
     <rect x="${cx - halfW}" y="${cy - halfH}" width="${w}" height="${h}" rx="8" fill="#04060E" transform="translate(3, 4)" opacity="0.8" />
@@ -199,11 +237,13 @@ function renderTabletop(type, cx, cy, w, h, capacity) {
       <line x1="${cx - halfW + 12}" y1="${cy}" x2="${cx + halfW - 12}" y2="${cy}" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1" />
     `}
 
-    <!-- Emblema de Capacidade no centro da mesa -->
+    <!-- Emblema de Mesa + Capacidade no centro da mesa -->
     <g class="table-cap-indicator" pointer-events="none">
-      <rect x="${cx - 18}" y="${cy - 12}" width="36" height="24" rx="6" 
+      <rect x="${cx - 33}" y="${cy - 24}" width="66" height="48" rx="8" 
             fill="rgba(6, 12, 26, 0.94)" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1.2" />
-      <text x="${cx}" y="${cy + 5}" text-anchor="middle" class="map-table-cap-text">${capacity}</text>
+      <text x="${cx}" y="${cy - 9}" text-anchor="middle" class="map-table-num-text" font-size="10.5" font-weight="900" fill="#00F0FF">Mesa ${number}</text>
+      <text x="${cx}" y="${cy + 4}" text-anchor="middle" class="map-table-sub-text" font-size="6.8" font-weight="700" fill="#94A3B8">Capacidade para</text>
+      <text x="${cx}" y="${cy + 17}" text-anchor="middle" class="map-table-cap-text" font-size="11.5" font-weight="900" fill="#FFFFFF">${capacity} pessoas</text>
     </g>
   `;
 }

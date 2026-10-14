@@ -2188,7 +2188,7 @@ body.mobile-menu-locked {
   background: linear-gradient(135deg, rgba(131, 24, 67, 0.35) 0%, rgba(20, 31, 68, 0.75) 100%);
   border: 1px solid rgba(255, 0, 122, 0.3);
   border-radius: var(--radius-md);
-  padding: 8px 18px;
+  padding: 10px 20px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -2219,17 +2219,71 @@ body.mobile-menu-locked {
   flex-shrink: 0;
 }
 
+#instagramLinkBtn,
+.instagram-link-btn {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: max-content !important;
+  padding: 8px 18px !important;
+  font-size: 0.82rem !important;
+  line-height: 1 !important;
+  letter-spacing: 0.02em !important;
+}
+
+#instagramLinkBtn span,
+.instagram-link-btn span {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+}
+
 @media (max-width: 600px) {
   .instagram-banner-card {
-    padding: 8px 14px;
-    gap: 10px;
-    justify-content: center;
+    padding: 10px 14px;
+    gap: 12px;
+    justify-content: space-between;
     width: 100%;
-    max-width: 420px;
+    max-width: 100%;
+  }
+
+  .instagram-banner-card .insta-left-wrap {
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .instagram-banner-card .insta-left-wrap h3 {
     font-size: 0.82rem !important;
+    line-height: 1.3 !important;
+  }
+
+  #instagramLinkBtn,
+  .instagram-link-btn {
+    padding: 8px 12px !important;
+    font-size: 0.76rem !important;
+  }
+}
+
+@media (max-width: 440px) {
+  .instagram-banner-card {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 10px !important;
+    padding: 14px !important;
+  }
+
+  .instagram-banner-card .insta-left-wrap {
+    justify-content: center !important;
+  }
+
+  #instagramLinkBtn,
+  .instagram-link-btn {
+    width: 100% !important;
+    max-width: 220px !important;
+    padding: 10px 16px !important;
   }
 }
 

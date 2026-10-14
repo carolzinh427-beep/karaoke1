@@ -1211,7 +1211,11 @@ function renderReservaRow(r) {
             <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.cancelarReserva('${r.id}')" title="Cancelar Reserva">
               Cancelar
             </button>
-          ` : ''}
+          ` : `
+            <button type="button" class="btn-admin btn-admin-danger btn-admin-xs" onclick="window.excluirReservaDefinitiva('${r.id}')" title="Excluir Permanentemente do Painel" style="background: rgba(239, 68, 68, 0.22); border-color: #EF4444; color: #FCA5A5;">
+              🗑️ Excluir
+            </button>
+          `}
         </div>
       </td>
     </tr>
@@ -2543,9 +2547,18 @@ window.abrirModalFinanceiroReserva = (id) => {
             <textarea id="modalFinObs" class="form-input" rows="2" placeholder="Ex: Recebido comprovante Pix de R$ 450,00 via WhatsApp. Restante na recepção.">${r.observacoes || ''}</textarea>
           </div>
 
-          <div class="admin-modal-footer">
-            <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.fecharModalFinanceiroReserva()">Cancelar</button>
-            <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarFin">Salvar Alterações</button>
+          <div class="admin-modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div>
+              ${stAtual === 'cancelled' || stAtual === 'cancelada' ? `
+                <button type="button" class="btn-admin btn-admin-danger btn-admin-sm" onclick="window.fecharModalFinanceiroReserva(); window.excluirReservaDefinitiva('${r.id}')" title="Excluir Permanentemente do Painel">
+                  🗑️ Excluir Reserva
+                </button>
+              ` : ''}
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.fecharModalFinanceiroReserva()">Fechar</button>
+              <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarFin">Salvar Alterações</button>
+            </div>
           </div>
         </form>
       </div>
@@ -2711,11 +2724,56 @@ window.cancelarReserva = (id) => {
         const r = state.reservas.find(item => item.id === id);
         if (r) r.status = 'CANCELLED';
 
-        showToast('Reserva cancelada.', 'info');
+        showToast('Reserva cancelada. Você também pode excluí-la definitivamente do painel caso deseje.', 'info');
         renderApp();
       } catch (err) {
         console.error('Erro ao cancelar reserva:', err);
         showToast('Erro ao cancelar reserva.', 'error');
+      }
+    }
+  });
+};
+
+window.excluirReservaDefinitiva = (id) => {
+  const r = state.reservas.find(item => item.id === id);
+  const clienteNome = r?.nome || 'esta reserva';
+  const codigo = r?.codigoReserva || (r?.id ? r.id.substring(0, 10).toUpperCase() : '');
+
+  showConfirmModal({
+    title: 'Excluir Reserva Definitivamente',
+    message: `Tem certeza que deseja EXCLUIR permanentemente a reserva ${codigo ? `[${codigo}] ` : ''}de "${clienteNome}"? Ela sumirá por completo do painel de administração e não poderá ser recuperada.`,
+    confirmText: 'Sim, Excluir Definitivamente',
+    confirmBtnClass: 'btn-admin-danger',
+    onConfirm: async () => {
+      try {
+        if (isSupabaseConfigured) {
+          try {
+            await deleteReservaSupabase(id);
+          } catch (supaErr) {
+            console.warn('Aviso Supabase excluir reserva:', supaErr);
+          }
+        }
+
+        if (db) {
+          try {
+            const docRef = doc(db, 'reservas', id);
+            await deleteDoc(docRef);
+          } catch (e) {
+            console.warn('Aviso Firestore excluir reserva:', e);
+          }
+        }
+
+        // Remove do estado local em memória e do storage
+        state.reservas = state.reservas.filter(item => item.id !== id);
+        try {
+          localStorage.setItem('backstage_reservas', JSON.stringify(state.reservas));
+        } catch (e) {}
+
+        showToast('Reserva excluída com sucesso e removida do painel.', 'success');
+        renderApp();
+      } catch (err) {
+        console.error('Erro ao excluir reserva:', err);
+        showToast('Erro ao excluir reserva: ' + err.message, 'error');
       }
     }
   });

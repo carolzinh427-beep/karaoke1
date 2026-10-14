@@ -451,7 +451,7 @@ export class KaraokeMap {
              tabindex="${isReserved ? '-1' : '0'}"
              onclick="if(window.karaokeMapInstance) window.karaokeMapInstance.handleTableClick('${t.id}')">
           <div class="table-card-info-main">
-            <strong>${t.name} (Até ${t.capacity} pessoas)</strong>
+            <strong>${t.name} — Capacidade para ${t.capacity} pessoas</strong>
             <span>${t.location}</span>
           </div>
           <div class="table-card-actions-wrap" style="display: flex; align-items: center; gap: 8px;">

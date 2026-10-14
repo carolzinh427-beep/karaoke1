@@ -297,7 +297,9 @@ body.kmap-body-locked {
   fill: #1E1504;
 }
 
-.map-table-item.selecionada .map-table-cap-text {
+.map-table-item.selecionada .map-table-cap-text,
+.map-table-item.selecionada .map-table-num-text,
+.map-table-item.selecionada .map-table-sub-text {
   fill: #FDE68A !important;
   font-weight: 900;
 }
@@ -338,7 +340,11 @@ body.kmap-body-locked {
 }
 
 .map-table-item.reservada .map-table-cap-text,
-.map-table-item.indisponivel .map-table-cap-text {
+.map-table-item.reservada .map-table-num-text,
+.map-table-item.reservada .map-table-sub-text,
+.map-table-item.indisponivel .map-table-cap-text,
+.map-table-item.indisponivel .map-table-num-text,
+.map-table-item.indisponivel .map-table-sub-text {
   fill: #FCA5A5 !important;
   font-weight: 900 !important;
 }
@@ -428,9 +434,22 @@ body.kmap-body-locked {
   opacity: 0.8;
 }
 
+.map-table-num-text {
+  font-family: inherit;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.map-table-sub-text {
+  font-family: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .map-table-cap-text {
   font-family: inherit;
-  font-size: 13px;
   font-weight: 900;
   fill: #FFFFFF;
 }
