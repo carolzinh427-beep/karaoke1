@@ -2428,7 +2428,8 @@ function renderPromocoesView() {
                   <span style="font-size: 0.70rem; color: var(--admin-text-muted); align-self: center; margin-right: 2px;">Atalhos:</span>
                   <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-drinks.png')">🍹 Drinks</button>
                   <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-sabado.jpg')">🎤 Sábado</button>
-                  <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-heineken.png')">🍻 Balde</button>
+                  <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-balde-promocao.jpg')">🍻 Balde Promoção</button>
+                  <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-heineken.png')">🍺 Heineken</button>
                   <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-quinta.jpg')">🍸 Quinta</button>
                   <button type="button" class="btn-admin btn-admin-xs" style="padding: 2px 7px; font-size: 0.70rem;" onclick="window.setPromoPreset(${idx}, '/assets/promos/promo-sexta.jpg')">🍺 Sexta</button>
                 </div>

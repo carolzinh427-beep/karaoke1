@@ -54,6 +54,7 @@ import {
   calcularPrecoSalaPrivada
 } from './lib/salasPrivadas.js';
 import { triggerFadeContent, initFadeContent } from './lib/FadeContent.js';
+import { DEFAULT_PROMOCOES } from './lib/catalogData.js';
 
 export { ROOM_DATA, calcularPrecoSalaPrivada };
 
@@ -253,9 +254,14 @@ function initHeader() {
 }
 
 // 2. Mobile Menu Drawer
-window.toggleMobileMenu = function() {
+window.toggleMobileMenu = function(e) {
+  if (e) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+  }
   const toggleBtn = document.getElementById('menuToggleBtn') || document.querySelector('.menu-toggle');
   const drawer = document.getElementById('mobileDrawer') || document.querySelector('.mobile-drawer');
+  const backdrop = document.getElementById('mobileDrawerBackdrop');
   if (!drawer) return;
 
   const isOpen = drawer.classList.toggle('open');
@@ -263,31 +269,46 @@ window.toggleMobileMenu = function() {
     toggleBtn.classList.toggle('active', isOpen);
     toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   }
+  if (backdrop) {
+    backdrop.classList.toggle('active', isOpen);
+  }
+  document.body.classList.toggle('mobile-menu-locked', isOpen);
   document.body.style.overflow = isOpen ? 'hidden' : '';
 };
 
-window.closeMobileMenu = function() {
+window.closeMobileMenu = function(e) {
+  if (e) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+  }
   const toggleBtn = document.getElementById('menuToggleBtn') || document.querySelector('.menu-toggle');
   const drawer = document.getElementById('mobileDrawer') || document.querySelector('.mobile-drawer');
+  const backdrop = document.getElementById('mobileDrawerBackdrop');
   if (drawer) drawer.classList.remove('open');
   if (toggleBtn) {
     toggleBtn.classList.remove('active');
     toggleBtn.setAttribute('aria-expanded', 'false');
   }
+  if (backdrop) backdrop.classList.remove('active');
+  document.body.classList.remove('mobile-menu-locked');
   document.body.style.overflow = '';
 };
 
 function initMobileMenu() {
-  const toggleBtn = document.querySelector('.menu-toggle');
-  const drawer = document.querySelector('.mobile-drawer');
+  const toggleBtn = document.getElementById('menuToggleBtn') || document.querySelector('.menu-toggle');
+  const drawer = document.getElementById('mobileDrawer') || document.querySelector('.mobile-drawer');
+  const backdrop = document.getElementById('mobileDrawerBackdrop');
   const navLinks = document.querySelectorAll('.mobile-nav-link');
 
-  if (!toggleBtn || !drawer) return;
+  if (!drawer) return;
 
-  toggleBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    window.toggleMobileMenu();
-  });
+  // Apenas anexa listener caso o botão não tenha o manipulador inline onclick
+  if (toggleBtn && !toggleBtn.getAttribute('onclick')) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.toggleMobileMenu(e);
+    });
+  }
 
   navLinks.forEach(link => {
     link.addEventListener('click', () => {
@@ -295,9 +316,23 @@ function initMobileMenu() {
     });
   });
 
+  if (backdrop) {
+    backdrop.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.closeMobileMenu(e);
+    });
+  }
+
   // Close when clicking outside drawer
   document.addEventListener('click', (e) => {
-    if (drawer.classList.contains('open') && !drawer.contains(e.target) && !toggleBtn.contains(e.target)) {
+    if (drawer.classList.contains('open') && !drawer.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+      window.closeMobileMenu();
+    }
+  });
+
+  // Fechar com tecla Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer.classList.contains('open')) {
       window.closeMobileMenu();
     }
   });
@@ -2714,9 +2749,20 @@ export function syncPromocoesCards() {
     }
   } catch(e) {}
 
-  if (cards && Array.isArray(cards) && cards.length >= 3) {
-    applyPromocoesCards(cards);
+  if (!cards || !Array.isArray(cards) || cards.length < 3) {
+    cards = JSON.parse(JSON.stringify(DEFAULT_PROMOCOES));
+  } else {
+    // Se o card 3 for o antigo ou não tiver o texto atualizado de Budweiser/Spaten
+    const desc3 = (cards[2]?.descricao || '').toLowerCase();
+    if (!desc3.includes('budweiser') && !desc3.includes('spaten')) {
+      cards[2] = { ...DEFAULT_PROMOCOES[2] };
+      try {
+        localStorage.setItem('backstage_promocoes', JSON.stringify(cards));
+      } catch(e) {}
+    }
   }
+
+  applyPromocoesCards(cards);
 
   // 2. Consulta Firestore de forma assíncrona para atualizações remotas
   if (db) {

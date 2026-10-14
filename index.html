@@ -287,10 +287,48 @@
       }
     }
 
+    function toggleMobileMenu(e) {
+      if (e) {
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+      }
+      var drawer = document.getElementById('mobileDrawer');
+      var btn = document.getElementById('menuToggleBtn');
+      var backdrop = document.getElementById('mobileDrawerBackdrop');
+      if (!drawer) return;
+      var isOpen = drawer.classList.toggle('open');
+      if (btn) {
+        btn.classList.toggle('active', isOpen);
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      }
+      if (backdrop) {
+        backdrop.classList.toggle('active', isOpen);
+      }
+      document.body.classList.toggle('mobile-menu-locked', isOpen);
+    }
+
+    function closeMobileMenu(e) {
+      if (e) {
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+      }
+      var drawer = document.getElementById('mobileDrawer');
+      var btn = document.getElementById('menuToggleBtn');
+      var backdrop = document.getElementById('mobileDrawerBackdrop');
+      if (drawer) drawer.classList.remove('open');
+      if (btn) {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+      if (backdrop) backdrop.classList.remove('active');
+      document.body.classList.remove('mobile-menu-locked');
+    }
+
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         closeInfoAntesModal();
         closeTermosModal();
+        closeMobileMenu();
       }
     });
   </script>
@@ -348,8 +386,8 @@
           <span>Agendar Sala</span>
         </a>
 
-        <!-- Mobile Menu Toggle Button -->
-        <button class="menu-toggle" id="menuToggleBtn" onclick="toggleMobileMenu()" aria-label="Abrir menu de navegação" aria-expanded="false">
+        <!-- Mobile Menu Toggle Button (3 barras) -->
+        <button type="button" class="menu-toggle" id="menuToggleBtn" onclick="toggleMobileMenu(event)" aria-label="Abrir menu de navegação" aria-expanded="false">
           <span></span>
           <span></span>
           <span></span>
@@ -358,11 +396,12 @@
     </div>
   </header>
 
-  <!-- Mobile Drawer Menu -->
+  <!-- Backdrop escurecido e Gaveta de Navegação Mobile -->
+  <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop" onclick="closeMobileMenu(event)"></div>
   <div class="mobile-drawer" id="mobileDrawer">
     <div class="mobile-drawer-top">
       <span class="mobile-drawer-title">Menu de Navegação</span>
-      <button type="button" class="mobile-drawer-close" onclick="closeMobileMenu()" aria-label="Fechar menu">&times;</button>
+      <button type="button" class="mobile-drawer-close" onclick="closeMobileMenu(event)" aria-label="Fechar menu">&times;</button>
     </div>
 
     <ul class="mobile-nav-list">
@@ -450,10 +489,6 @@
     <section class="gallery-section" id="galeria">
       <div class="container">
         <div class="section-header" style="margin-bottom: 24px;">
-          <div class="section-tag" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); color: var(--primary-cyan); font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
-            <span style="width: 7px; height: 7px; border-radius: 50%; background: var(--primary-cyan); box-shadow: 0 0 10px var(--primary-cyan);"></span>
-            Experiência & Vibe
-          </div>
           <h2 class="section-title">Viva o Backstage</h2>
           <p class="section-subtitle">
             Viva os drinks autorais, promoções épicas e momentos inesquecíveis no karaokê mais animado de Brasília!
@@ -463,6 +498,34 @@
         <!-- Componente React Bits: FlexCarousel com WebGL/OGL -->
         <div class="viva-flex-carousel-wrapper" style="width: 100%; height: 560px; position: relative; margin-bottom: 26px; border-radius: 20px; overflow: hidden; background: radial-gradient(circle at center, rgba(14, 22, 45, 0.75) 0%, rgba(5, 8, 19, 0.98) 100%); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);">
           <div id="vivaFlexCarouselMount" style="width: 100%; height: 100%; position: relative;"></div>
+        </div>
+
+        <!-- Cards de Promoções Gerenciados pelo Painel de Admin -->
+        <div class="gallery-grid promo-grid-3" id="promoCardsContainer" style="margin-bottom: 24px;">
+          <!-- Card 1: Lateral Esquerda (Drinks autorais) -->
+          <div class="gallery-card promo-card" id="promoCard1" data-slot="0">
+            <img src="/assets/promos/promo-drinks.png" alt="Drinks e Coquetéis no Backstage Karaokê" loading="lazy">
+          </div>
+
+          <!-- Card 2: Centro (Sábado - Destaque Principal) -->
+          <div class="gallery-card promo-card" id="promoCard2" data-slot="1">
+            <img src="/assets/promos/promo-sabado.jpg" alt="Promoção de Sábado no Backstage Karaokê" loading="lazy">
+            <div class="gallery-caption promo-caption">
+              <span class="caption-tag">Noite Especial</span>
+              <span class="caption-title">Sábado no Backstage</span>
+              <p class="promo-desc">Combos especiais com petiscos, Gin Tropical e palco aberto até 3h30 da manhã para comemorar sem hora para acabar!</p>
+            </div>
+          </div>
+
+          <!-- Card 3: Lateral Direita (Balde - Promoções da Casa por Tempo Limitado) -->
+          <div class="gallery-card promo-card" id="promoCard3" data-slot="2">
+            <img src="/assets/promos/promo-balde-promocao.jpg" alt="Promoções da Casa por Tempo Limitado - Balde de Cerveja" loading="lazy">
+            <div class="gallery-caption promo-caption" style="display: flex;">
+              <span class="caption-tag" style="background: rgba(255, 0, 122, 0.2); border: 1px solid rgba(255, 0, 122, 0.45); color: #FF007A; padding: 2px 8px; border-radius: 999px; width: fit-content; font-size: 0.68rem; font-weight: 800; text-transform: uppercase;">Tempo Limitado</span>
+              <span class="caption-title" style="margin-top: 4px; font-size: 1.02rem; color: #FFFFFF; font-weight: 800;">Balde por Nossa Conta</span>
+              <p class="promo-desc" style="font-size: 0.78rem; line-height: 1.4; color: #E2E8F0; margin-top: 4px;">Vc com mais 5 amigos chegando juntos e fazendo um pagamento integral das entradas ganha um balde de long neck por nossa conta (obs: Budweiser ou Spaten). Voucher retirado na recepção, lembrando que é só de terça a quinta.</p>
+            </div>
+          </div>
         </div>
 
         <!-- Instagram Community Card (Compacto) -->

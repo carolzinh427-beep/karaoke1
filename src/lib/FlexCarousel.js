@@ -24,10 +24,10 @@ const DEFAULT_ITEMS = [
     subtitle: 'Mixologia exclusiva e clássicos'
   },
   {
-    src: '/assets/promos/promo-heineken.png',
-    alt: 'Balde por Nossa Conta',
-    title: 'Balde por Nossa Conta',
-    subtitle: 'Promoção especial para grupos'
+    src: '/assets/promos/promo-balde-promocao.jpg',
+    alt: 'Promoções da Casa por Tempo Limitado - Balde por Nossa Conta',
+    title: 'Balde por Nossa Conta (Budweiser ou Spaten)',
+    subtitle: 'Vc + 5 amigos ganham um balde de long neck! Terça a quinta.'
   },
   {
     src: '/assets/promos/promo-sexta.jpg',

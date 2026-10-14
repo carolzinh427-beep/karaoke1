@@ -308,12 +308,12 @@ export const DEFAULT_PROMOCOES = [
   {
     id: 'promo-3',
     posicao: 'direita',
-    label: 'Lateral Direita',
-    imagemUrl: '/assets/promos/promo-heineken.png',
+    label: 'Lateral Direita (Promoções da Casa / Cerveja)',
+    imagemUrl: '/assets/promos/promo-balde-promocao.jpg',
     imagemPublicId: null,
-    tag: 'Tempo Ilimitado',
+    tag: 'Tempo Limitado',
     titulo: 'Balde por Nossa Conta',
-    descricao: 'Chegando junto com mais 5 amigos vocês ganham um balde de long neck por nossa conta. Voucher retirado na recepção de terça a quinta.'
+    descricao: 'Vc com mais 5 amigos chegando juntos e fazendo um pagamento integral das entradas ganha um balde de long neck por nossa conta (obs: Budweiser ou Spaten). Voucher retirado na recepção, lembrando que é só de terça a quinta.'
   }
 ];
 

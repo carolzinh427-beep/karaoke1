@@ -498,6 +498,31 @@ img, video {
   transform: translateY(-8px) rotate(-45deg);
 }
 
+/* Mobile Drawer Backdrop & Body Lock */
+.mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-drawer-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.mobile-menu-locked {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
 /* Mobile Drawer */
 .mobile-drawer {
   position: fixed;
@@ -509,7 +534,7 @@ img, video {
   height: 100dvh;
   background: rgba(5, 8, 19, 0.98);
   backdrop-filter: blur(25px);
-  z-index: 1001;
+  z-index: 9999 !important;
   display: flex;
   flex-direction: column;
   padding: 30px 24px 40px;
@@ -2036,6 +2061,7 @@ img, video {
 @media (min-width: 768px) {
   .gallery-grid.promo-grid-3 {
     grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
   }
 }
 
@@ -2048,6 +2074,31 @@ img, video {
   height: 240px;
   background: var(--bg-card);
   transition: var(--transition-smooth);
+}
+
+.gallery-card.promo-card {
+  min-height: 290px;
+  height: 290px;
+}
+
+.gallery-card.promo-card .gallery-caption {
+  padding: 16px 18px;
+  background: linear-gradient(180deg, transparent 0%, rgba(5, 8, 19, 0.7) 18%, rgba(4, 6, 14, 0.96) 50%, rgba(4, 6, 14, 0.99) 100%);
+  max-height: 85%;
+  justify-content: flex-end;
+}
+
+.gallery-card.promo-card .promo-desc {
+  font-size: 0.78rem;
+  color: #E2E8F0;
+  line-height: 1.42;
+  margin: 4px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .gallery-card:hover {
@@ -2786,6 +2837,34 @@ img, video {
     height: 155px !important;
     min-height: 155px !important;
     border-radius: 12px !important;
+  }
+
+  /* PROMOÇÕES DA CASA NO MOBILE: CARDS COMPLETOS E LEGÍVEIS */
+  .gallery-grid.promo-grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .gallery-grid.promo-grid-3 .gallery-card.promo-card {
+    height: 280px !important;
+    min-height: 280px !important;
+    border-radius: 16px !important;
+  }
+
+  .gallery-grid.promo-grid-3 .gallery-card.promo-card .gallery-caption {
+    padding: 14px 16px !important;
+    background: linear-gradient(180deg, transparent 0%, rgba(5, 8, 19, 0.72) 20%, rgba(4, 6, 14, 0.97) 50%, rgba(4, 6, 14, 1) 100%) !important;
+  }
+
+  .gallery-grid.promo-grid-3 .gallery-card.promo-card .caption-title {
+    font-size: 1.05rem !important;
+  }
+
+  .gallery-grid.promo-grid-3 .gallery-card.promo-card .promo-desc {
+    -webkit-line-clamp: 6 !important;
+    line-clamp: 6 !important;
+    font-size: 0.82rem !important;
+    line-height: 1.4 !important;
   }
 
   .gallery-card img {
