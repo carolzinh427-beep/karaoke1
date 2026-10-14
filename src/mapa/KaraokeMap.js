@@ -78,20 +78,12 @@ export class KaraokeMap {
             <button type="button" class="kmap-zoom-btn" id="kmapZoomIn" title="Aumentar zoom" aria-label="Aumentar zoom">+</button>
             <button type="button" class="kmap-zoom-btn" id="kmapZoomOut" title="Diminuir zoom" aria-label="Diminuir zoom">−</button>
             <button type="button" class="kmap-zoom-btn" id="kmapZoomReset" title="Ajustar à tela" aria-label="Resetar zoom">⟲</button>
-            <button type="button" class="kmap-zoom-btn kmap-fs-toggle-btn" id="kmapFullscreenBtn" title="Abrir na tela toda" aria-label="Abrir mapa na tela toda">⛶</button>
+            <button type="button" class="kmap-zoom-btn kmap-fs-toggle-btn" id="kmapFullscreenBtn" title="Tela cheia" aria-label="Tela cheia">⛶</button>
           </div>
         </div>
 
         <!-- ÁREA DO VIEWPORT SVG DO MAPA -->
         <div class="kmap-viewport" id="kmapViewport">
-          <!-- Botão Flutuante de Tela Toda -->
-          <button type="button" class="kmap-expand-pill-btn" id="kmapExpandPillBtn" aria-label="Abrir mapa na tela toda">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-            </svg>
-            <span>Ver mapa na tela toda</span>
-          </button>
-
           <div class="kmap-pan-layer" id="kmapPanLayer">
             ${this.buildSvgMap()}
           </div>
@@ -292,13 +284,11 @@ export class KaraokeMap {
     const zoomOutBtn = document.getElementById('kmapZoomOut');
     const zoomResetBtn = document.getElementById('kmapZoomReset');
     const fsToggleBtn = document.getElementById('kmapFullscreenBtn');
-    const expandPillBtn = document.getElementById('kmapExpandPillBtn');
 
     if (zoomInBtn) zoomInBtn.addEventListener('click', () => this.setZoom(this.zoom + 0.15));
     if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => this.setZoom(this.zoom - 0.15));
     if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => this.resetZoom());
     if (fsToggleBtn) fsToggleBtn.addEventListener('click', () => this.toggleFullscreen());
-    if (expandPillBtn) expandPillBtn.addEventListener('click', () => this.toggleFullscreen());
 
     // Tecla ESC para sair da tela cheia
     document.addEventListener('keydown', (e) => {
@@ -328,13 +318,9 @@ export class KaraokeMap {
     document.body.classList.toggle('kmap-body-locked', this.isFullscreen);
 
     const fsBtn = document.getElementById('kmapFullscreenBtn');
-    const expandPill = document.getElementById('kmapExpandPillBtn');
     if (fsBtn) {
       fsBtn.innerHTML = this.isFullscreen ? '✕' : '⛶';
-      fsBtn.title = this.isFullscreen ? 'Fechar tela cheia (ESC)' : 'Abrir mapa na tela toda';
-    }
-    if (expandPill) {
-      expandPill.style.display = this.isFullscreen ? 'none' : 'inline-flex';
+      fsBtn.title = this.isFullscreen ? 'Fechar tela cheia (ESC)' : 'Tela cheia';
     }
 
     if (this.isFullscreen) {
