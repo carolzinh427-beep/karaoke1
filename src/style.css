@@ -2005,6 +2005,37 @@ body.mobile-menu-locked {
 }
 
 /* ==========================================================================
+   PROMOÇÕES DA CASA (SEÇÃO DEDICADA COM 3 CARDS LADO A LADO E TEXTO SEO)
+   ========================================================================== */
+.promocoes-section {
+  padding: 60px 0 65px;
+  background-color: var(--bg-deep);
+  position: relative;
+  overflow: hidden;
+}
+
+.promocoes-header {
+  margin-bottom: 26px;
+  text-align: center;
+}
+
+.promocoes-seo-text {
+  max-width: 900px;
+  margin: 14px auto 0;
+  font-size: 0.94rem;
+  line-height: 1.68;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.gallery-grid.promo-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* ==========================================================================
    12. GALERIA & VIBE BACKSTAGE (VIVA O BACKSTAGE)
    ========================================================================== */
 .gallery-section {
@@ -2893,15 +2924,36 @@ body.mobile-menu-locked {
     border-radius: 12px !important;
   }
 
-  /* PROMOÇÕES DA CASA NO MOBILE: CARDS COMPLETOS E LEGÍVEIS */
+  /* PROMOÇÕES DA CASA NO MOBILE: 3 IMAGENS UMA AO LADO DA OUTRA */
   .gallery-grid.promo-grid-3 {
-    grid-template-columns: 1fr !important;
-    gap: 16px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 14px !important;
+    padding-bottom: 12px !important;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+  }
+
+  .gallery-grid.promo-grid-3::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .gallery-grid.promo-grid-3::-webkit-scrollbar-thumb {
+    background: rgba(0, 240, 255, 0.4);
+    border-radius: 999px;
   }
 
   .gallery-grid.promo-grid-3 .gallery-card.promo-card {
-    height: 280px !important;
-    min-height: 280px !important;
+    flex: 0 0 82% !important;
+    min-width: 275px !important;
+    max-width: 320px !important;
+    scroll-snap-align: center !important;
+    height: 290px !important;
+    min-height: 290px !important;
     border-radius: 16px !important;
   }
 

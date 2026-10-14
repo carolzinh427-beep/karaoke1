@@ -1341,7 +1341,13 @@ export function initFlexCarousel(mountSelector = '#vivaFlexCarouselMount', custo
   const mount = typeof mountSelector === 'string' ? document.querySelector(mountSelector) : mountSelector;
   if (!mount) return null;
 
-  return createFlexCarousel(mount, {
+  // Carrega itens da galeria gerenciada pelo Admin se existirem
+  let itemsToUse = customOptions.items;
+  if (!itemsToUse || !itemsToUse.length) {
+    itemsToUse = getCarouselItemsFromStorage();
+  }
+
+  const instance = createFlexCarousel(mount, {
     preset: 'liquid',
     intro: 'rise',
     cardHeight: window.innerWidth < 768 ? 0.6 : 0.52,
@@ -1351,6 +1357,45 @@ export function initFlexCarousel(mountSelector = '#vivaFlexCarouselMount', custo
     captions: true,
     autoplay: true,
     interval: 4,
+    items: itemsToUse && itemsToUse.length ? itemsToUse : DEFAULT_ITEMS,
     ...customOptions
   });
+
+  if (instance) {
+    window.__vivaCarouselInstance = instance;
+
+    const handleUpdate = () => {
+      const refreshed = getCarouselItemsFromStorage();
+      if (refreshed && refreshed.length && instance.setItems) {
+        instance.setItems(refreshed);
+      }
+    };
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'backstage_galeria') handleUpdate();
+    });
+    window.addEventListener('backstage_galeria_updated', handleUpdate);
+  }
+
+  return instance;
+}
+
+function getCarouselItemsFromStorage() {
+  try {
+    const raw = localStorage.getItem('backstage_galeria');
+    if (!raw) return null;
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list) || !list.length) return null;
+    const activeImages = list.filter(g => g.tipo !== 'video' && g.ativo !== false && g.url);
+    if (activeImages.length >= 3) {
+      activeImages.sort((a, b) => (a.ordem || 999) - (b.ordem || 999));
+      return activeImages.map(g => ({
+        src: g.url,
+        alt: g.titulo || 'Viva o Backstage Karaokê',
+        title: g.titulo || 'Viva o Backstage',
+        subtitle: g.tag || g.descricao || 'Karaokê Brasília'
+      }));
+    }
+  } catch(e) {}
+  return null;
 }

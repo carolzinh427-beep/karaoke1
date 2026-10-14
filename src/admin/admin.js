@@ -1990,8 +1990,8 @@ function renderGaleriaView() {
   return `
     <div class="view-header">
       <div class="view-headline">
-        <h2>Galeria de Fotos e Vídeos</h2>
-        <p>Gerencie o acervo visual das salas privadas e do espaço com upload direto de arquivos</p>
+        <h2>Galeria de Fotos & Carrossel Viva o Backstage</h2>
+        <p>Gerencie as fotos e mídias exibidas no Carrossel 'Viva o Backstage' (após a reserva de salas) e na Galeria Completa das Salas.</p>
       </div>
       <div class="view-actions">
         <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.openMediaUploadModal(null, 'imagem')">
@@ -2006,8 +2006,8 @@ function renderGaleriaView() {
     <!-- Atalho Destaque para Promoções da Home -->
     <div class="admin-card" style="margin-bottom: 24px; padding: 14px 20px; border-left: 4px solid var(--admin-magenta); background: rgba(255, 0, 122, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div>
-        <strong style="color: #FFF; font-size: 0.95rem;">⭐ Cards Promocionais e Destaques da Página Inicial</strong>
-        <p style="margin: 2px 0 0; color: var(--admin-text-muted); font-size: 0.82rem;">Altere os 3 cards da home (Sábado no centro, drinks nas laterais, títulos e descrições opcionais).</p>
+        <strong style="color: #FFF; font-size: 0.95rem;">⭐ Seção Promoções da Home</strong>
+        <p style="margin: 2px 0 0; color: var(--admin-text-muted); font-size: 0.82rem;">Altere os 3 cards da nova seção Promoções (Balde Heineken no meio, drinks e noite especial nas laterais).</p>
       </div>
       <button type="button" class="btn-admin btn-admin-primary btn-admin-xs" onclick="window.adminNav('/admin/promocoes')">
         Gerenciar Promoções da Home &rarr;
@@ -2353,8 +2353,8 @@ function renderPromocoesView() {
   return `
     <div class="view-header">
       <div class="view-headline">
-        <h2>Promoções e Destaques da Semana</h2>
-        <p>Altere as imagens, títulos e descrições dos 3 cards da página inicial. Sábado no centro e drinks nas laterais.</p>
+        <h2>Promoções</h2>
+        <p>Altere as imagens, títulos e descrições dos 3 cards da seção de Promoções da página inicial. A promoção do Balde Heineken fica no centro (meio) e os outros destaques nas laterais.</p>
       </div>
       <div class="view-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
         <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.handleResetPromocoes()">
@@ -2371,10 +2371,10 @@ function renderPromocoesView() {
       <div style="display: flex; gap: 12px; align-items: flex-start;">
         <div style="color: var(--admin-cyan); font-size: 1.3rem; line-height: 1;">💡</div>
         <div style="font-size: 0.85rem; color: var(--admin-text-main); line-height: 1.5;">
-          <strong style="color: #FFF;">Legenda Opcional nos Cards:</strong><br>
-          Os cards laterais vêm sem descrição por padrão (destacando apenas as fotos dos drinks).
-          Se você preencher o <strong>Título</strong> ou a <strong>Descrição</strong>, a tarja de texto será exibida automaticamente por cima da foto no site.
-          Se deixar em branco, o site exibirá a <strong>foto 100% limpa</strong>, ideal para drinks, petiscos e ambiente.
+          <strong style="color: #FFF;">Gerenciamento dos 3 Cards de Promoções (Lado a Lado):</strong><br>
+          O <strong>Card do Meio</strong> é o destaque central (Promoção do Balde Heineken). As 3 imagens ficam uma ao lado da outra na página inicial.
+          Se você preencher o <strong>Título</strong> ou a <strong>Descrição</strong>, a legenda com os detalhes da promoção será exibida sobre a foto.
+          Se deixar em branco, o site exibirá a <strong>foto limpa</strong> (ideal para fotos de drinks e petiscos).
         </div>
       </div>
     </div>
@@ -2384,8 +2384,8 @@ function renderPromocoesView() {
         ${cards.map((card, idx) => {
           const isCenter = idx === 1;
           const posLabel = idx === 0 
-            ? 'Card 1 — Lateral Esquerda (ex: Drinks)' 
-            : (idx === 1 ? 'Card 2 — Centro (Destaque Principal / Sábado)' : 'Card 3 — Lateral Direita (ex: Balde / Bebidas)');
+            ? 'Card 1 — Lateral Esquerda (ex: Drinks Autorais)' 
+            : (idx === 1 ? 'Card 2 — Centro (MEIO: Promoção Balde Heineken)' : 'Card 3 — Lateral Direita (ex: Sábado no Backstage)');
           const hasContent = Boolean((card.titulo && card.titulo.trim()) || (card.descricao && card.descricao.trim()));
 
           return `
@@ -4151,6 +4151,9 @@ window.toggleAtivoItemGaleria = async (id, novoAtivo) => {
     }
 
     if (item) item.ativo = novoAtivo;
+    try { localStorage.setItem('backstage_galeria', JSON.stringify(state.galeria)); } catch(e) {}
+    notifyRealtimeUpdate('GALERIA_UPDATE', state.galeria);
+    window.dispatchEvent(new CustomEvent('backstage_galeria_updated', { detail: state.galeria }));
     showToast(novoAtivo ? 'Mídia ativada na galeria pública.' : 'Mídia oculta na galeria pública.', 'info');
     renderApp();
   } catch (err) {
@@ -4179,6 +4182,10 @@ window.reordenarItemGaleria = async (id, direcao) => {
   // Swap no array
   state.galeria[idx] = targetItem;
   state.galeria[targetIdx] = currentItem;
+
+  try { localStorage.setItem('backstage_galeria', JSON.stringify(state.galeria)); } catch(e) {}
+  notifyRealtimeUpdate('GALERIA_UPDATE', state.galeria);
+  window.dispatchEvent(new CustomEvent('backstage_galeria_updated', { detail: state.galeria }));
 
   renderApp();
 
@@ -5136,8 +5143,8 @@ window.handleSalvarPromocoes = async (e) => {
         ...base,
         id: `promo-${idx + 1}`,
         posicao: idx === 0 ? 'esquerda' : (idx === 1 ? 'centro' : 'direita'),
-        label: idx === 0 ? 'Lateral Esquerda' : (idx === 1 ? 'Centro (Destaque Principal / Sábado)' : 'Lateral Direita'),
-        imagemUrl: imagemUrl || base.imagemUrl || '/assets/promos/promo-drinks.png',
+        label: idx === 0 ? 'Lateral Esquerda' : (idx === 1 ? 'Centro (MEIO: Promoção Balde Heineken)' : 'Lateral Direita (Sábado no Backstage)'),
+        imagemUrl: imagemUrl || base.imagemUrl || (idx === 1 ? '/assets/promos/promo-heineken.png' : (idx === 0 ? '/assets/promos/promo-drinks.png' : '/assets/promos/promo-sabado.jpg')),
         tag,
         titulo,
         descricao,

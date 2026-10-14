@@ -2593,6 +2593,13 @@ export async function initSalasGallery() {
       }
     }
 
+    if (items && items.length) {
+      try {
+        localStorage.setItem('backstage_galeria', JSON.stringify(items));
+      } catch(e) {}
+      window.dispatchEvent(new CustomEvent('backstage_galeria_updated', { detail: items }));
+    }
+
     renderMediaParaSala(container1, 'sala-red', items || [], 'Sala 1 (Sala Red)', 'var(--room-red)');
     renderMediaParaSala(container2, 'sala-green', items || [], 'Sala 2 (Sala Green)', 'var(--room-green)');
     renderMediaParaSala(container3, 'sala-blue', items || [], 'Sala 3 (Sala Blue)', 'var(--room-blue)');
@@ -2752,9 +2759,10 @@ export function syncPromocoesCards() {
   if (!cards || !Array.isArray(cards) || cards.length < 3) {
     cards = JSON.parse(JSON.stringify(DEFAULT_PROMOCOES));
   } else {
-    // Se o card 3 for o antigo ou não tiver o texto atualizado de Budweiser/Spaten
-    const desc3 = (cards[2]?.descricao || '').toLowerCase();
-    if (!desc3.includes('budweiser') && !desc3.includes('spaten')) {
+    // Se o cache ainda contiver o layout antigo com Sábado no centro, atualiza para o novo padrão com Heineken no meio
+    const isOldCenter = cards[1]?.titulo === 'Sábado no Backstage' || (cards[1]?.imagemUrl || '').includes('promo-sabado');
+    if (isOldCenter) {
+      cards[1] = { ...DEFAULT_PROMOCOES[1] };
       cards[2] = { ...DEFAULT_PROMOCOES[2] };
       try {
         localStorage.setItem('backstage_promocoes', JSON.stringify(cards));
@@ -3177,6 +3185,25 @@ export function initRealtimeListeners() {
           if (!snap.empty) applyCardapioToDOM(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         }, (err) => console.warn('Realtime cardapio aviso:', err));
       }
+
+      // Galeria (Atualizações visuais das salas e do Carrossel Viva o Backstage)
+      onSnapshot(collection(db, 'galeria'), (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          try { localStorage.setItem('backstage_galeria', JSON.stringify(list)); } catch(e) {}
+          window.dispatchEvent(new CustomEvent('backstage_galeria_updated', { detail: list }));
+          initSalasGallery();
+        }
+      }, (err) => console.warn('Realtime galeria aviso:', err));
+
+      // Promoções da Home
+      onSnapshot(doc(db, 'configuracoes', 'promocoes'), (snap) => {
+        if (snap.exists() && snap.data()?.cards) {
+          const cards = snap.data().cards;
+          try { localStorage.setItem('backstage_promocoes', JSON.stringify(cards)); } catch(e) {}
+          if (typeof syncPromocoesCards === 'function') syncPromocoesCards();
+        }
+      }, (err) => console.warn('Realtime promocoes aviso:', err));
     } catch(fsErr) {
       console.warn('Realtime Firestore subscription aviso:', fsErr);
     }

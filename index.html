@@ -350,10 +350,11 @@
       <nav class="desktop-nav" aria-label="Menu principal">
         <ul class="nav-menu">
           <li><a href="#inicio" class="nav-link active">Início</a></li>
-          <li><a href="#galeria" class="nav-link">Viva o Backstage</a></li>
+          <li><a href="#promocoes" class="nav-link">Promoções</a></li>
           <li><a href="#salao-principal" class="nav-link">Salão</a></li>
           <li><a href="#aniversario" class="nav-link">Aniversário</a></li>
           <li><a href="#agendamento" class="nav-link" style="color: var(--primary-cyan); font-weight: 800;">Agendar</a></li>
+          <li><a href="#galeria" class="nav-link">Viva o Backstage</a></li>
           <li><a href="#salas" class="nav-link">Salas</a></li>
           <li><a href="/cardapio.html" class="nav-link" style="color: var(--primary-magenta); font-weight: 800;">Cardápio</a></li>
           <li><a href="#localizacao" class="nav-link">Localização</a></li>
@@ -406,10 +407,11 @@
 
     <ul class="mobile-nav-list">
       <li><a href="#inicio" class="mobile-nav-link" onclick="closeMobileMenu()">Início <span>→</span></a></li>
-      <li><a href="#galeria" class="mobile-nav-link" onclick="closeMobileMenu()">Viva o Backstage <span>→</span></a></li>
+      <li><a href="#promocoes" class="mobile-nav-link" onclick="closeMobileMenu()">Promoções <span>→</span></a></li>
       <li><a href="#salao-principal" class="mobile-nav-link" onclick="closeMobileMenu()">Salão Principal <span>→</span></a></li>
       <li><a href="#aniversario" class="mobile-nav-link" onclick="closeMobileMenu()">Aniversário <span>→</span></a></li>
       <li><a href="#agendamento" class="mobile-nav-link" onclick="closeMobileMenu()" style="color: var(--primary-cyan); font-weight: 800;">Agendar Sala <span>→</span></a></li>
+      <li><a href="#galeria" class="mobile-nav-link" onclick="closeMobileMenu()">Viva o Backstage <span>→</span></a></li>
       <li><a href="#salas" class="mobile-nav-link" onclick="closeMobileMenu()">Salas Privadas <span>→</span></a></li>
       <li><a href="#termos" class="mobile-nav-link" onclick="closeMobileMenu(); openTermosModal(event)">Ciência das Responsabilidades <span>→</span></a></li>
       <li><a href="#regras" class="mobile-nav-link" onclick="closeMobileMenu(); openInfoAntesModal(event)">Regras & Avisos <span>→</span></a></li>
@@ -472,58 +474,54 @@
             </svg>
             <span>Reservar Mesa</span>
           </a>
-          <a href="#galeria" class="hero-cta-btn hero-cta-conheca" id="heroConhecaBtn">
+          <a href="#promocoes" class="hero-cta-btn hero-cta-conheca" id="heroConhecaBtn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <circle cx="12" cy="12" r="10"/>
-              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
-            <span>Conheça o Backstage</span>
+            <span>Ver Promoções</span>
           </a>
         </div>
       </div>
     </section>
 
     <!-- ========================================================================
-         VIVA O BACKSTAGE (CARROSSEL INTERATIVO FLEXCAROUSEL - REACT BITS)
+         PROMOÇÕES DA CASA (GERENCIÁVEL PELO PAINEL DE ADMINISTRAÇÃO)
+         Título "Promoções", 100 palavras SEO para "karaokê de brasília" / "karaoke brasilia"
+         3 Imagens uma ao lado da outra com Balde de Heineken no Centro
          ======================================================================== -->
-    <section class="gallery-section" id="galeria">
+    <section class="promocoes-section" id="promocoes" aria-label="Promoções do Backstage Karaokê">
       <div class="container">
-        <div class="section-header" style="margin-bottom: 24px;">
-          <h2 class="section-title">Viva o Backstage</h2>
-          <p class="section-subtitle">
-            Viva os drinks autorais, promoções épicas e momentos inesquecíveis no karaokê mais animado de Brasília!
+        <div class="section-header promocoes-header" style="margin-bottom: 24px; text-align: center;">
+          <h2 class="section-title">Promoções</h2>
+          <p class="section-subtitle promocoes-seo-text">
+            O Backstage é o melhor karaokê de Brasília, localizado no coração do Distrito Federal para quem busca diversão, música de qualidade e gastronomia premium. Se você procura um autêntico karaokê em Brasília para comemorar aniversário, confraternização ou curtir a noite com amigos, nosso espaço oferece salão principal vibrante com palco e iluminação profissional, além de salas privativas temáticas com isolamento acústico de ponta. Viva a experiência definitiva de karaokê Brasília com carta de drinks autorais, chopp trincando, petiscos irresistíveis e promoções imperdíveis a semana toda. Reserve agora a sua sala privada ou mesa no maior e melhor karaokê de Brasília!
           </p>
         </div>
 
-        <!-- Componente React Bits: FlexCarousel com WebGL/OGL -->
-        <div class="viva-flex-carousel-wrapper" style="width: 100%; height: 560px; position: relative; margin-bottom: 26px; border-radius: 20px; overflow: hidden; background: radial-gradient(circle at center, rgba(14, 22, 45, 0.75) 0%, rgba(5, 8, 19, 0.98) 100%); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);">
-          <div id="vivaFlexCarouselMount" style="width: 100%; height: 100%; position: relative;"></div>
-        </div>
-
-        <!-- Cards de Promoções Gerenciados pelo Painel de Admin -->
+        <!-- Cards de Promoções Gerenciados pelo Painel de Admin (3 imagens uma ao lado da outra) -->
         <div class="gallery-grid promo-grid-3" id="promoCardsContainer" style="margin-bottom: 24px;">
           <!-- Card 1: Lateral Esquerda (Drinks autorais) -->
           <div class="gallery-card promo-card" id="promoCard1" data-slot="0">
-            <img src="/assets/promos/promo-drinks.png" alt="Drinks e Coquetéis no Backstage Karaokê" loading="lazy">
+            <img src="/assets/promos/promo-drinks.png" alt="Drinks e Coquetéis no Backstage Karaokê Brasília" loading="lazy">
           </div>
 
-          <!-- Card 2: Centro (Sábado - Destaque Principal) -->
+          <!-- Card 2: Centro (MEIO: Promoção Balde de Cerveja Heineken) -->
           <div class="gallery-card promo-card" id="promoCard2" data-slot="1">
-            <img src="/assets/promos/promo-sabado.jpg" alt="Promoção de Sábado no Backstage Karaokê" loading="lazy">
-            <div class="gallery-caption promo-caption">
-              <span class="caption-tag">Noite Especial</span>
-              <span class="caption-title">Sábado no Backstage</span>
-              <p class="promo-desc">Combos especiais com petiscos, Gin Tropical e palco aberto até 3h30 da manhã para comemorar sem hora para acabar!</p>
-            </div>
-          </div>
-
-          <!-- Card 3: Lateral Direita (Balde - Promoções da Casa por Tempo Limitado) -->
-          <div class="gallery-card promo-card" id="promoCard3" data-slot="2">
-            <img src="/assets/promos/promo-balde-promocao.jpg" alt="Promoções da Casa por Tempo Limitado - Balde de Cerveja" loading="lazy">
+            <img src="/assets/promos/promo-heineken.png" alt="Promoção Balde de Cerveja Heineken no Backstage Karaokê Brasília" loading="lazy">
             <div class="gallery-caption promo-caption" style="display: flex;">
               <span class="caption-tag" style="background: rgba(255, 0, 122, 0.2); border: 1px solid rgba(255, 0, 122, 0.45); color: #FF007A; padding: 2px 8px; border-radius: 999px; width: fit-content; font-size: 0.68rem; font-weight: 800; text-transform: uppercase;">Tempo Limitado</span>
               <span class="caption-title" style="margin-top: 4px; font-size: 1.02rem; color: #FFFFFF; font-weight: 800;">Balde por Nossa Conta</span>
               <p class="promo-desc" style="font-size: 0.78rem; line-height: 1.4; color: #E2E8F0; margin-top: 4px;">Vc com mais 5 amigos chegando juntos e fazendo um pagamento integral das entradas ganha um balde de long neck por nossa conta (obs: Budweiser ou Spaten). Voucher retirado na recepção, lembrando que é só de terça a quinta.</p>
+            </div>
+          </div>
+
+          <!-- Card 3: Lateral Direita (Sábado no Backstage) -->
+          <div class="gallery-card promo-card" id="promoCard3" data-slot="2">
+            <img src="/assets/promos/promo-sabado.jpg" alt="Sábado no Backstage Karaokê Brasília" loading="lazy">
+            <div class="gallery-caption promo-caption" style="display: flex;">
+              <span class="caption-tag">Noite Especial</span>
+              <span class="caption-title">Sábado no Backstage</span>
+              <p class="promo-desc">Combos especiais com petiscos, Gin Tropical e palco aberto até 3h30 da manhã para comemorar sem hora para acabar!</p>
             </div>
           </div>
         </div>
@@ -973,11 +971,26 @@
       </div>
     </section>
 
+    <!-- ========================================================================
+         VIVA O BACKSTAGE (CARROSSEL INTERATIVO FLEXCAROUSEL - REACT BITS)
+         Posicionado logo após Reservar Salas Privadas
+         Fotos editáveis pelo painel administrativo (/admin/galeria)
+         ======================================================================== -->
+    <section class="gallery-section" id="galeria" aria-label="Galeria Viva o Backstage">
+      <div class="container">
+        <div class="section-header" style="margin-bottom: 24px; text-align: center;">
+          <h2 class="section-title">Viva o Backstage</h2>
+          <p class="section-subtitle" style="max-width: 680px; margin: 0 auto;">
+            Viva os drinks autorais, momentos inesquecíveis e a energia contagiante do melhor karaokê de Brasília!
+          </p>
+        </div>
 
-
-
-
-
+        <!-- Componente React Bits: FlexCarousel com WebGL/OGL -->
+        <div class="viva-flex-carousel-wrapper" style="width: 100%; height: 560px; position: relative; margin-bottom: 26px; border-radius: 20px; overflow: hidden; background: radial-gradient(circle at center, rgba(14, 22, 45, 0.75) 0%, rgba(5, 8, 19, 0.98) 100%); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);">
+          <div id="vivaFlexCarouselMount" style="width: 100%; height: 100%; position: relative;"></div>
+        </div>
+      </div>
+    </section>
 
     <!-- ========================================================================
          13. LOCALIZAÇÃO & 14. HORÁRIOS

@@ -288,7 +288,7 @@ export const DEFAULT_PROMOCOES = [
   {
     id: 'promo-1',
     posicao: 'esquerda',
-    label: 'Lateral Esquerda',
+    label: 'Lateral Esquerda (Drinks & Coquetéis)',
     imagemUrl: '/assets/promos/promo-drinks.png',
     imagemPublicId: null,
     tag: '',
@@ -298,22 +298,22 @@ export const DEFAULT_PROMOCOES = [
   {
     id: 'promo-2',
     posicao: 'centro',
-    label: 'Centro (Destaque Principal / Sábado)',
+    label: 'Centro (Promoção da Cerveja / Balde Heineken)',
+    imagemUrl: '/assets/promos/promo-heineken.png',
+    imagemPublicId: null,
+    tag: 'Tempo Limitado',
+    titulo: 'Balde por Nossa Conta',
+    descricao: 'Vc com mais 5 amigos chegando juntos e fazendo um pagamento integral das entradas ganha um balde de long neck por nossa conta (obs: Budweiser ou Spaten). Voucher retirado na recepção, lembrando que é só de terça a quinta.'
+  },
+  {
+    id: 'promo-3',
+    posicao: 'direita',
+    label: 'Lateral Direita (Noite Especial / Sábado)',
     imagemUrl: '/assets/promos/promo-sabado.jpg',
     imagemPublicId: null,
     tag: 'Noite Especial',
     titulo: 'Sábado no Backstage',
     descricao: 'Combos especiais com petiscos, Gin Tropical e palco aberto até 3h30 da manhã para comemorar sem hora para acabar!'
-  },
-  {
-    id: 'promo-3',
-    posicao: 'direita',
-    label: 'Lateral Direita (Promoções da Casa / Cerveja)',
-    imagemUrl: '/assets/promos/promo-balde-promocao.jpg',
-    imagemPublicId: null,
-    tag: 'Tempo Limitado',
-    titulo: 'Balde por Nossa Conta',
-    descricao: 'Vc com mais 5 amigos chegando juntos e fazendo um pagamento integral das entradas ganha um balde de long neck por nossa conta (obs: Budweiser ou Spaten). Voucher retirado na recepção, lembrando que é só de terça a quinta.'
   }
 ];
 
