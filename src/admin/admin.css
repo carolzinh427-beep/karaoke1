@@ -479,10 +479,19 @@ body.admin-body {
 /* Views Container */
 .admin-content-view {
   flex: 1;
-  padding: 32px;
+  padding: 1cm;
+  margin: 1cm auto;
   max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
+  width: calc(100% - 2cm);
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .admin-content-view {
+    padding: 1cm;
+    margin: 1cm 0;
+    width: 100%;
+  }
 }
 
 /* ==========================================================================
@@ -721,32 +730,44 @@ body.admin-body {
   letter-spacing: -0.02em;
 }
 
-/* Section Header in Views */
+/* Section Header in Views - Centralizado */
 .view-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
   margin-bottom: 24px;
+  width: 100%;
 }
 
-.view-headline h2 {
+.view-headline {
+  text-align: center;
+  width: 100%;
+}
+
+.view-headline h2,
+.view-headline h1 {
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .view-headline p {
   font-size: 0.9rem;
   color: var(--admin-text-muted);
   margin-top: 4px;
+  text-align: center;
 }
 
 .view-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* Card Container */
@@ -1230,8 +1251,8 @@ body.admin-body {
 /* Grid of Cards (Salas, Cardapio, Galeria) */
 .admin-items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
 }
 
 .admin-item-card {
@@ -1252,29 +1273,66 @@ body.admin-body {
 
 .admin-item-thumb {
   width: 100%;
-  height: 180px;
+  height: 110px;
+  max-height: 110px;
   object-fit: cover;
   background: #000;
 }
 
 .admin-item-body {
-  padding: 18px;
+  padding: 14px;
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 .admin-item-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
   margin-bottom: 4px;
+  text-align: center;
 }
 
 .admin-item-desc {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--admin-text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   flex: 1;
+  line-height: 1.4;
+}
+
+/* Grid Específica e Compacta de Salas no Painel de Adm */
+.admin-salas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+
+.admin-sala-card .admin-sala-thumb {
+  height: 95px !important;
+  max-height: 95px !important;
+  object-fit: cover;
+}
+
+.admin-sala-card .admin-sala-body {
+  padding: 10px 12px !important;
+}
+
+.admin-sala-card .admin-item-title {
+  font-size: 0.98rem !important;
+  margin-bottom: 2px !important;
+  text-align: center;
+}
+
+.admin-sala-card .admin-item-desc {
+  font-size: 0.78rem !important;
+  margin-bottom: 6px !important;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .admin-item-footer {
@@ -1645,7 +1703,7 @@ body.admin-body {
 
 .cardapio-item-img-wrap {
   width: 100%;
-  height: 180px;
+  height: 110px;
   position: relative;
   background: rgba(0, 0, 0, 0.35);
   overflow: hidden;

@@ -80,6 +80,7 @@ export default async function handler(req, res) {
               pixCopiaCola: row.pix_copia_cola || '',
               pixQrcodeUrl: row.pix_qrcode_url || '',
               horarios: row.horarios || {},
+              informacoesImportantes: row.informacoes_importantes || row.informacoesImportantes || '',
               atualizadoEm: row.updated_at || row.created_at
             }
           });
@@ -116,6 +117,7 @@ export default async function handler(req, res) {
     contatoEmail,
     endereco,
     horarios,
+    informacoesImportantes,
     pdfUrl,
     pdfPublicId,
     pixChave,
@@ -165,6 +167,7 @@ export default async function handler(req, res) {
     pix_copia_cola: String(pixCopiaCola || '').trim(),
     pix_qrcode_url: String(pixQrcodeUrl || '').trim(),
     horarios: horarios || {},
+    informacoes_importantes: String(informacoesImportantes || '').trim(),
     updated_at: new Date().toISOString()
   };
 
@@ -186,9 +189,9 @@ export default async function handler(req, res) {
         const errJson = await supaRes.json().catch(() => ({}));
 
         // Caso colunas novas ainda não existam no schema remoto do Supabase
-        if (errJson?.code === '42703' || errJson?.message?.includes('column') || errJson?.message?.includes('contato_email')) {
+        if (errJson?.code === '42703' || errJson?.message?.includes('column') || errJson?.message?.includes('contato_email') || errJson?.message?.includes('informacoes_importantes')) {
           console.warn('[Admin Config] Colunas adicionais ausentes no Supabase, salvando campos essenciais...', errJson?.message);
-          const { contato_email, pix_chave, pix_tipo_chave, pix_titular, pix_copia_cola, pix_qrcode_url, ...payloadBase } = payload;
+          const { contato_email, pix_chave, pix_tipo_chave, pix_titular, pix_copia_cola, pix_qrcode_url, informacoes_importantes, ...payloadBase } = payload;
           const retryRes = await fetch(`${supabaseUrl}/rest/v1/configuracoes`, {
             method: 'POST',
             headers: {

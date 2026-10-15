@@ -70,6 +70,73 @@ import {
 } from '../lib/cloudinary.js';
 
 // ============================================================================
+// TEXTO PADRÃO DA POLÍTICA / INFORMAÇÕES IMPORTANTES
+// ============================================================================
+export const DEFAULT_INFORMACOES_IMPORTANTE_TEXT = `🎙️ POLÍTICA DO BACKSTAGE KARAOKÊ 🎙️
+
+🎉 Salas Privadas
+
+🔴 SALA MENOR — Até 30 pessoas
+Valor total: R$ 800,00
+R$ 400,00 no agendamento
+R$ 400,00 no dia do evento
+
+🟢 SALA MÉDIA — Até 40 pessoas
+Valor total: R$ 900,00
+R$ 450,00 no agendamento
+R$ 450,00 no dia do evento
+
+🔵 SALA MAIOR — Até 50 pessoas
+Valor total: R$ 1.000,00
+R$ 500,00 no agendamento
+R$ 500,00 no dia do evento
+
+Formas de pagamento: Pix.
+
+Chave Pix CPF: 81980477191
+Nome: Marceley Martins
+
+Reservas e cancelamentos:
+As reservas são feitas mediante pagamento de 50% do valor total. Em caso de desistência, o valor pago para o agendamento não é reembolsável.
+
+🎉 Regras das salas privadas
+
+- Os convidados não pagam entrada.
+- Menores de idade são bem-vindos nas salas privadas.
+- É permitido trazer bolo e docinhos e decorar a mesa.
+- Bebidas e salgados são proibidos.
+- A taxa de rolha é de R$ 80,00 por garrafa.
+- De terça a quinta-feira, as salas têm desconto. Consulte a promoção.
+
+🎱 Regra da sinuca
+
+- Não é permitido que crianças joguem sinuca nas dependências do Backstage Karaokê.
+
+🎤 Salão principal
+
+Para reservas, informe:
+
+- Nome.
+- Dia desejado.
+- Quantidade de convidados.
+
+Aguarde o atendimento para confirmação.
+
+⚠️ No salão principal, é proibida a entrada de menores de idade.
+
+📲 Horários de atendimento pelo WhatsApp:
+Segunda a sábado, das 10h30 às 21h30.
+
+🎶 Horários do karaokê:
+
+- Terça-feira: 19h às 2h30.
+- Quarta a sábado: 19h às 3h30.
+
+❌ Este número não recebe ligações.
+
+🎊 Backstage Karaokê — Onde o som é mais alto que o preço!`;
+
+// ============================================================================
 // 0. SINCRONIZAÇÃO EM TEMPO REAL MULTI-ABA E MULTI-DISPOSITIVO
 // ============================================================================
 export function notifyRealtimeUpdate(type, data) {
@@ -769,7 +836,6 @@ function renderApp() {
             <div class="user-avatar">${(state.user.email || 'A').charAt(0).toUpperCase()}</div>
             <div class="user-meta">
               <div class="user-email-label" title="${state.user.email}">${state.user.email}</div>
-              <div class="user-role-badge">Online</div>
             </div>
           </div>
           <button type="button" class="btn-signout" onclick="window.adminLogout()">
@@ -790,7 +856,6 @@ function renderApp() {
           </div>
 
           <div class="topbar-right">
-            <div class="topbar-badge">Sistema Conectado</div>
           </div>
         </header>
 
@@ -1560,15 +1625,15 @@ function renderSalasView() {
       </div>
     </div>
 
-    <div class="admin-items-grid">
+    <div class="admin-items-grid admin-salas-grid">
       ${state.salas.map(s => {
         const midiasSala = state.galeria.filter(g => g.sala === s.id || (s.id === 'sala-red' && (g.sala === 'sala-1' || (g.tag||'').toLowerCase().includes('red'))) || (s.id === 'sala-green' && (g.sala === 'sala-2' || (g.tag||'').toLowerCase().includes('green'))) || (s.id === 'sala-blue' && (g.sala === 'sala-3' || (g.tag||'').toLowerCase().includes('blue'))));
         const numFotos = midiasSala.filter(g => g.tipo !== 'video').length;
         const numVideos = midiasSala.filter(g => g.tipo === 'video').length;
         return `
-        <div class="admin-item-card">
-          <img src="${s.imagem || '/assets/brand/hero-bg.webp'}" alt="${s.nome}" class="admin-item-thumb">
-          <div class="admin-item-body">
+        <div class="admin-item-card admin-sala-card">
+          <img src="${s.imagem || '/assets/brand/hero-bg.webp'}" alt="${s.nome}" class="admin-item-thumb admin-sala-thumb">
+          <div class="admin-item-body admin-sala-body">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <h3 class="admin-item-title">${s.nome}</h3>
               <span class="badge-status ${s.ativo ? 'confirmed' : 'cancelled'}">${s.ativo ? 'Ativa' : 'Inativa'}</span>
@@ -2334,6 +2399,17 @@ function renderConfiguracoesView() {
           </div>
         </div>
 
+        <!-- Seção de Informações Importantes (Política do Backstage Karaokê) -->
+        <div style="border-top: 1px solid var(--admin-border); margin: 24px 0; padding-top: 20px;">
+          <h4 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; color: var(--admin-cyan); text-align: center;">Informações Importantes (Política do Backstage Karaokê)</h4>
+          <p style="font-size: 0.82rem; color: var(--admin-text-muted); margin-bottom: 14px; line-height: 1.45; text-align: center;">
+            Edite aqui o texto oficial exibido no botão "Informações Importantes" (Clique aqui antes) da página inicial.
+          </p>
+          <div class="form-group">
+            <textarea id="confInformacoesImportantes" class="form-textarea" rows="20" style="font-family: inherit; font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap;">${conf.informacoesImportantes || DEFAULT_INFORMACOES_IMPORTANTE_TEXT}</textarea>
+          </div>
+        </div>
+
         <div style="display: flex; justify-content: flex-end;">
           <button type="submit" class="btn-admin btn-admin-primary" id="btnSalvarConfig">
             Salvar Configurações
@@ -2356,26 +2432,13 @@ function renderPromocoesView() {
         <h2>Promoções</h2>
         <p>Altere as imagens, títulos e descrições dos 3 cards da seção de Promoções da página inicial. A promoção do Balde Heineken fica no centro (meio) e os outros destaques nas laterais.</p>
       </div>
-      <div class="view-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <div class="view-actions" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
         <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.handleResetPromocoes()">
           Restaurar Padrão
         </button>
         <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarPromosTop" onclick="document.getElementById('formAdminPromocoes').requestSubmit()">
           💾 Salvar Alterações
         </button>
-      </div>
-    </div>
-
-    <!-- Dica sobre Descrição Opcional -->
-    <div class="admin-card" style="margin-bottom: 24px; padding: 14px 20px; border-left: 4px solid var(--admin-cyan); background: rgba(0, 240, 255, 0.04);">
-      <div style="display: flex; gap: 12px; align-items: flex-start;">
-        <div style="color: var(--admin-cyan); font-size: 1.3rem; line-height: 1;">💡</div>
-        <div style="font-size: 0.85rem; color: var(--admin-text-main); line-height: 1.5;">
-          <strong style="color: #FFF;">Gerenciamento dos 3 Cards de Promoções (Lado a Lado):</strong><br>
-          O <strong>Card do Meio</strong> é o destaque central (Promoção do Balde Heineken). As 3 imagens ficam uma ao lado da outra na página inicial.
-          Se você preencher o <strong>Título</strong> ou a <strong>Descrição</strong>, a legenda com os detalhes da promoção será exibida sobre a foto.
-          Se deixar em branco, o site exibirá a <strong>foto limpa</strong> (ideal para fotos de drinks e petiscos).
-        </div>
       </div>
     </div>
 
@@ -2407,7 +2470,7 @@ function renderPromocoesView() {
               </div>
 
               <!-- Prévia Visual da Imagem -->
-              <div style="position: relative; height: 180px; border-radius: 8px; overflow: hidden; margin-bottom: 14px; background: #000; border: 1px solid rgba(255,255,255,0.1);">
+              <div style="position: relative; height: 110px; border-radius: 8px; overflow: hidden; margin-bottom: 14px; background: #000; border: 1px solid rgba(255,255,255,0.1);">
                 <img id="promoPreview_${idx}" src="${card.imagemUrl}" alt="Prévia" style="width: 100%; height: 100%; object-fit: cover;">
                 <div id="promoOverlayPreview_${idx}" style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 10px 12px; background: linear-gradient(180deg, transparent 0%, rgba(4,6,14,0.95) 100%); display: ${hasContent ? 'block' : 'none'};">
                   <div id="promoTagPreview_${idx}" style="font-size: 0.65rem; color: var(--admin-cyan); font-weight: 800; text-transform: uppercase;">${card.tag || ''}</div>
@@ -4566,8 +4629,9 @@ window.handleSalvarConfiguracoes = async (e) => {
   const terca = document.getElementById('confHorarioTerca')?.value?.trim();
   const quarta = document.getElementById('confHorarioQuarta')?.value?.trim();
   const quinta = document.getElementById('confHorarioQuinta')?.value?.trim();
-  const sexta = document.getElementById('confHorarioSexta')?.value?.trim();
+  const sextaS = document.getElementById('confHorarioSexta')?.value?.trim();
   const sabado = document.getElementById('confHorarioSabado')?.value?.trim();
+  const informacoesImportantes = document.getElementById('confInformacoesImportantes')?.value || '';
 
   // 2. Validação rigorosa dos campos no frontend
   const wppLimpo = (whatsapp || '').replace(/\D/g, '');
@@ -4610,11 +4674,12 @@ window.handleSalvarConfiguracoes = async (e) => {
         terca: terca || '19:00 → 02:30 (madrugada de quarta)',
         quarta: quarta || '19:00 → 03:30 (madrugada de quinta)',
         quinta: quinta || '19:00 → 03:30 (madrugada de sexta)',
-        sexta: sexta || '18:30 → 04:00 (madrugada de sábado)',
+        sexta: sextaS || '18:30 → 04:00 (madrugada de sábado)',
         sabado: sabado || '18:30 → 04:00 (madrugada de domingo)',
         domingo: 'FECHADO',
         segunda: 'FECHADO'
       },
+      informacoesImportantes,
       atualizadoEm: new Date().toISOString()
     };
 
@@ -4652,7 +4717,8 @@ window.handleSalvarConfiguracoes = async (e) => {
           pixTitular: payload.pixTitular,
           pixQrcodeUrl: payload.pixQrcodeUrl,
           pixCopiaCola: payload.pixCopiaCola,
-          horarios: payload.horarios
+          horarios: payload.horarios,
+          informacoesImportantes: payload.informacoesImportantes
         })
       });
 
@@ -4707,6 +4773,9 @@ window.handleSalvarConfiguracoes = async (e) => {
     // 8. Grava no localStorage para cache local
     try {
       localStorage.setItem('backstage_configuracoes', JSON.stringify(payload));
+      if (payload.informacoesImportantes) {
+        localStorage.setItem('backstage_informacoes_importantes', payload.informacoesImportantes);
+      }
     } catch(e) {}
 
     state.configuracoes = { ...state.configuracoes, ...payload };

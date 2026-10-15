@@ -199,35 +199,69 @@
       </div>
 
       <div class="welcome-info-body">
-        <div class="rules-grid">
-          <div class="rule-card">
-            <div class="rule-text">Nas salas privadas o valor é único da sala inteira, sem cobrança por pessoa</div>
-          </div>
-          <div class="rule-card">
-            <div class="rule-text">A taxa de rolha é de R$ 80 por garrafa</div>
-          </div>
-          <div class="rule-card perk">
-            <div class="rule-text">De terça a quinta as salas têm condições especiais, consulte a promoção!</div>
-          </div>
-          <div class="rule-card perk">
-            <div class="rule-text">Nas salas privadas todos os seus convidados têm acesso livre sem pagamento de entrada</div>
-          </div>
-          <div class="rule-card perk">
-            <div class="rule-text">Menores de idade são bem-vindos nas salas privadas</div>
-          </div>
-          <div class="rule-card alert">
-            <div class="rule-text">Menores de idade não são permitidos no Salão Principal (exclusivo para 18+)</div>
-          </div>
-          <div class="rule-card perk">
-            <div class="rule-text">Pode trazer bolo e docinhos e decorar a mesa para aniversários</div>
-          </div>
-          <div class="rule-card alert">
-            <div class="rule-text">Bebidas e salgados externos são proibidos no Salão Principal</div>
-          </div>
-          <div class="rule-card">
-            <div class="rule-text">Atendimento exclusivo pelo WhatsApp, o número não recebe ligações de voz</div>
-          </div>
-        </div>
+        <div id="welcomeInfoContentBox" class="welcome-info-text-box" style="white-space: pre-wrap; font-family: inherit; font-size: 0.92rem; line-height: 1.65; color: #E2E8F0; padding: 16px 20px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; max-height: 65vh; overflow-y: auto;">🎙️ POLÍTICA DO BACKSTAGE KARAOKÊ 🎙️
+
+🎉 Salas Privadas
+
+🔴 SALA MENOR — Até 30 pessoas
+Valor total: R$ 800,00
+R$ 400,00 no agendamento
+R$ 400,00 no dia do evento
+
+🟢 SALA MÉDIA — Até 40 pessoas
+Valor total: R$ 900,00
+R$ 450,00 no agendamento
+R$ 450,00 no dia do evento
+
+🔵 SALA MAIOR — Até 50 pessoas
+Valor total: R$ 1.000,00
+R$ 500,00 no agendamento
+R$ 500,00 no dia do evento
+
+Formas de pagamento: Pix.
+
+Chave Pix CPF: 81980477191
+Nome: Marceley Martins
+
+Reservas e cancelamentos:
+As reservas são feitas mediante pagamento de 50% do valor total. Em caso de desistência, o valor pago para o agendamento não é reembolsável.
+
+🎉 Regras das salas privadas
+
+- Os convidados não pagam entrada.
+- Menores de idade são bem-vindos nas salas privadas.
+- É permitido trazer bolo e docinhos e decorar a mesa.
+- Bebidas e salgados são proibidos.
+- A taxa de rolha é de R$ 80,00 por garrafa.
+- De terça a quinta-feira, as salas têm desconto. Consulte a promoção.
+
+🎱 Regra da sinuca
+
+- Não é permitido que crianças joguem sinuca nas dependências do Backstage Karaokê.
+
+🎤 Salão principal
+
+Para reservas, informe:
+
+- Nome.
+- Dia desejado.
+- Quantidade de convidados.
+
+Aguarde o atendimento para confirmação.
+
+⚠️ No salão principal, é proibida a entrada de menores de idade.
+
+📲 Horários de atendimento pelo WhatsApp:
+Segunda a sábado, das 10h30 às 21h30.
+
+🎶 Horários do karaokê:
+
+- Terça-feira: 19h às 2h30.
+- Quarta a sábado: 19h às 3h30.
+
+❌ Este número não recebe ligações.
+
+🎊 Backstage Karaokê — Onde o som é mais alto que o preço!</div>
       </div>
 
       <div class="welcome-info-footer">
@@ -245,6 +279,11 @@
     function openInfoAntesModal(e) {
       if (e && e.preventDefault) e.preventDefault();
       var modal = document.getElementById('welcomeInfoModal');
+      var box = document.getElementById('welcomeInfoContentBox');
+      try {
+        var saved = localStorage.getItem('backstage_informacoes_importantes');
+        if (saved && box) box.textContent = saved;
+      } catch(err) {}
       if (modal) {
         modal.style.display = 'flex';
         requestAnimationFrame(function() {
