@@ -18,22 +18,10 @@ const DEFAULT_ITEMS = [
     subtitle: 'Energia contagiante e noitada inesquecível'
   },
   {
-    src: '/assets/galeria/sala-red-karaoke.jpg',
-    alt: 'Sala 1 - Sala Red (Até 30 pessoas)',
-    title: 'Sala 1 — Sala Red',
-    subtitle: 'Lounge privativo intimista com iluminação vermelha'
-  },
-  {
     src: '/assets/drinks/tanqueray-tropical.webp',
     alt: 'Tanqueray Tropical Gin',
     title: 'Tanqueray Tropical',
     subtitle: 'Drinks e coquetéis autorais do nosso cardápio'
-  },
-  {
-    src: '/assets/galeria/sala-green-karaoke.jpg',
-    alt: 'Sala 2 - Sala Green (Até 40 pessoas)',
-    title: 'Sala 2 — Sala Green',
-    subtitle: 'Sofás amplos e luzes esmeralda para seu evento'
   },
   {
     src: '/assets/drinks/aperol-spritz.jpg',
@@ -46,12 +34,6 @@ const DEFAULT_ITEMS = [
     alt: 'Comemorações e Aniversários com a Turma',
     title: 'Viva o Momento com os Amigos',
     subtitle: 'Brinde e cante suas músicas favoritas'
-  },
-  {
-    src: '/assets/galeria/sala-blue-karaoke.jpg',
-    alt: 'Sala 3 - Sala Blue VIP (Até 50 pessoas)',
-    title: 'Sala 3 — Sala Blue VIP',
-    subtitle: 'Nossa maior sala com acústica e sistema premium'
   },
   {
     src: '/assets/drinks/moscow-mule.jpg',
@@ -1399,10 +1381,13 @@ function getCarouselItemsFromStorage() {
     const list = JSON.parse(raw);
     if (!Array.isArray(list) || !list.length) return null;
     const activeImages = list.filter(g => g.tipo !== 'video' && g.ativo !== false && g.url);
-    // Filtrar fora qualquer imagem antiga que contenha preços ou seja banner promocional
+    // Filtrar fora qualquer imagem antiga que contenha preços, banner promocional ou salas
     const cleanImages = activeImages.filter(g => {
       const u = (g.url || '').toLowerCase();
-      return !u.includes('promo-') && !u.includes('/assets/promos/');
+      const t = (g.titulo || '').toLowerCase();
+      const s = (g.sala || '').toLowerCase();
+      const isSala = u.includes('sala-') || s.startsWith('sala') || t.includes('sala red') || t.includes('sala green') || t.includes('sala blue');
+      return !u.includes('promo-') && !u.includes('/assets/promos/') && !isSala;
     });
     if (cleanImages.length >= 3) {
       cleanImages.sort((a, b) => (a.ordem || 999) - (b.ordem || 999));
