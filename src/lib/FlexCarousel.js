@@ -12,58 +12,70 @@ import '../components/FlexCarousel.css';
 
 const DEFAULT_ITEMS = [
   {
-    src: '/assets/promos/promo-sabado.jpg',
-    alt: 'Sábado no Backstage Karaokê',
-    title: 'Sábado no Backstage',
-    subtitle: 'Palco aberto & noitada até 3h30'
+    src: '/assets/galeria/karaoke-galera-amigos.jpg',
+    alt: 'Karaokê com a Galera no Backstage',
+    title: 'Karaokê com a Galera',
+    subtitle: 'Energia contagiante e noitada inesquecível'
   },
   {
-    src: '/assets/promos/promo-drinks.png',
-    alt: 'Drinks & Coquetéis Autorais',
-    title: 'Drinks & Coquetéis',
-    subtitle: 'Mixologia exclusiva e clássicos'
-  },
-  {
-    src: '/assets/promos/promo-balde-promocao.jpg',
-    alt: 'Promoções da Casa por Tempo Limitado - Balde por Nossa Conta',
-    title: 'Balde por Nossa Conta (Budweiser ou Spaten)',
-    subtitle: 'Vc + 5 amigos ganham um balde de long neck! Terça a quinta.'
-  },
-  {
-    src: '/assets/promos/promo-sexta.jpg',
-    alt: 'Sexta no Backstage Karaokê',
-    title: 'Sexta Especial',
-    subtitle: 'A vibe mais animada de Brasília'
-  },
-  {
-    src: '/assets/promos/promo-quinta.jpg',
-    alt: 'Quinta no Backstage',
-    title: 'Quinta no Backstage',
-    subtitle: 'Promoções exclusivas'
+    src: '/assets/galeria/sala-red-karaoke.jpg',
+    alt: 'Sala 1 - Sala Red (Até 30 pessoas)',
+    title: 'Sala 1 — Sala Red',
+    subtitle: 'Lounge privativo intimista com iluminação vermelha'
   },
   {
     src: '/assets/drinks/tanqueray-tropical.webp',
     alt: 'Tanqueray Tropical Gin',
     title: 'Tanqueray Tropical',
-    subtitle: 'Drinks Tropicais'
+    subtitle: 'Drinks e coquetéis autorais do nosso cardápio'
+  },
+  {
+    src: '/assets/galeria/sala-green-karaoke.jpg',
+    alt: 'Sala 2 - Sala Green (Até 40 pessoas)',
+    title: 'Sala 2 — Sala Green',
+    subtitle: 'Sofás amplos e luzes esmeralda para seu evento'
   },
   {
     src: '/assets/drinks/aperol-spritz.webp',
-    alt: 'Aperol Spritz',
+    alt: 'Aperol Spritz Clássico',
     title: 'Aperol Spritz',
     subtitle: 'Refrescância e elegância no copo'
   },
   {
+    src: '/assets/galeria/karaoke-galera-festa.jpg',
+    alt: 'Comemorações e Aniversários com a Turma',
+    title: 'Viva o Momento com os Amigos',
+    subtitle: 'Brinde e cante suas músicas favoritas'
+  },
+  {
+    src: '/assets/galeria/sala-blue-karaoke.jpg',
+    alt: 'Sala 3 - Sala Blue VIP (Até 50 pessoas)',
+    title: 'Sala 3 — Sala Blue VIP',
+    subtitle: 'Nossa maior sala com acústica e sistema premium'
+  },
+  {
     src: '/assets/drinks/moscow-mule.webp',
-    alt: 'Moscow Mule',
+    alt: 'Moscow Mule Artesanal',
     title: 'Moscow Mule',
-    subtitle: 'Curta a vibe Backstage'
+    subtitle: 'Espuma cremosa e sabor marcante'
+  },
+  {
+    src: '/assets/drinks/caipira-autoral.webp',
+    alt: 'Caipirinha Autoral de Frutas',
+    title: 'Caipirinha Autoral',
+    subtitle: 'Frutas frescas e mixologia especial'
+  },
+  {
+    src: '/assets/drinks/coqueteis-frutas.webp',
+    alt: 'Coquetéis e Drinks Tropicais',
+    title: 'Drinks Tropicais',
+    subtitle: 'Cores vibrantes e sabores exclusivos'
   },
   {
     src: '/assets/drinks/balde-heineken.webp',
     alt: 'Balde Heineken Gelada',
     title: 'Balde Heineken',
-    subtitle: 'Cerveja trincando para a galera'
+    subtitle: 'Cerveja trincando para brindar com a turma'
   }
 ];
 
@@ -1387,9 +1399,14 @@ function getCarouselItemsFromStorage() {
     const list = JSON.parse(raw);
     if (!Array.isArray(list) || !list.length) return null;
     const activeImages = list.filter(g => g.tipo !== 'video' && g.ativo !== false && g.url);
-    if (activeImages.length >= 3) {
-      activeImages.sort((a, b) => (a.ordem || 999) - (b.ordem || 999));
-      return activeImages.map(g => ({
+    // Filtrar fora qualquer imagem antiga que contenha preços ou seja banner promocional
+    const cleanImages = activeImages.filter(g => {
+      const u = (g.url || '').toLowerCase();
+      return !u.includes('promo-') && !u.includes('/assets/promos/');
+    });
+    if (cleanImages.length >= 3) {
+      cleanImages.sort((a, b) => (a.ordem || 999) - (b.ordem || 999));
+      return cleanImages.map(g => ({
         src: g.url,
         alt: g.titulo || 'Viva o Backstage Karaokê',
         title: g.titulo || 'Viva o Backstage',
