@@ -36,7 +36,7 @@ const DEFAULT_ITEMS = [
     subtitle: 'Sofás amplos e luzes esmeralda para seu evento'
   },
   {
-    src: '/assets/drinks/aperol-spritz.webp',
+    src: '/assets/drinks/aperol-spritz.jpg',
     alt: 'Aperol Spritz Clássico',
     title: 'Aperol Spritz',
     subtitle: 'Refrescância e elegância no copo'
@@ -54,13 +54,13 @@ const DEFAULT_ITEMS = [
     subtitle: 'Nossa maior sala com acústica e sistema premium'
   },
   {
-    src: '/assets/drinks/moscow-mule.webp',
+    src: '/assets/drinks/moscow-mule.jpg',
     alt: 'Moscow Mule Artesanal',
     title: 'Moscow Mule',
     subtitle: 'Espuma cremosa e sabor marcante'
   },
   {
-    src: '/assets/drinks/caipira-autoral.webp',
+    src: '/assets/drinks/caipira-autoral.jpg',
     alt: 'Caipirinha Autoral de Frutas',
     title: 'Caipirinha Autoral',
     subtitle: 'Frutas frescas e mixologia especial'
@@ -72,7 +72,7 @@ const DEFAULT_ITEMS = [
     subtitle: 'Cores vibrantes e sabores exclusivos'
   },
   {
-    src: '/assets/drinks/balde-heineken.webp',
+    src: '/assets/drinks/balde-heineken.jpg',
     alt: 'Balde Heineken Gelada',
     title: 'Balde Heineken',
     subtitle: 'Cerveja trincando para brindar com a turma'
