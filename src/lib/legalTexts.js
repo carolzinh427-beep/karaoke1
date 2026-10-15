@@ -44,8 +44,8 @@ export const REGRAS_AMBIENTES = {
       'O titular da reserva declara expressamente ser o pai, mãe ou tutor legal com autoridade sobre os menores presentes no seu grupo.',
       'Não coletamos nem armazenamos dados pessoais de crianças no sistema, nos termos do art. 14 da LGPD (minimização e melhor interesse da criança).',
       'A capacidade máxima de ocupação estipulada para cada sala (Red: 30 pessoas; Green: 40 pessoas; Blue: 50 pessoas) deve ser rigorosamente respeitada por normas do Corpo de Bombeiros e segurança.',
-      'A locação de salas privadas é realizada mediante pagamento único integral da sala completa no ato da reserva (Sala Red: R$ 800,00; Sala Green: R$ 900,00; Sala Blue: R$ 1.000,00). Não existe sinal de 50% nem saldo para pagar na recepção.',
-      'Em caso de cancelamento de sala privada, 50% do valor total corresponde à parcela que poderá não ser reembolsada, observadas a legislação aplicável e as circunstâncias do caso.',
+      'A locação de salas privadas pode ser realizada mediante pagamento integral ou pagamento de metade (50%) no ato da reserva e a outra metade na data do evento (Sala Red: R$ 800,00; Sala Green: R$ 900,00; Sala Blue: R$ 1.000,00).',
+      'O valor da reserva de sala privada não é reembolsável, observadas a legislação aplicável e as circunstâncias do caso.',
       'Nas salas privadas, o valor contratado contempla o uso exclusivo da sala inteira, sem cobrança por pessoa e sem acréscimo de taxas adicionais.',
       'Danos e avarias causados aos equipamentos de som, microfones, TVs e tablets das salas serão de responsabilidade do titular contratante.'
     ]
@@ -92,7 +92,7 @@ export const TERMOS_COMPRA_RESERVA = `
 
 ### 2. FORMA DE PAGAMENTO E VALORES
 
-2.1. Para a reserva de salas privativas, o valor é fixo e integral para a sala completa, contratado em modalidade de PAGAMENTO ÚNICO INTEGRAL via Pix, Débito ou Cartão de Crédito, sem cobrança por pessoa e sem acréscimo de taxas.
+2.1. Para a reserva de salas privativas, o valor é fixo para a sala completa, podendo o cliente optar pelo pagamento integral ou por pagar metade (50%) no ato da reserva e a outra metade na data do evento via Pix, Débito ou Cartão de Crédito, sem cobrança por pessoa e sem acréscimo de taxas.
 
 2.2. Nas salas privadas, não há cobrança por pessoa: o valor anunciado e contratado contempla a locação da sala inteira, respeitado o limite de capacidade estabelecido para o espaço.
 
@@ -108,9 +108,9 @@ export const TERMOS_COMPRA_RESERVA = `
 
 3.2. Nas contratações realizadas fora do estabelecimento comercial, inclusive por meio do site, é assegurado o direito ao reembolso conforme a legislação e as regras vigentes do estabelecimento.
 
-3.3. Para a reserva de salas privadas, o pagamento é efetuado pelo valor integral da sala no momento da contratação (Sala Red R$ 800,00, Sala Green R$ 900,00, Sala Blue R$ 1.000,00). Não existe cobrança de sinal parcial nem saldo restante para acerto na recepção.
+3.3. Para a reserva de salas privadas, o cliente pode optar por pagar o valor total ou metade no ato da reserva e a outra metade na data do evento (Sala Red R$ 800,00, Sala Green R$ 900,00, Sala Blue R$ 1.000,00).
 
-3.4. Em caso de cancelamento de reserva de sala privada solicitado pelo cliente, 50% (cinquenta por cento) do valor total corresponde à parcela que poderá não ser reembolsada, observadas a legislação aplicável e as circunstâncias do caso, destinada a cobrir a retenção por exclusividade e custos de reserva da agenda do estabelecimento. O cliente manifesta seu aceite explícito a esta política antes de efetuar o pagamento.
+3.4. O valor pago pela reserva de sala privada não é reembolsável, em razão da reserva e bloqueio de exclusividade da agenda do espaço. O cliente manifesta seu aceite e ciência explícita a esta condição antes de efetuar o pagamento.
 
 3.5. Para as reservas de mesas no Salão Principal, cancelamentos comunicados com antecedência observarão a legislação aplicável e as normas vigentes de proteção ao consumidor.
 

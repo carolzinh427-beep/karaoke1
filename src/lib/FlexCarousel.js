@@ -38,14 +38,14 @@ const DEFAULT_ITEMS = [
   {
     src: '/assets/promos/promo-quinta.jpg',
     alt: 'Quinta no Backstage',
-    title: 'Quinta Free',
-    subtitle: 'Entrada free & promoções exclusivas'
+    title: 'Quinta no Backstage',
+    subtitle: 'Promoções exclusivas'
   },
   {
     src: '/assets/drinks/tanqueray-tropical.webp',
     alt: 'Tanqueray Tropical Gin',
     title: 'Tanqueray Tropical',
-    subtitle: 'Gin premium com frutas tropicais'
+    subtitle: 'Drinks Tropicais'
   },
   {
     src: '/assets/drinks/aperol-spritz.webp',
@@ -57,7 +57,7 @@ const DEFAULT_ITEMS = [
     src: '/assets/drinks/moscow-mule.webp',
     alt: 'Moscow Mule',
     title: 'Moscow Mule',
-    subtitle: 'Caneca de cobre & espuma de gengibre'
+    subtitle: 'Curta a vibe Backstage'
   },
   {
     src: '/assets/drinks/balde-heineken.webp',

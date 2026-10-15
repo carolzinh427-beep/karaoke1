@@ -867,7 +867,7 @@ window.confirmRoomFromPopup = () => {
     }
     if (summaryCap && room) summaryCap.textContent = room.capacidade;
     if (summaryTotal && room) summaryTotal.textContent = room.precoTotal;
-    if (summarySignal && room) summarySignal.textContent = 'Pagamento Único';
+    if (summarySignal && room) summarySignal.textContent = 'Total ou 50% agora + 50% na data';
     if (pessoasInput && room) {
       pessoasInput.max = room.capacidadeNum;
       pessoasInput.placeholder = `Ex: ${Math.round(room.capacidadeNum * 0.7)} convidados (máx: ${room.capacidadeNum})`;
@@ -1708,10 +1708,10 @@ window.selecionarMetodoTarifa = (metodo = 'pix') => {
     if (totalEl) totalEl.textContent = calcAtual.formatadoCobrado;
     if (pagarValor) pagarValor.textContent = calcAtual.formatadoCobrado;
 
-    const descSala = `${calcAtual.nome} • Preço fixo total da sala: ${calcAtual.formatadoCobrado} (Pagamento integral da sala completa, sem cobrança por pessoa)`;
+    const descSala = `${calcAtual.nome} • Valor total: ${calcAtual.formatadoCobrado} (Opção de pagar o total ou 50% agora e 50% na data)`;
     if (formulaEl) formulaEl.textContent = descSala;
     if (pagarMetodo) {
-      pagarMetodo.textContent = `Pagamento Integral da Sala via ${nomeMetodo} (Preço fixo total: ${calcAtual.formatadoCobrado})`;
+      pagarMetodo.textContent = `Pagamento da Sala via ${nomeMetodo} (Valor total: ${calcAtual.formatadoCobrado} • Opção de 50% ou 100%)`;
     }
   } else {
     // Garante que o bloco de salas permaneça 100% oculto
@@ -1766,7 +1766,7 @@ window.avancarParaPassoPagar = async () => {
       chkCancelamento.checked = true;
     }
     if (chkCancelamento && !chkCancelamento.checked) {
-      alert('É obrigatório dar o aceite explícito na Política de Cancelamento (ciência de que 50% do valor da reserva corresponde à parcela que poderá não ser reembolsada em caso de cancelamento) para prosseguir com a reserva.');
+      alert('É obrigatório concordar que o valor não é reembolsável para prosseguir com a reserva.');
       return;
     }
   }
@@ -2418,7 +2418,7 @@ window.handleBookingSubmit = (e) => {
 
   const chkCancel = document.getElementById('bookingCancelamentoCheck');
   if (chkCancel && !chkCancel.checked) {
-    alert('É obrigatório dar o aceite explícito na Política de Cancelamento (ciência de que 50% do valor corresponde à parcela que poderá não ser reembolsada) para prosseguir.');
+    alert('É obrigatório concordar que o valor não é reembolsável para prosseguir com a reserva.');
     return;
   }
 

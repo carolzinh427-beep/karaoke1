@@ -26,8 +26,8 @@ export const ROOM_DATA = {
     capacidadeNum: 50,
     precoTotal: 'R$ 1.000,00',
     precoTotalNum: 1000,
-    sinal: 'Pagamento Único',
-    sinalNum: 1000
+    sinal: 'Total ou 50% agora + 50% na data',
+    sinalNum: 500
   },
   'Sala Red': {
     name: 'Sala Red',
@@ -41,8 +41,8 @@ export const ROOM_DATA = {
     capacidadeNum: 30,
     precoTotal: 'R$ 800,00',
     precoTotalNum: 800,
-    sinal: 'Pagamento Único',
-    sinalNum: 800
+    sinal: 'Total ou 50% agora + 50% na data',
+    sinalNum: 400
   },
   'Sala Green': {
     name: 'Sala Green',
@@ -56,8 +56,8 @@ export const ROOM_DATA = {
     capacidadeNum: 40,
     precoTotal: 'R$ 900,00',
     precoTotalNum: 900,
-    sinal: 'Pagamento Único',
-    sinalNum: 900
+    sinal: 'Total ou 50% agora + 50% na data',
+    sinalNum: 450
   }
 };
 

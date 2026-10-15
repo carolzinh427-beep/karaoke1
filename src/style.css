@@ -2008,10 +2008,18 @@ body.mobile-menu-locked {
    PROMOÇÕES DA CASA (SEÇÃO DEDICADA COM 3 CARDS LADO A LADO E TEXTO SEO)
    ========================================================================== */
 .promocoes-section {
-  padding: 60px 0 65px;
+  padding: 40px 0 45px;
+  margin: 2cm 0;
   background-color: var(--bg-deep);
   position: relative;
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .promocoes-section {
+    padding: 24px 0;
+    margin: 1cm 0;
+  }
 }
 
 .promocoes-header {
