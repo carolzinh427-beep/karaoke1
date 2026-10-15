@@ -6584,7 +6584,7 @@ body.mobile-menu-locked {
 @media (min-width: 1024px) {
   .mapa-layout-grid {
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 380px !important;
+    grid-template-columns: minmax(0, 1fr) 390px !important;
     gap: 24px !important;
     align-items: stretch !important;
     justify-content: center !important;
@@ -6849,6 +6849,38 @@ body.mobile-menu-locked {
 @media (min-width: 1024px) {
   .mapa-tables-list-panel {
     display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+    align-self: stretch !important;
+    box-sizing: border-box !important;
+    justify-content: space-between !important;
+  }
+
+  .mapa-tables-list-panel .tables-list-scroll,
+  #mapaTablesListScroll {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    padding-right: 6px !important;
+  }
+
+  .mapa-tables-list-panel .table-selection-card {
+    padding: 7px 11px !important;
+    gap: 8px !important;
+  }
+
+  .mapa-tables-list-panel .table-card-info-main strong {
+    font-size: 0.79rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .mapa-tables-list-panel .table-card-info-main span {
+    font-size: 0.67rem !important;
+    line-height: 1.2 !important;
   }
 }
 
@@ -6895,9 +6927,28 @@ body.mobile-menu-locked {
   gap: 6px;
   flex: 1 1 auto;
   min-height: 280px;
-  max-height: 360px;
   overflow-y: auto;
   padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 240, 255, 0.3) rgba(255, 255, 255, 0.03);
+}
+
+.tables-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tables-list-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.tables-list-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+}
+
+.tables-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.6);
 }
 
 .table-selection-card {
