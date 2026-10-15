@@ -203,9 +203,6 @@
           <div class="rule-card">
             <div class="rule-text">Nas salas privadas o valor é único da sala inteira, sem cobrança por pessoa</div>
           </div>
-          <div class="rule-card alert">
-            <div class="rule-text">Cancelamento com reembolso garantido conforme a nossa política de reservas</div>
-          </div>
           <div class="rule-card">
             <div class="rule-text">A taxa de rolha é de R$ 80 por garrafa</div>
           </div>
@@ -752,7 +749,7 @@
               <div class="room-card-pricing-box">
                 <div class="room-card-total-price">R$ 800,00</div>
                 <div class="room-card-signal-split">
-                  <span>Pagamento Único • <strong>Reembolso garantido</strong></span>
+                  <span>Pagamento Único</span>
                 </div>
               </div>
 
@@ -780,7 +777,7 @@
               <div class="room-card-pricing-box">
                 <div class="room-card-total-price">R$ 900,00</div>
                 <div class="room-card-signal-split">
-                  <span>Pagamento Único • <strong>Reembolso garantido</strong></span>
+                  <span>Pagamento Único</span>
                 </div>
               </div>
 
@@ -808,7 +805,7 @@
               <div class="room-card-pricing-box">
                 <div class="room-card-total-price">R$ 1.000,00</div>
                 <div class="room-card-signal-split">
-                  <span>Pagamento Único • <strong>Reembolso garantido</strong></span>
+                  <span>Pagamento Único</span>
                 </div>
               </div>
 
@@ -875,7 +872,7 @@
                 <div class="summary-item">
                   <span class="summary-item-label">Investimento Total:</span>
                   <div class="summary-item-val" id="summaryTotalVal">R$ 800,00</div>
-                  <div class="summary-sub-val" id="summarySignalVal">Pagamento Único • Reembolso garantido</div>
+                  <div class="summary-sub-val" id="summarySignalVal">Pagamento Único</div>
                 </div>
               </div>
             </div>
@@ -960,6 +957,7 @@
                   </svg>
                   <span>Reservar Minha Sala</span>
                 </button>
+                <div class="pagamento-nao-reembolsavel">Não reembolsável</div>
               </div>
 
               <!-- Mensagem de Status -->
@@ -1215,7 +1213,7 @@
             </div>
           </div>
           <div class="spec-terms-notice">
-            * Pagamento único integral com reembolso garantido conforme regras de cancelamento. Menores de idade são bem-vindos nas salas privadas.
+            * Pagamento único integral. Menores de idade são bem-vindos nas salas privadas.
             <button type="button" class="terms-inline-link" onclick="openTermosModal(event); event.stopPropagation();" style="display: block; margin: 6px auto 0; font-size: 0.78rem;">
               Ver Termos de Responsabilidade da Reserva
             </button>
@@ -1227,6 +1225,7 @@
           <button type="button" class="btn btn-primary btn-lg btn-full" id="btnConfirmRoomChoice" onclick="confirmRoomFromPopup()">
             <span id="btnConfirmRoomText">Sim, Quero Esta Sala! Preencher Meus Dados →</span>
           </button>
+          <div class="pagamento-nao-reembolsavel">Não reembolsável</div>
           <button type="button" class="btn btn-outline btn-sm btn-full" onclick="closeRoomPersonalityModal()" style="margin-top: 10px; border-color: rgba(255,255,255,0.2); color: var(--text-secondary);">
             ← Ver Outras Salas
           </button>
@@ -1701,6 +1700,7 @@
           <div style="font-size: 0.74rem; color: var(--text-muted); text-align: center;">
             Após pagar no seu banco, envie o comprovante pelo WhatsApp para conferência e confirmação da sua reserva.
           </div>
+          <div class="pagamento-nao-reembolsavel">Não reembolsável</div>
         </div>
 
         <!-- Detalhes de Débito / Crédito (Combinação Manual no WhatsApp) -->
@@ -1718,6 +1718,7 @@
           <div style="font-size: 0.74rem; color: var(--text-muted); text-align: center;">
             Abriremos uma conversa no WhatsApp com todos os dados da reserva pré-preenchidos.
           </div>
+          <div class="pagamento-nao-reembolsavel">Não reembolsável</div>
         </div>
 
         <!-- Aviso de Erro quando WhatsApp Oficial não estiver configurado no Admin -->
@@ -1732,6 +1733,8 @@
             <span id="pagarStatusLiveTexto">Aguardando envio do comprovante para conferência manual da nossa equipe.</span>
           </div>
         </div>
+
+        <div class="pagamento-nao-reembolsavel" style="margin-bottom: 14px;">Não reembolsável</div>
 
         <div style="text-align: center;">
           <button type="button" class="btn btn-outline btn-xs" onclick="voltarParaPassoResumo()">

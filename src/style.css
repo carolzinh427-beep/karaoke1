@@ -7234,3 +7234,20 @@ main, section, header, footer, .hero, .gallery-section, .salao-mapa-section, .co
 .viva-flex-carousel-wrapper canvas {
   max-width: 100% !important;
 }
+
+/* ==========================================================================
+   AVISO DE NÃO REEMBOLSÁVEL NO FINAL DO PAGAMENTO
+   Texto discreto, bem pequeno, visível em cinza não neon
+   ========================================================================== */
+.pagamento-nao-reembolsavel {
+  font-size: 0.72rem !important;
+  color: #94a3b8 !important;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-top: 6px;
+  line-height: 1.4;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+

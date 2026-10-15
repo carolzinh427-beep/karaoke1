@@ -867,7 +867,7 @@ window.confirmRoomFromPopup = () => {
     }
     if (summaryCap && room) summaryCap.textContent = room.capacidade;
     if (summaryTotal && room) summaryTotal.textContent = room.precoTotal;
-    if (summarySignal && room) summarySignal.textContent = 'Pagamento Único • Reembolso garantido';
+    if (summarySignal && room) summarySignal.textContent = 'Pagamento Único';
     if (pessoasInput && room) {
       pessoasInput.max = room.capacidadeNum;
       pessoasInput.placeholder = `Ex: ${Math.round(room.capacidadeNum * 0.7)} convidados (máx: ${room.capacidadeNum})`;

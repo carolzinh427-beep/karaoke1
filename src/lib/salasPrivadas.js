@@ -65,7 +65,6 @@ export const ROOM_DATA = {
  * Calcula a precificação de salas privativas:
  * - Pagamento único integral da sala completa (sem cobrança por pessoa e sem acréscimo de taxas)
  * - Valor nominal normal para todos os métodos (Pix, Débito e Crédito)
- * - Reembolso garantido
  */
 export function calcularPrecoSalaPrivada(roomName, metodo = 'pix') {
   const room = ROOM_DATA[roomName] || ROOM_DATA['Sala Red'];
