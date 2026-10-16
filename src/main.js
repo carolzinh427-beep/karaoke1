@@ -210,6 +210,35 @@ function initWelcomeScreen() {
     dismiss(targetId || 'inicio');
   };
 
+  window.voltarParaWelcome = (e) => {
+    if (e) {
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+    }
+    try {
+      sessionStorage.removeItem('backstage_entered');
+      sessionStorage.setItem('backstage_show_welcome', 'true');
+      sessionStorage.setItem('backstage_from_welcome', 'true');
+    } catch(err) {}
+
+    if (welcomeScreen) {
+      welcomeScreen.style.display = 'flex';
+      requestAnimationFrame(() => {
+        welcomeScreen.classList.remove('fade-out');
+      });
+      if (welcomeFade) {
+        triggerFadeContent(welcomeFade, { blur: true, duration: 1000, initialOpacity: 0 });
+      }
+      try { initBorderGlow(); } catch(err) {}
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      try {
+        history.replaceState(null, '', '#welcome');
+      } catch(err) {}
+    } else {
+      window.location.href = '/#welcome';
+    }
+  };
+
   const enterBtn = document.getElementById('enterSiteBtn');
   if (enterBtn) {
     enterBtn.addEventListener('click', (e) => {

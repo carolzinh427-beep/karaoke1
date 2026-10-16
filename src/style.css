@@ -415,6 +415,51 @@ img, video {
   white-space: nowrap !important;
 }
 
+/* Header Voltar Pill */
+.header-voltar-pill {
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  padding: 6px 14px !important;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #FFFFFF !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  transition: all var(--transition-fast) !important;
+  cursor: pointer !important;
+}
+
+.header-voltar-pill:hover {
+  background: rgba(255, 0, 122, 0.22) !important;
+  border-color: rgba(255, 0, 122, 0.6) !important;
+  color: #FFFFFF !important;
+  transform: translateX(-2px);
+  box-shadow: 0 0 12px rgba(255, 0, 122, 0.35);
+}
+
+.header-voltar-pill svg {
+  transition: transform var(--transition-fast);
+}
+
+.header-voltar-pill:hover svg {
+  transform: translateX(-2px);
+}
+
+@media (max-width: 480px) {
+  .header-voltar-pill {
+    padding: 5px 10px !important;
+    font-size: 0.70rem !important;
+  }
+}
+
 .header-termos-pill {
   font-size: 0.70rem !important;
   font-weight: 700 !important;
@@ -2807,7 +2852,9 @@ body.mobile-menu-locked {
   }
   
   .header-nav-left {
-    display: none;
+    display: flex !important;
+    align-items: center;
+    z-index: 10;
   }
 
   .header-nav-right .nav-menu.right-links {
