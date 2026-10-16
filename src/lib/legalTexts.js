@@ -85,6 +85,9 @@ Menores de 18 anos podem frequentar as salas privativas conforme as regras do es
 ### 4. Responsabilidade
 O cliente é responsável pelas informações fornecidas na reserva e pelo uso adequado dos equipamentos e instalações.
 
+### 5. Alteração de data
+Para mudar a data da reserva, é necessário entrar em contato com o responsável com 15 dias de antecedência para verificar a disponibilidade.
+
 Ao concluir a reserva, o cliente declara estar ciente e de acordo com estes termos, sem prejuízo dos direitos garantidos pela legislação brasileira.
 `;
 
