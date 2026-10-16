@@ -321,7 +321,7 @@ Segunda a sábado, das 10h30 às 21h30.
 
     function openTermosModal(e) {
       if (e && e.preventDefault) e.preventDefault();
-      var modal = document.getElementById('termosResponsabilidadeModal');
+      var modal = document.getElementById('modalTermosCompletos') || document.getElementById('termosResponsabilidadeModal');
       if (modal) {
         modal.style.display = 'flex';
         requestAnimationFrame(function() {
@@ -331,12 +331,15 @@ Segunda a sábado, das 10h30 às 21h30.
     }
     function closeTermosModal(e) {
       if (e && e.preventDefault) e.preventDefault();
-      var modal = document.getElementById('termosResponsabilidadeModal');
-      if (modal) {
-        modal.classList.remove('open');
-        setTimeout(function() {
-          modal.style.display = 'none';
-        }, 280);
+      var m1 = document.getElementById('modalTermosCompletos');
+      var m2 = document.getElementById('termosResponsabilidadeModal');
+      if (m1) {
+        m1.classList.remove('open');
+        setTimeout(function() { m1.style.display = 'none'; }, 280);
+      }
+      if (m2) {
+        m2.classList.remove('open');
+        setTimeout(function() { m2.style.display = 'none'; }, 280);
       }
     }
 
@@ -1856,17 +1859,26 @@ Segunda a sábado, das 10h30 às 21h30.
   </div>
 
   <!-- ========================================================================
-       MODAL DE LEITURA: TERMOS DE COMPRA E RESERVA (COMPLETO)
+       MODAL DE LEITURA: TERMOS E CONDIÇÕES (COMPLETO)
        ======================================================================== -->
   <div class="termos-responsabilidade-modal" id="modalTermosCompletos" role="dialog" aria-modal="true" style="display: none;">
     <div class="termos-backdrop" onclick="closeDocViewerModal('modalTermosCompletos')"></div>
     <div class="termos-dialog doc-viewer-modal-dialog">
       <div class="termos-header">
-        <h3 class="termos-title">Termos e Condições de Compra e Reserva</h3>
+        <h3 class="termos-title">Termos e Condições — Backstage Karaokê</h3>
         <button type="button" class="termos-close-btn" onclick="closeDocViewerModal('modalTermosCompletos')" aria-label="Fechar">&times;</button>
       </div>
       <div class="termos-body doc-viewer-body" id="modalTermosCompletosBody">
-        <!-- Injetado dinamicamente via JS de legalTexts.js -->
+        <h1 style="color: #FFFFFF; font-size: 1.35rem; margin: 0 0 12px; font-weight: 800;">Termos e Condições — Backstage Karaokê</h1>
+        <h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">1. Reservas e pagamentos</h3>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">A reserva será confirmada após a identificação do pagamento. O valor pago pela reserva não será reembolsado em caso de desistência ou cancelamento.</p>
+        <h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">2. Menores de idade</h3>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">Menores de 18 anos podem frequentar as salas privativas conforme as regras do estabelecimento, mas são proibidos de participar de jogos da sinuca na área do Backstage Karaoke.</p>
+        <h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">3. Proibições</h3>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">É proibido levar bebidas e salgados de fora para o estabelecimento.</p>
+        <h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">4. Responsabilidade</h3>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">O cliente é responsável pelas informações fornecidas na reserva e pelo uso adequado dos equipamentos e instalações.</p>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">Ao concluir a reserva, o cliente declara estar ciente e de acordo com estes termos, sem prejuízo dos direitos garantidos pela legislação brasileira.</p>
       </div>
       <div class="termos-footer">
         <button type="button" class="btn btn-primary btn-md btn-full" onclick="closeDocViewerModal('modalTermosCompletos')">
@@ -1923,11 +1935,20 @@ Segunda a sábado, das 10h30 às 21h30.
     <div class="termos-backdrop" onclick="closeTermosModal(event)"></div>
     <div class="termos-dialog">
       <div class="termos-header">
-        <h3 class="termos-title">Termos de Responsabilidade da Reserva</h3>
+        <h3 class="termos-title">Termos e Condições — Backstage Karaokê</h3>
         <button type="button" class="termos-close-btn" onclick="closeTermosModal(event)" aria-label="Fechar termos">&times;</button>
       </div>
       <div class="termos-body" id="termosResponsabilidadeModalBody">
-        <!-- Preenchido via legalTexts.js -->
+        <h1 style="color: #FFFFFF; font-size: 1.35rem; margin: 0 0 12px; font-weight: 800;">Termos e Condições — Backstage Karaokê</h1>
+        <h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">1. Reservas e pagamentos</h3>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">A reserva será confirmada após a identificação do pagamento. O valor pago pela reserva não será reembolsado em caso de desistência ou cancelamento.</p>
+        <h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">2. Menores de idade</h3>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">Menores de 18 anos podem frequentar as salas privativas conforme as regras do estabelecimento, mas são proibidos de participar de jogos da sinuca na área do Backstage Karaoke.</p>
+        <h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">3. Proibições</h3>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">É proibido levar bebidas e salgados de fora para o estabelecimento.</p>
+        <h3 style="color: #00F0FF; font-size: 1.05rem; margin: 20px 0 8px; font-weight: 700; border-left: 3px solid #00F0FF; padding-left: 10px;">4. Responsabilidade</h3>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">O cliente é responsável pelas informações fornecidas na reserva e pelo uso adequado dos equipamentos e instalações.</p>
+        <p style="margin-bottom: 10px; line-height: 1.6; color: #CBD5E1;">Ao concluir a reserva, o cliente declara estar ciente e de acordo com estes termos, sem prejuízo dos direitos garantidos pela legislação brasileira.</p>
       </div>
       <div class="termos-footer">
         <button type="button" class="btn btn-primary btn-md btn-full" onclick="closeTermosModal(event)">

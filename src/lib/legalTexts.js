@@ -68,163 +68,24 @@ export const REGRAS_AMBIENTES = {
 };
 
 /**
- * TERMOS E CONDIÇÕES DE COMPRA E RESERVA OFICIAL
+ * TERMOS E CONDIÇÕES OFICIAIS — BACKSTAGE KARAOKÊ
  */
 export const TERMOS_COMPRA_RESERVA = `
-# TERMOS E CONDIÇÕES DE COMPRA E RESERVA — BACKSTAGE KARAOKÊ
+# Termos e Condições — Backstage Karaokê
 
-**Versão:** ${VERSAO_DOCUMENTOS}  
-**Última atualização:** Outubro de 2026  
-**Estabelecimento:** Backstage Karaokê Brasília  
-**Endereço:** CLN 307, Bloco A, Subsolo — Asa Norte, Brasília/DF  
+### 1. Reservas e pagamentos
+A reserva será confirmada após a identificação do pagamento. O valor pago pela reserva não será reembolsado em caso de desistência ou cancelamento.
 
----
+### 2. Menores de idade
+Menores de 18 anos podem frequentar as salas privativas conforme as regras do estabelecimento, mas são proibidos de participar de jogos da sinuca na área do Backstage Karaoke.
 
-### 1. OBJETO
+### 3. Proibições
+É proibido levar bebidas e salgados de fora para o estabelecimento.
 
-1.1. Estes Termos e Condições regulam a contratação de reservas, utilização de salas privativas, espaços e demais serviços disponibilizados pelo Backstage Karaokê Brasília, inclusive por meio de sua plataforma digital.
+### 4. Responsabilidade
+O cliente é responsável pelas informações fornecidas na reserva e pelo uso adequado dos equipamentos e instalações.
 
-1.2. Ao concluir uma reserva ou compra, o cliente declara que teve acesso prévio a estes Termos, compreendeu suas condições e concorda com as regras aplicáveis à utilização do estabelecimento.
-
-1.3. A reserva somente será considerada confirmada após a identificação e confirmação do pagamento exigido para a modalidade contratada.
-
----
-
-### 2. FORMA DE PAGAMENTO E VALORES
-
-2.1. Para a reserva de salas privativas, o valor é fixo para a sala completa, podendo o cliente optar pelo pagamento integral ou por pagar metade (50%) no ato da reserva e a outra metade na data do evento via Pix, Débito ou Cartão de Crédito, sem cobrança por pessoa e sem acréscimo de taxas.
-
-2.2. Nas salas privadas, não há cobrança por pessoa: o valor anunciado e contratado contempla a locação da sala inteira, respeitado o limite de capacidade estabelecido para o espaço.
-
-2.3. Exclusivamente para as mesas do Salão Principal, o valor da entrada é cobrado individualmente por pessoa (R$ 20 via Pix/Débito e R$ 25 via Crédito), garantindo a exclusividade da mesa para o grupo.
-
-2.4. O pagamento integral garante a disponibilidade exclusiva do espaço, data e horário escolhidos pelo cliente.
-
----
-
-### 3. CANCELAMENTO E REEMBOLSO
-
-3.1. As solicitações de cancelamento deverão ser realizadas pelos canais oficiais disponibilizados pelo Backstage Karaokê.
-
-3.2. Nas contratações realizadas fora do estabelecimento comercial, inclusive por meio do site, é assegurado o direito ao reembolso conforme a legislação e as regras vigentes do estabelecimento.
-
-3.3. Para a reserva de salas privadas, o cliente pode optar por pagar o valor total ou metade no ato da reserva e a outra metade na data do evento (Sala Red R$ 800,00, Sala Green R$ 900,00, Sala Blue R$ 1.000,00).
-
-3.4. O valor pago pela reserva de sala privada não é reembolsável, em razão da reserva e bloqueio de exclusividade da agenda do espaço. O cliente manifesta seu aceite e ciência explícita a esta condição antes de efetuar o pagamento.
-
-3.5. Para as reservas de mesas no Salão Principal, cancelamentos comunicados com antecedência observarão a legislação aplicável e as normas vigentes de proteção ao consumidor.
-
-3.6. O não comparecimento do cliente (no-show), sem cancelamento prévio, será tratado conforme as mesmas regras de cancelamento aplicáveis à modalidade contratada.
-
-3.7. Caso o cancelamento ocorra por responsabilidade do Backstage Karaokê, ou quando houver impossibilidade de prestação do serviço por fato imputável ao estabelecimento, serão observados os direitos do consumidor, incluindo, quando cabível, a restituição dos valores pagos ou a remarcação da reserva, conforme acordado com o cliente e a legislação aplicável.
-
-3.8. Situações excepcionais serão analisadas individualmente, especialmente nos casos de força maior ou outras circunstâncias devidamente comprovadas.
-
----
-
-### 4. REMARCAÇÃO
-
-4.1. O cliente poderá solicitar a remarcação da reserva com antecedência mínima de 72 (setenta e duas) horas, sujeita à disponibilidade de data, horário e espaço.
-
-4.2. A remarcação não será considerada automaticamente confirmada até que o Backstage Karaokê confirme a nova data e horário.
-
-4.3. Eventuais diferenças de valores decorrentes da nova data, horário ou espaço poderão ser aplicadas, desde que previamente informadas ao cliente.
-
----
-
-### 5. CAPACIDADE DOS ESPAÇOS
-
-5.1. Cada espaço possui capacidade máxima determinada de acordo com suas características, segurança e regras de funcionamento do estabelecimento.
-
-5.2. Os limites de ocupação deverão ser respeitados integralmente e não poderão ser ultrapassados.
-
-5.3. Atualmente, as capacidades máximas informadas para as salas são:
-- **Sala Red:** até 30 pessoas;
-- **Sala Green:** até 40 pessoas;
-- **Sala Blue:** até 50 pessoas.
-
-5.4. O cliente deverá informar corretamente a quantidade de pessoas no momento da reserva.
-
----
-
-### 6. REGRAS DE IDADE E ACESSO
-
-#### 6.1. Salão Principal
-- O Salão Principal é destinado exclusivamente a maiores de 18 anos.
-- O estabelecimento poderá solicitar documento oficial com foto para comprovação da idade.
-
-#### 6.2. Salas Privativas
-- A presença de menores de 18 anos nas salas privativas será permitida de acordo com as regras do estabelecimento e da legislação aplicável, sendo necessária a presença e responsabilidade do pai, mãe ou responsável legal quando exigida.
-- O estabelecimento poderá solicitar documentação para comprovação de identidade, idade e responsabilidade legal.
-
-#### 6.3. Área de sinuca e bilhar
-- É expressamente proibida a entrada e permanência de crianças e adolescentes na área destinada à exploração comercial de sinuca, bilhar ou atividades congêneres.
-- Essa regra decorre do art. 80 do Estatuto da Criança e do Adolescente (Lei nº 8.069/1990).
-- **AVISO IMPORTANTE:** menores de idade não podem entrar ou permanecer na área de sinuca/bilhar.
-
----
-
-### 7. HORÁRIOS E TOLERÂNCIA
-
-7.1. As reservas deverão respeitar os horários disponibilizados no sistema de reservas.
-
-7.2. Será concedida tolerância de até 30 (trinta) minutos para chegada e ocupação da reserva, salvo condições específicas informadas no momento da contratação.
-
-7.3. A tolerância não implica extensão automática do horário contratado.
-
-7.4. O encerramento das atividades observará os horários de funcionamento e as autorizações legais do estabelecimento.
-
----
-
-### 8. EQUIPAMENTOS E INSTALAÇÕES
-
-8.1. O cliente deverá utilizar adequadamente os equipamentos, móveis, instalações e demais bens disponibilizados pelo Backstage Karaokê.
-
-8.2. O responsável pela reserva poderá responder pelos danos causados por utilização inadequada, mau uso ou conduta deliberada que resulte em dano ao patrimônio do estabelecimento, observada a legislação aplicável.
-
----
-
-### 9. RESPONSABILIDADE SOBRE INFORMAÇÕES DA RESERVA
-
-9.1. O titular da reserva é responsável pela veracidade dos dados fornecidos no momento da contratação.
-
-9.2. O titular deverá conferir cuidadosamente data, horário, espaço, quantidade de pessoas e demais informações antes de finalizar a reserva.
-
-9.3. A confirmação da reserva será encaminhada pelos canais disponibilizados pelo estabelecimento.
-
----
-
-### 10. CANCELAMENTO PELO ESTABELECIMENTO
-
-10.1. Em situações excepcionais que impossibilitem a prestação do serviço, incluindo problemas técnicos graves, determinações de autoridades, situações de força maior ou outras circunstâncias alheias ao controle razoável do estabelecimento, o Backstage Karaokê poderá cancelar ou remarcar a reserva.
-
-10.2. Nesses casos, o cliente será comunicado e serão observadas as alternativas e direitos previstos na legislação aplicável, podendo ser oferecida remarcação ou restituição dos valores pagos, conforme o caso.
-
----
-
-### 11. ACEITE DOS TERMOS
-
-11.1. Antes de concluir uma reserva ou compra pelo site, o cliente deverá ter acesso a estes Termos e manifestar sua concordância quando exigido.
-
-11.2. O aceite destes Termos não afasta nem limita os direitos assegurados ao consumidor pela legislação brasileira.
-
----
-
-### 12. PROTEÇÃO DE DADOS
-
-12.1. Os dados pessoais fornecidos durante a reserva serão tratados de acordo com a legislação aplicável de proteção de dados e com a Política de Privacidade do Backstage Karaokê.
-
-12.2. O estabelecimento deverá disponibilizar ao cliente informações sobre a finalidade, utilização, armazenamento e demais aspectos relacionados ao tratamento de seus dados pessoais.
-
----
-
-### 13. DISPOSIÇÕES FINAIS
-
-13.1. Estes Termos deverão ser interpretados em conjunto com a Política de Privacidade, regras de utilização dos espaços e demais informações apresentadas ao cliente no momento da contratação.
-
-13.2. Em caso de conflito entre uma disposição destes Termos e uma norma legal de proteção ao consumidor aplicável ao caso, prevalecerá a legislação vigente.
-
-13.3. O Backstage Karaokê poderá atualizar estes Termos sempre que necessário, mantendo disponível a versão vigente em seu site.
+Ao concluir a reserva, o cliente declara estar ciente e de acordo com estes termos, sem prejuízo dos direitos garantidos pela legislação brasileira.
 `;
 
 /**

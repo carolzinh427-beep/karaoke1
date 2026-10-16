@@ -2340,11 +2340,16 @@ function renderLegalMarkdown(text) {
 // Visualizadores de Documentos Jurídicos Completos
 window.openTermosCompletosModal = (e) => {
   if (e && e.preventDefault) e.preventDefault();
+  const content = renderLegalMarkdown(TERMOS_COMPRA_RESERVA);
   const body = document.getElementById('modalTermosCompletosBody');
   if (body) {
-    body.innerHTML = renderLegalMarkdown(TERMOS_COMPRA_RESERVA);
+    body.innerHTML = content;
   }
-  const modal = document.getElementById('modalTermosCompletos');
+  const altBody = document.getElementById('termosResponsabilidadeModalBody');
+  if (altBody) {
+    altBody.innerHTML = content;
+  }
+  const modal = document.getElementById('modalTermosCompletos') || document.getElementById('termosResponsabilidadeModal');
   if (modal) modal.style.display = 'flex';
 };
 
