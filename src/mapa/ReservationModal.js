@@ -55,7 +55,7 @@ export class ReservationModal {
               <span class="kmodal-badge-rate">Pix/Débito: R$ 20/pessoa</span>
             </div>
             <div class="kmodal-age-alert" style="margin-top: 8px; font-size: 0.74rem; color: #FCA5A5; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 6px;">
-              <span>🔞 <strong>18+:</strong> Salão Principal exclusivo para maiores. Para menores, reserve Salas Privadas.</span>
+              <span><strong>16+:</strong> Proibido menor de 16 anos no Salão Principal. Para menores de 16 anos, reserve Salas Privadas.</span>
             </div>
           </div>
 
@@ -222,6 +222,29 @@ export class ReservationModal {
       pessoasSelect.addEventListener('input', () => this.updateCalculo());
     }
 
+    // Validação de disponibilidade e pop-up de conferência ao escolher data
+    const dataInput = document.getElementById('kmodalData');
+    if (dataInput) {
+      dataInput.addEventListener('change', () => {
+        this.validarDisponibilidadeMesaAtual();
+        const val = dataInput.value;
+        if (val && val.length === 10) {
+          if (typeof window !== 'undefined' && window.abrirModalConferirDataWhatsApp) {
+            const dataFmt = typeof window.formatarDataComDiaSemana === 'function'
+              ? window.formatarDataComDiaSemana(val)
+              : (typeof window.formatarDataBR === 'function' ? window.formatarDataBR(val) : val);
+            window.abrirModalConferirDataWhatsApp(dataFmt, val, 'mesa_modal');
+          }
+        }
+      });
+      dataInput.addEventListener('input', () => this.validarDisponibilidadeMesaAtual());
+    }
+
+    const horarioSelect = document.getElementById('kmodalHorario');
+    if (horarioSelect) {
+      horarioSelect.addEventListener('change', () => this.validarDisponibilidadeMesaAtual());
+    }
+
     // Máscara inteligente de telefone WhatsApp
     const zapInput = document.getElementById('kmodalWhatsapp');
     if (zapInput) {
@@ -285,6 +308,39 @@ export class ReservationModal {
     }
   }
 
+  validarDisponibilidadeMesaAtual() {
+    const dataInput = document.getElementById('kmodalData');
+    const horarioSelect = document.getElementById('kmodalHorario');
+    const dataVal = dataInput?.value;
+    const horaVal = horarioSelect?.value || '19:00';
+    const btnSubmit = document.getElementById('kmodalSubmitBtn');
+
+    if (!this.currentTable || !dataVal) return;
+
+    const reservada = typeof window !== 'undefined' && typeof window.isMesaReservada === 'function'
+      ? window.isMesaReservada(this.currentTable.id, dataVal, horaVal)
+      : false;
+
+    if (reservada) {
+      const dataFmt = typeof window !== 'undefined' && window.formatarDataBR ? window.formatarDataBR(dataVal) : dataVal;
+      this.showAlert(`⚠️ A ${this.currentTable.name} já está reservada para ${dataFmt} às ${horaVal}. Por favor, escolha outro horário, outra data ou selecione outra mesa.`);
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.style.opacity = '0.45';
+        btnSubmit.style.cursor = 'not-allowed';
+        btnSubmit.style.pointerEvents = 'none';
+      }
+    } else {
+      this.hideAlert();
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.style.opacity = '';
+        btnSubmit.style.cursor = 'pointer';
+        btnSubmit.style.pointerEvents = '';
+      }
+    }
+  }
+
   open(table) {
     if (!table) return;
     this.currentTable = table;
@@ -301,18 +357,19 @@ export class ReservationModal {
     if (capEl) capEl.textContent = `Capacidade: ${table.capacity} pessoas`;
     if (capHint) capHint.textContent = `Esta mesa acomoda confortavelmente até ${table.capacity} pessoas.`;
 
-    // Data mínima: hoje
+    // Data mínima: hoje (ou sincroniza com filtro rápido do mapa)
+    const mapaData = document.getElementById('mapaFiltroData')?.value;
+    const mapaHora = document.getElementById('mapaFiltroHorario')?.value;
+
     if (dataInput) {
       const today = new Date().toISOString().split('T')[0];
       dataInput.min = today;
-      if (!dataInput.value) dataInput.value = today;
+      dataInput.value = mapaData || dataInput.value || today;
     }
 
-    // Horário: garante padrão 19:00 selecionado
+    // Horário: garante padrão 19:00 ou filtro do mapa selecionado
     if (horarioSelect) {
-      if (!horarioSelect.value) {
-        horarioSelect.value = '19:00';
-      }
+      horarioSelect.value = mapaHora || horarioSelect.value || '19:00';
     }
 
     // Popula opções de quantidade de pessoas até o limite da mesa
@@ -342,6 +399,9 @@ export class ReservationModal {
 
     // Reseta método para Pix (recomendado) e atualiza total
     this.setPaymentMethod('pix');
+
+    // Valida disponibilidade da mesa para a data e horário selecionados
+    this.validarDisponibilidadeMesaAtual();
 
     // Reseta visualização
     document.getElementById('kmodalFormView').style.display = 'block';
@@ -405,6 +465,12 @@ export class ReservationModal {
     if (!email || !email.includes('@') || !email.includes('.')) {
       document.getElementById('kmodalEmail')?.focus();
       return this.showAlert('Por favor, informe um e-mail válido para envio do voucher.');
+    }
+
+    // Validação estrita de disponibilidade da mesa na data e horário
+    if (typeof window !== 'undefined' && typeof window.isMesaReservada === 'function' && window.isMesaReservada(this.currentTable.id, data, horario)) {
+      const dataFmt = typeof window !== 'undefined' && window.formatarDataBR ? window.formatarDataBR(data) : data;
+      return this.showAlert(`Atenção: A ${this.currentTable.name} já foi reservada para ${dataFmt} às ${horario}. Por favor, escolha outra mesa ou outro horário.`);
     }
 
     const qtdPessoas = parseInt(pessoas, 10);

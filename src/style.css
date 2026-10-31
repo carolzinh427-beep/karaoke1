@@ -5649,8 +5649,48 @@ body.mobile-menu-locked {
 
 .btn-room-select-trigger.red {
   background: rgba(255, 51, 102, 0.15);
-  border-color: #FF3366;
+  color: #FF3366;
+  border-color: rgba(255, 51, 102, 0.4);
+}
+.btn-room-select-trigger.red:hover {
+  background: #FF3366;
   color: #FFFFFF;
+  box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+}
+
+/* Estado de Indisponibilidade das Salas no Passo 2 */
+.step-room-card.room-card-unavailable {
+  opacity: 0.65;
+  filter: grayscale(0.4);
+  cursor: not-allowed !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.step-room-card.room-card-unavailable:hover {
+  transform: none !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25) !important;
+}
+
+.step-room-card.room-card-unavailable .btn-room-select-trigger {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border-color: #EF4444 !important;
+  color: #FCA5A5 !important;
+  cursor: not-allowed !important;
+}
+
+.room-card-status-pill.unavailable {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(239, 68, 68, 0.22);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.03em;
 }
 .btn-room-select-trigger.red:hover {
   background: #FF3366;
@@ -7409,5 +7449,136 @@ main, section, header, footer, .hero, .gallery-section, .salao-mapa-section, .co
   line-height: 1.4;
   text-shadow: none !important;
   box-shadow: none !important;
+}
+
+/* ==============================================================================
+   MODAL POP-UP: CONFERIR DISPONIBILIDADE DA DATA NO WHATSAPP
+   ============================================================================== */
+.modal-conferir-data-wrap {
+  z-index: 1000000 !important;
+}
+
+.modal-conferir-data-dialog {
+  max-width: 480px !important;
+  border-radius: 20px !important;
+  background: radial-gradient(circle at top, rgba(20, 30, 60, 0.98) 0%, rgba(5, 8, 19, 0.98) 100%) !important;
+  border: 1px solid rgba(0, 240, 255, 0.35) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.2) !important;
+  padding: 24px 26px !important;
+}
+
+.modal-conferir-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.modal-conferir-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: var(--primary-cyan, #00F0FF);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.modal-conferir-body {
+  text-align: center;
+  padding: 8px 0 20px;
+}
+
+.modal-conferir-title {
+  font-family: var(--font-heading, Montserrat, sans-serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+
+.modal-conferir-desc {
+  font-size: 0.88rem;
+  color: #94A3B8;
+  margin: 0 0 10px;
+}
+
+.modal-conferir-date-pill {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid var(--primary-cyan, #00F0FF);
+  color: #FFFFFF;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 10px 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.25);
+  margin-bottom: 14px;
+}
+
+.modal-conferir-subtext {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #CBD5E1;
+  margin: 0 auto;
+  max-width: 380px;
+}
+
+.modal-conferir-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn-whatsapp-conferir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #25D366 !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  font-size: 1rem !important;
+  padding: 13px 20px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: 0 4px 18px rgba(37, 211, 102, 0.4) !important;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+}
+
+.btn-whatsapp-conferir:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(37, 211, 102, 0.55) !important;
+  filter: brightness(1.08);
+}
+
+.btn-outline-conferir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #E2E8F0 !important;
+  font-weight: 700 !important;
+  font-size: 0.92rem !important;
+  padding: 11px 18px !important;
+  border-radius: 12px !important;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn-outline-conferir:hover {
+  background: rgba(0, 240, 255, 0.15) !important;
+  border-color: var(--primary-cyan) !important;
+  color: #FFFFFF !important;
 }
 

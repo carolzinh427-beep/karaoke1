@@ -112,7 +112,7 @@ As reservas são feitas mediante pagamento de 50% do valor total. Em caso de des
 
 - Não é permitido que crianças joguem sinuca nas dependências do Backstage Karaokê.
 
-🎤 Salão principal
+Salão principal
 
 Para reservas, informe:
 
@@ -122,7 +122,7 @@ Para reservas, informe:
 
 Aguarde o atendimento para confirmação.
 
-⚠️ No salão principal, é proibida a entrada de menores de idade.
+No salão principal, é proibida a entrada de menores de 16 anos.
 
 📲 Horários de atendimento pelo WhatsApp:
 Segunda a sábado, das 10h30 às 21h30.
@@ -1107,7 +1107,11 @@ function renderReservasView() {
         <h2>Gerenciamento de Reservas</h2>
         <p>Controle de ocupação, conferência financeira de comprovantes Pix e validação de ingressos</p>
       </div>
-      <div class="view-actions" style="display: flex; gap: 8px;">
+      <div class="view-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.abrirModalNovaReservaAdmin()" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #10B981, #059669); border-color: #10B981;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>+ Marcar / Nova Reserva</span>
+        </button>
         <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" onclick="window.openModalValidarCheckIn()" style="display: inline-flex; align-items: center; gap: 6px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
           <span>Validar Ingresso / QR Code</span>
@@ -1529,19 +1533,34 @@ function renderDisponibilidadeView() {
           <div class="form-group">
             <label class="form-label" for="blockTipo">Tipo de Bloqueio *</label>
             <select id="blockTipo" class="form-select" onchange="window.handleTipoBloqueioChange(this.value)">
-              <option value="dia_inteiro">Dia Inteiro Indisponível (Todas as salas)</option>
-              <option value="sala_horario">Sala e Horário Específicos</option>
-              <option value="horario_especifico">Horário Específico (Todas as salas)</option>
+              <option value="dia_inteiro">Dia Inteiro Indisponível (Todas as salas e mesas)</option>
+              <option value="sala_horario">Sala ou Mesa em Horário Específico</option>
+              <option value="horario_especifico">Horário Específico (Todas as salas e mesas)</option>
             </select>
           </div>
 
           <div class="form-group" id="blockSalaGroup" style="display: none;">
-            <label class="form-label" for="blockSala">Sala</label>
+            <label class="form-label" for="blockSala">Ambiente / Sala / Mesa</label>
             <select id="blockSala" class="form-select">
-              <option value="todas">Todas as Salas</option>
-              <option value="Sala Red">Sala Red</option>
-              <option value="Sala Green">Sala Green</option>
-              <option value="Sala Blue">Sala Blue</option>
+              <option value="todas">Todas as Salas e Mesas</option>
+              <optgroup label="Salas Privadas">
+                <option value="Sala Red">Sala Red (30 pessoas)</option>
+                <option value="Sala Green">Sala Green (40 pessoas)</option>
+                <option value="Sala Blue">Sala Blue (50 pessoas)</option>
+              </optgroup>
+              <optgroup label="Mesas do Salão Principal">
+                <option value="Mesa 1">Mesa 1 (30 pessoas)</option>
+                <option value="Mesa 2">Mesa 2 (26 pessoas)</option>
+                <option value="Mesa 3">Mesa 3 (26 pessoas)</option>
+                <option value="Mesa 4">Mesa 4 (20 pessoas)</option>
+                <option value="Mesa 5">Mesa 5 (22 pessoas)</option>
+                <option value="Mesa 6">Mesa 6 (12 pessoas)</option>
+                <option value="Mesa 7">Mesa 7 (16 pessoas)</option>
+                <option value="Mesa 8">Mesa 8 (14 pessoas)</option>
+                <option value="Mesa 9">Mesa 9 (12 pessoas)</option>
+                <option value="Mesa 10">Mesa 10 (4 pessoas)</option>
+                <option value="Mesa 11">Mesa 11 (2 pessoas)</option>
+              </optgroup>
             </select>
           </div>
 
@@ -2750,7 +2769,9 @@ window.confirmarReserva = async (id) => {
 
     // Atualiza estado local
     res.status = 'CONFIRMED';
-    showToast('Reserva confirmada com sucesso.', 'success');
+    res.statusPagamento = 'aprovado';
+    try { notifyRealtimeUpdate('RESERVAS_UPDATE', state.reservas); } catch(e) {}
+    showToast('Reserva confirmada com sucesso. Mesa/sala marcada como ocupada no site.', 'success');
     renderApp();
   } catch (err) {
     console.error('Erro ao confirmar reserva:', err);
@@ -2768,7 +2789,7 @@ window.cancelarReserva = (id) => {
       try {
         if (isSupabaseConfigured) {
           try {
-            await updateReservaStatusSupabase(id, 'CANCELLED');
+            await updateReservaStatusSupabase(id, 'CANCELLED', { status_pagamento: 'recusado' });
           } catch (supaErr) {
             console.warn('Aviso Supabase cancelar reserva:', supaErr);
           }
@@ -2779,15 +2800,20 @@ window.cancelarReserva = (id) => {
             const docRef = doc(db, 'reservas', id);
             await updateDoc(docRef, {
               status: 'CANCELLED',
+              status_pagamento: 'recusado',
               canceladoEm: serverTimestamp()
             });
           } catch(e) {}
         }
 
         const r = state.reservas.find(item => item.id === id);
-        if (r) r.status = 'CANCELLED';
+        if (r) {
+          r.status = 'CANCELLED';
+          r.statusPagamento = 'recusado';
+        }
+        try { notifyRealtimeUpdate('RESERVAS_UPDATE', state.reservas); } catch(e) {}
 
-        showToast('Reserva cancelada. Você também pode excluí-la definitivamente do painel caso deseje.', 'info');
+        showToast('Reserva cancelada e horário liberado no site.', 'info');
         renderApp();
       } catch (err) {
         console.error('Erro ao cancelar reserva:', err);
@@ -2856,6 +2882,255 @@ window.refreshReservas = async () => {
   await fetchReservas();
   showToast('Lista de reservas atualizada.', 'info');
   renderApp();
+};
+
+// 8.1.0 Marcar / Cadastrar Reserva Manual (Admin)
+window.abrirModalNovaReservaAdmin = () => {
+  const modalHtml = `
+    <div class="admin-modal-backdrop open" id="modalNovaReservaAdminBackdrop" onclick="if(event.target === this) window.fecharModalNovaReservaAdmin()">
+      <div class="admin-modal-dialog" style="max-width: 580px; width: 100%; padding: 24px; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--admin-border); padding-bottom: 12px;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--admin-cyan); margin: 0;">+ Marcar / Nova Reserva Manual</h3>
+            <span style="font-size: 0.8rem; color: var(--admin-text-muted);">Cadastrar reserva avulsa e marcar mesa/sala como ocupada</span>
+          </div>
+          <button type="button" class="btn-admin btn-admin-outline btn-admin-xs" onclick="window.fecharModalNovaReservaAdmin()">&times;</button>
+        </div>
+
+        <form id="formNovaReservaAdmin" onsubmit="window.handleSalvarNovaReservaAdmin(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" for="adminResNome">Nome do Cliente *</label>
+              <input type="text" id="adminResNome" class="form-input" placeholder="Ex: Lucas Ferreira ou Reserva Balcão" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="adminResZap">WhatsApp / Telefone *</label>
+              <input type="tel" id="adminResZap" class="form-input" placeholder="(61) 98765-4321" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="adminResEmail">E-mail (Opcional)</label>
+              <input type="email" id="adminResEmail" class="form-input" placeholder="cliente@exemplo.com">
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" for="adminResEspaco">Espaço (Sala ou Mesa) *</label>
+              <select id="adminResEspaco" class="form-select" required onchange="window.handleAdminEspacoChange(this.value)">
+                <optgroup label="Salas Privadas">
+                  <option value="Sala Red" selected>Sala Red (Até 30 pessoas • R$ 800,00)</option>
+                  <option value="Sala Green">Sala Green (Até 40 pessoas • R$ 900,00)</option>
+                  <option value="Sala Blue">Sala Blue (Até 50 pessoas • R$ 1.000,00)</option>
+                </optgroup>
+                <optgroup label="Mesas do Salão Principal">
+                  <option value="Mesa 1">Mesa 1 (30 pessoas • Lado Esquerdo Palco)</option>
+                  <option value="Mesa 2">Mesa 2 (26 pessoas • Salão Central Esquerda)</option>
+                  <option value="Mesa 3">Mesa 3 (26 pessoas • Salão Central Centro)</option>
+                  <option value="Mesa 4">Mesa 4 (20 pessoas • Salão Central Direita)</option>
+                  <option value="Mesa 5">Mesa 5 (22 pessoas • Canto Sofá + Bar)</option>
+                  <option value="Mesa 6">Mesa 6 (12 pessoas • Frente Cabine DJ)</option>
+                  <option value="Mesa 7">Mesa 7 (16 pessoas • Próximo Xadrez)</option>
+                  <option value="Mesa 8">Mesa 8 (14 pessoas • Lounge Inferior Sofá)</option>
+                  <option value="Mesa 9">Mesa 9 (12 pessoas • Próxima Entrada)</option>
+                  <option value="Mesa 10">Mesa 10 (4 pessoas • Bistrô Bar)</option>
+                  <option value="Mesa 11">Mesa 11 (2 pessoas • Espaço Xadrez)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="adminResData">Data da Reserva *</label>
+              <input type="date" id="adminResData" class="form-input" required value="${new Date().toISOString().split('T')[0]}">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="adminResHorario">Horário *</label>
+              <select id="adminResHorario" class="form-select" required>
+                <option value="19:00" selected>19:00</option>
+                <option value="19:30">19:30</option>
+                <option value="20:00">20:00</option>
+                <option value="20:30">20:30</option>
+                <option value="21:00">21:00</option>
+                <option value="21:30">21:30</option>
+                <option value="22:00">22:00</option>
+                <option value="Dia Inteiro">Dia Inteiro (Bloqueio total)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="adminResPessoas">Quantidade de Pessoas</label>
+              <input type="number" id="adminResPessoas" class="form-input" min="1" max="184" value="4" oninput="window.handleAdminPessoasChange(this.value)">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="adminResStatus">Status Inicial *</label>
+              <select id="adminResStatus" class="form-select" required>
+                <option value="CONFIRMED" selected>Confirmada (Bloqueia no site)</option>
+                <option value="PENDING">Pendente (Aguardando comprovante)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="adminResValorTotal">Valor Total (R$)</label>
+              <input type="number" step="0.01" id="adminResValorTotal" class="form-input" value="800.00">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="adminResValorPago">Valor Já Pago (R$)</label>
+              <input type="number" step="0.01" id="adminResValorPago" class="form-input" value="800.00">
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" for="adminResObs">Observações</label>
+              <input type="text" id="adminResObs" class="form-input" placeholder="Ex: Reserva presencial no balcão / WhatsApp direto">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; border-top: 1px solid var(--admin-border); padding-top: 14px;">
+            <button type="button" class="btn-admin btn-admin-outline btn-admin-sm" onclick="window.fecharModalNovaReservaAdmin()">Cancelar</button>
+            <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" id="btnSalvarNovaReservaAdmin" style="background: linear-gradient(135deg, #10B981, #059669); border-color: #10B981;">Salvar e Marcar Reserva</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const existing = document.getElementById('modalNovaReservaAdminBackdrop');
+  if (existing) existing.remove();
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+window.fecharModalNovaReservaAdmin = () => {
+  const el = document.getElementById('modalNovaReservaAdminBackdrop');
+  if (el) el.remove();
+};
+
+window.handleAdminEspacoChange = (espaco) => {
+  const vTotal = document.getElementById('adminResValorTotal');
+  const vPago = document.getElementById('adminResValorPago');
+  const pessoasInput = document.getElementById('adminResPessoas');
+  const numPessoas = parseInt(pessoasInput?.value || '4', 10);
+
+  if (espaco.includes('Red')) {
+    if (vTotal) vTotal.value = '800.00';
+    if (vPago) vPago.value = '800.00';
+  } else if (espaco.includes('Green')) {
+    if (vTotal) vTotal.value = '900.00';
+    if (vPago) vPago.value = '900.00';
+  } else if (espaco.includes('Blue')) {
+    if (vTotal) vTotal.value = '1000.00';
+    if (vPago) vPago.value = '1000.00';
+  } else {
+    // Mesas: R$ 20 por pessoa padrão
+    const calc = numPessoas * 20;
+    if (vTotal) vTotal.value = calc.toFixed(2);
+    if (vPago) vPago.value = calc.toFixed(2);
+  }
+};
+
+window.handleAdminPessoasChange = (qtd) => {
+  const espaco = document.getElementById('adminResEspaco')?.value || '';
+  if (espaco.toLowerCase().includes('mesa')) {
+    const numPessoas = parseInt(qtd || '1', 10);
+    const vTotal = document.getElementById('adminResValorTotal');
+    const vPago = document.getElementById('adminResValorPago');
+    const calc = numPessoas * 20;
+    if (vTotal) vTotal.value = calc.toFixed(2);
+    if (vPago) vPago.value = calc.toFixed(2);
+  }
+};
+
+window.handleSalvarNovaReservaAdmin = async (e) => {
+  e.preventDefault();
+  const nome = document.getElementById('adminResNome')?.value?.trim();
+  const whatsapp = document.getElementById('adminResZap')?.value?.trim();
+  const email = document.getElementById('adminResEmail')?.value?.trim();
+  const espaco = document.getElementById('adminResEspaco')?.value || 'Sala Red';
+  const data = document.getElementById('adminResData')?.value;
+  const horario = document.getElementById('adminResHorario')?.value || '19:00';
+  const pessoas = parseInt(document.getElementById('adminResPessoas')?.value || '1', 10);
+  const status = document.getElementById('adminResStatus')?.value || 'CONFIRMED';
+  const valorTotal = parseFloat(document.getElementById('adminResValorTotal')?.value || '0');
+  const valorPago = parseFloat(document.getElementById('adminResValorPago')?.value || '0');
+  const observacoes = document.getElementById('adminResObs')?.value || 'Reserva manual inserida no painel';
+
+  if (!nome || !data || !horario || !whatsapp) {
+    alert('Por favor, preencha todos os campos obrigatórios (Nome, WhatsApp, Data e Horário).');
+    return;
+  }
+
+  const btn = document.getElementById('btnSalvarNovaReservaAdmin');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+  }
+
+  const ano = new Date().getFullYear();
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const codigoReserva = `BK-${ano}-${rand}`;
+  const isMesa = espaco.toLowerCase().includes('mesa');
+
+  const novaReserva = {
+    codigo_reserva: codigoReserva,
+    nome,
+    whatsapp,
+    email: email || null,
+    data,
+    horario,
+    ambiente_id: isMesa ? 'salao-principal' : 'salas-privadas',
+    sala_ou_mesa: espaco,
+    sala: espaco,
+    pessoas,
+    status,
+    status_pagamento: status === 'CONFIRMED' ? (valorPago >= valorTotal ? 'aprovado' : 'sinal_pago') : 'aguardando',
+    valor_total: valorTotal,
+    valor_sinal: valorPago,
+    valor_pago: valorPago,
+    valor_restante: Math.max(0, valorTotal - valorPago),
+    observacoes,
+    origem: 'painel_admin',
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    let savedId = null;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: resData, error: supaErr } = await supabase.from('reservas').insert([novaReserva]).select().single();
+        if (supaErr) throw supaErr;
+        if (resData?.id) savedId = resData.id;
+      } catch (err) {
+        console.warn('Aviso Supabase ao salvar reserva manual:', err.message);
+      }
+    }
+
+    if (db) {
+      try {
+        const docRef = await addDoc(collection(db, 'reservas'), novaReserva);
+        if (!savedId) savedId = docRef.id;
+      } catch (fireErr) {}
+    }
+
+    const itemLocal = {
+      id: savedId || codigoReserva,
+      codigoReserva,
+      ...novaReserva,
+      criadoEm: new Date()
+    };
+
+    state.reservas.unshift(itemLocal);
+    try { notifyRealtimeUpdate('RESERVAS_UPDATE', state.reservas); } catch(e) {}
+    window.fecharModalNovaReservaAdmin();
+    showToast(`Reserva ${codigoReserva} criada com sucesso e ${espaco} marcada como ocupada!`, 'success');
+    renderApp();
+  } catch (err) {
+    console.error('Erro ao salvar reserva manual:', err);
+    alert('Erro ao salvar reserva: ' + err.message);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Salvar e Marcar Reserva';
+    }
+  }
 };
 
 // 8.1.1 Validação de Ingresso / Check-In Portaria

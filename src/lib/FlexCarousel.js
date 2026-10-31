@@ -10,7 +10,7 @@
 import { Renderer, Program, Mesh, Triangle, Plane, Texture, RenderTarget } from 'ogl';
 import '../components/FlexCarousel.css';
 
-const DEFAULT_ITEMS = [
+export const DEFAULT_ITEMS = [
   {
     src: '/assets/galeria/karaoke-galera-amigos.jpg',
     alt: 'Karaokê com a Galera no Backstage',
@@ -18,10 +18,22 @@ const DEFAULT_ITEMS = [
     subtitle: 'Energia contagiante e noitada inesquecível'
   },
   {
+    src: '/assets/galeria/sala-red-karaoke.jpg',
+    alt: 'Sala 1 - Sala Red (Até 30 pessoas)',
+    title: 'Sala 1 — Sala Red',
+    subtitle: 'Lounge privativo intimista com iluminação vermelha'
+  },
+  {
     src: '/assets/drinks/tanqueray-tropical.webp',
     alt: 'Tanqueray Tropical Gin',
     title: 'Tanqueray Tropical',
     subtitle: 'Drinks e coquetéis autorais do nosso cardápio'
+  },
+  {
+    src: '/assets/galeria/sala-green-karaoke.jpg',
+    alt: 'Sala 2 - Sala Green (Até 40 pessoas)',
+    title: 'Sala 2 — Sala Green',
+    subtitle: 'Sofás amplos e luzes esmeralda para seu evento'
   },
   {
     src: '/assets/drinks/aperol-spritz.jpg',
@@ -34,6 +46,12 @@ const DEFAULT_ITEMS = [
     alt: 'Comemorações e Aniversários com a Turma',
     title: 'Viva o Momento com os Amigos',
     subtitle: 'Brinde e cante suas músicas favoritas'
+  },
+  {
+    src: '/assets/galeria/sala-blue-karaoke.jpg',
+    alt: 'Sala 3 - Sala Blue VIP (Até 50 pessoas)',
+    title: 'Sala 3 — Sala Blue VIP',
+    subtitle: 'Nossa maior sala com acústica e sistema premium'
   },
   {
     src: '/assets/drinks/moscow-mule.jpg',
@@ -327,8 +345,12 @@ export function createFlexCarousel(container, options = {}) {
     titleEl = document.createElement('span');
     titleEl.className = 'flex-carousel__title';
 
+    const titleTextNode = document.createTextNode(items[0]?.title || items[0]?.alt || '');
+    titleEl.appendChild(titleTextNode);
+
     subtitleEl = document.createElement('span');
     subtitleEl.className = 'flex-carousel__subtitle';
+    subtitleEl.textContent = items[0]?.subtitle || '';
     titleEl.appendChild(subtitleEl);
 
     countEl = document.createElement('span');
@@ -394,7 +416,12 @@ export function createFlexCarousel(container, options = {}) {
     if (!item) return;
 
     if (titleEl) {
-      titleEl.childNodes[0].nodeValue = item.title || item.alt || '';
+      if (titleEl.childNodes[0] && titleEl.childNodes[0].nodeType === 3) {
+        titleEl.childNodes[0].nodeValue = (item.title || item.alt || '') + ' ';
+      } else {
+        const txt = document.createTextNode((item.title || item.alt || '') + ' ');
+        titleEl.insertBefore(txt, subtitleEl);
+      }
       if (subtitleEl) {
         subtitleEl.textContent = item.subtitle || '';
       }
@@ -425,24 +452,28 @@ export function createFlexCarousel(container, options = {}) {
       depth: false
     });
   } catch (err) {
-    console.warn('[FlexCarousel] WebGL not supported', err);
+    console.warn('[FlexCarousel] WebGL not supported, mantendo carrossel HTML de alta fidelidade', err);
     return null;
   }
 
   const gl = renderer.gl;
   if (!renderer.isWebgl2) {
     gl.getExtension('WEBGL_lose_context')?.loseContext();
-    console.warn('[FlexCarousel] WebGL2 required');
+    console.warn('[FlexCarousel] WebGL2 required, mantendo carrossel HTML de alta fidelidade');
     return null;
   }
 
   gl.clearColor(0, 0, 0, 0);
   const canvas = gl.canvas;
   canvas.style.display = 'block';
+  canvas.style.position = 'absolute';
+  canvas.style.top = '0';
+  canvas.style.left = '0';
   canvas.style.width = '100%';
   canvas.style.height = '100%';
   canvas.setAttribute('aria-hidden', 'true');
   container.prepend(canvas);
+  container.classList.add('flex-carousel-webgl-active');
 
   const cardProgram = new Program(gl, {
     vertex: cardVertex,
@@ -568,7 +599,16 @@ export function createFlexCarousel(container, options = {}) {
       dispose: () => {}
     };
     const image = new Image();
-    image.crossOrigin = 'anonymous';
+    if (item.src && (item.src.startsWith('http://') || item.src.startsWith('https://'))) {
+      try {
+        const u = new URL(item.src);
+        if (typeof window !== 'undefined' && u.origin !== window.location.origin) {
+          image.crossOrigin = 'anonymous';
+        }
+      } catch (e) {
+        image.crossOrigin = 'anonymous';
+      }
+    }
     image.decoding = 'async';
     image.onload = () => {
       if (!alive || !slots.includes(slot)) return;
@@ -1340,28 +1380,40 @@ export function initFlexCarousel(mountSelector = '#vivaFlexCarouselMount', custo
   if (!itemsToUse || !itemsToUse.length) {
     itemsToUse = getCarouselItemsFromStorage();
   }
+  const finalItems = itemsToUse && itemsToUse.length ? itemsToUse : DEFAULT_ITEMS;
 
-  const instance = createFlexCarousel(mount, {
-    preset: 'liquid',
-    intro: 'rise',
-    cardHeight: window.innerWidth < 768 ? 0.6 : 0.52,
-    gap: 14,
-    squeeze: 0.2,
-    focusOnClick: true,
-    captions: true,
-    autoplay: true,
-    interval: 4,
-    items: itemsToUse && itemsToUse.length ? itemsToUse : DEFAULT_ITEMS,
-    ...customOptions
-  });
+  // Garante a existência do fallback HTML robusto para exibição instantânea de fotos
+  ensureFallbackHtmlCarousel(mount, finalItems);
+
+  let instance = null;
+  try {
+    instance = createFlexCarousel(mount, {
+      preset: 'liquid',
+      intro: 'rise',
+      cardHeight: window.innerWidth < 768 ? 0.6 : 0.52,
+      gap: 14,
+      squeeze: 0.2,
+      focusOnClick: true,
+      captions: true,
+      autoplay: true,
+      interval: 4,
+      items: finalItems,
+      ...customOptions
+    });
+  } catch (err) {
+    console.warn('[FlexCarousel] Erro ao instanciar WebGL FlexCarousel, mantendo carrossel HTML:', err);
+  }
 
   if (instance) {
     window.__vivaCarouselInstance = instance;
 
     const handleUpdate = () => {
       const refreshed = getCarouselItemsFromStorage();
-      if (refreshed && refreshed.length && instance.setItems) {
-        instance.setItems(refreshed);
+      if (refreshed && refreshed.length) {
+        ensureFallbackHtmlCarousel(mount, refreshed);
+        if (instance.setItems) {
+          instance.setItems(refreshed);
+        }
       }
     };
 
@@ -1374,6 +1426,45 @@ export function initFlexCarousel(mountSelector = '#vivaFlexCarouselMount', custo
   return instance;
 }
 
+export function ensureFallbackHtmlCarousel(container, items) {
+  if (!container) return;
+  let fallback = container.querySelector('.viva-fallback-carousel');
+  if (!fallback) {
+    fallback = document.createElement('div');
+    fallback.className = 'viva-fallback-carousel';
+    fallback.id = 'vivaFallbackCarousel';
+    fallback.setAttribute('aria-label', 'Galeria Viva o Backstage');
+    fallback.innerHTML = `
+      <button type="button" class="viva-fallback-nav-btn prev" aria-label="Foto anterior" onclick="window.vivaScrollPrev && window.vivaScrollPrev()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <div class="viva-fallback-track" id="vivaFallbackTrack"></div>
+      <button type="button" class="viva-fallback-nav-btn next" aria-label="Próxima foto" onclick="window.vivaScrollNext && window.vivaScrollNext()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+    `;
+    container.appendChild(fallback);
+  }
+
+  const track = fallback.querySelector('.viva-fallback-track');
+  if (!track) return;
+  track.innerHTML = '';
+
+  const list = items && items.length ? items : DEFAULT_ITEMS;
+  list.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'viva-fallback-card';
+    card.innerHTML = `
+      <img src="${item.src}" alt="${item.alt || item.title || 'Backstage Karaokê'}" class="viva-fallback-img" loading="lazy" />
+      <div class="viva-fallback-overlay">
+        <h4 class="viva-fallback-title">${item.title || item.alt || ''}</h4>
+        ${item.subtitle ? `<span class="viva-fallback-subtitle">${item.subtitle}</span>` : ''}
+      </div>
+    `;
+    track.appendChild(card);
+  });
+}
+
 function getCarouselItemsFromStorage() {
   try {
     const raw = localStorage.getItem('backstage_galeria');
@@ -1381,22 +1472,27 @@ function getCarouselItemsFromStorage() {
     const list = JSON.parse(raw);
     if (!Array.isArray(list) || !list.length) return null;
     const activeImages = list.filter(g => g.tipo !== 'video' && g.ativo !== false && g.url);
-    // Filtrar fora qualquer imagem antiga que contenha preços, banner promocional ou salas
     const cleanImages = activeImages.filter(g => {
       const u = (g.url || '').toLowerCase();
-      const t = (g.titulo || '').toLowerCase();
-      const s = (g.sala || '').toLowerCase();
-      const isSala = u.includes('sala-') || s.startsWith('sala') || t.includes('sala red') || t.includes('sala green') || t.includes('sala blue');
-      return !u.includes('promo-') && !u.includes('/assets/promos/') && !isSala;
+      return !u.includes('promo-') && !u.includes('/assets/promos/');
     });
-    if (cleanImages.length >= 3) {
+    if (cleanImages.length >= 2) {
       cleanImages.sort((a, b) => (a.ordem || 999) - (b.ordem || 999));
-      return cleanImages.map(g => ({
+      const mapped = cleanImages.map(g => ({
         src: g.url,
         alt: g.titulo || 'Viva o Backstage Karaokê',
         title: g.titulo || 'Viva o Backstage',
         subtitle: g.tag || g.descricao || 'Karaokê Brasília'
       }));
+      if (mapped.length < 6) {
+        const existingUrls = new Set(mapped.map(m => m.src));
+        for (const def of DEFAULT_ITEMS) {
+          if (!existingUrls.has(def.src)) {
+            mapped.push(def);
+          }
+        }
+      }
+      return mapped;
     }
   } catch(e) {}
   return null;

@@ -479,7 +479,7 @@ GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
 -- Ambientes Regulamentados
 INSERT INTO public.ambientes (id, nome, tipo, faixa_etaria, permite_menor, capacidade_maxima, valor_base, descricao, ativo)
 VALUES
-    ('salao-principal', 'Salão Principal (Palco & Bar)', 'aberto', '18+ (Classificação Indicativa Estrita)', false, 80, 0.00, 'Ambiente vibrante com palco integrado de karaokê, mesas e bar. Entrada e permanência restritas a maiores de 18 anos.', true),
+    ('salao-principal', 'Salão Principal (Palco & Bar)', 'aberto', '16+ (Classificação Indicativa)', false, 80, 0.00, 'Ambiente vibrante com palco integrado de karaokê, mesas e bar. Entrada e permanência restritas a maiores de 16 anos (proibido menor de 16 anos).', true),
     ('salas-privadas', 'Salas Privativas VIP (Red, Green, Blue)', 'privado', 'Livre com Responsável Legal', true, 50, 800.00, 'Salas privativas acústicas exclusivas com som profissional. Entrada de menores permitida exclusivamente com a presença e vigilância contínua do responsável legal.', true),
     ('sinuca-bilhar', 'Área de Jogos, Sinuca & Bilhar', 'jogos', '18+ (Art. 80 do ECA - Lei 8.069/1990)', false, 20, 0.00, 'Mesas profissionais de bilhar. Proibida a entrada e permanência de crianças e adolescentes nos termos do Artigo 80 do Estatuto da Criança e do Adolescente.', true)
 ON CONFLICT (id) DO UPDATE SET

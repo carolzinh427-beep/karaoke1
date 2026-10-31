@@ -99,6 +99,14 @@ let activeConfirmedReservation = null;
 if (typeof window !== 'undefined') {
   window.selectedBookingHorario = selectedBookingHorario;
   window.selectedCheckoutHorario = selectedCheckoutHorario;
+  window.vivaScrollPrev = function() {
+    const track = document.getElementById('vivaFallbackTrack');
+    if (track) track.scrollBy({ left: -310, behavior: 'smooth' });
+  };
+  window.vivaScrollNext = function() {
+    const track = document.getElementById('vivaFallbackTrack');
+    if (track) track.scrollBy({ left: 310, behavior: 'smooth' });
+  };
 }
 
 // Estado de Configurações Administrativas e Pagamento Manual
@@ -118,6 +126,87 @@ function pararMonitoramentoPagamento() {
 export function createWhatsAppUrl(message) {
   const phone = (cachedConfiguracoes?.whatsapp || WHATSAPP_PHONE || '556181426321').replace(/\D/g, '');
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+// Pop-up para conferir disponibilidade da data no WhatsApp
+let currentConferirData = null;
+
+export function formatarDataComDiaSemana(val) {
+  const iso = typeof extrairDataISO === 'function' ? extrairDataISO(val) : null;
+  if (!iso) return String(val || '');
+  const parts = iso.split('-').map(Number);
+  const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+  const dayOfWeek = dt.getDay();
+  const dStr = String(parts[2]).padStart(2, '0');
+  const mStr = String(parts[1]).padStart(2, '0');
+  const nomeDia = (WEEKDAY_NAMES && WEEKDAY_NAMES[dayOfWeek]) || '';
+  return nomeDia ? `${nomeDia}, ${dStr}/${mStr}/${parts[0]}` : `${dStr}/${mStr}/${parts[0]}`;
+}
+
+export function abrirModalConferirDataWhatsApp(formattedDisplay, dateStr, context = 'sala') {
+  const modal = document.getElementById('modalConferirDataWhatsApp');
+  if (modal && modal.classList.contains('open') && currentConferirData?.dateStr === dateStr) {
+    return;
+  }
+  currentConferirData = { formattedDisplay, dateStr, context };
+  const txt = document.getElementById('modalConferirDataTexto');
+  if (txt) {
+    txt.textContent = `📅 ${formattedDisplay}`;
+  }
+  if (modal) {
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => modal.classList.add('open'));
+  }
+}
+
+export function fecharModalConferirData(avancarNoSite = false) {
+  const modal = document.getElementById('modalConferirDataWhatsApp');
+  if (modal) {
+    modal.classList.remove('open');
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 200);
+  }
+
+  if (avancarNoSite && currentConferirData) {
+    if (currentConferirData.context === 'sala') {
+      window.goToBookingStep(2, true);
+    } else if (currentConferirData.context === 'mesa') {
+      setTimeout(() => {
+        if (typeof window.avancarParaPassoHorario === 'function') {
+          window.avancarParaPassoHorario();
+        }
+      }, 150);
+    }
+  }
+}
+
+export function confirmarConferirNoWhatsApp() {
+  const dataTxt = currentConferirData?.formattedDisplay || 'a data escolhida';
+  let msg = `Olá! Gostaria de conferir se a data ${dataTxt} está realmente disponível para reserva no Backstage Karaokê.`;
+  if (currentConferirData?.context === 'sala') {
+    msg = `Olá! Gostaria de conferir se a data ${dataTxt} está realmente disponível para reserva de sala privada no Backstage Karaokê.`;
+  } else if (currentConferirData?.context === 'mesa' || currentConferirData?.context === 'mapa_filtro' || currentConferirData?.context === 'mesa_modal') {
+    msg = `Olá! Gostaria de conferir se a data ${dataTxt} está realmente disponível para reserva de mesa no Salão Principal do Backstage Karaokê.`;
+  }
+
+  const url = createWhatsAppUrl(msg);
+  window.open(url, '_blank', 'noopener,noreferrer');
+  fecharModalConferirData(true);
+}
+
+if (typeof window !== 'undefined') {
+  window.formatarDataComDiaSemana = formatarDataComDiaSemana;
+  window.abrirModalConferirDataWhatsApp = abrirModalConferirDataWhatsApp;
+  window.fecharModalConferirData = fecharModalConferirData;
+  window.confirmarConferirNoWhatsApp = confirmarConferirNoWhatsApp;
+  window.conferirDataAtualMesaWpp = () => {
+    const dataInput = document.getElementById('kmodalData');
+    if (dataInput && dataInput.value) {
+      const dataFmt = typeof formatarDataComDiaSemana === 'function' ? formatarDataComDiaSemana(dataInput.value) : (typeof formatarDataBR === 'function' ? formatarDataBR(dataInput.value) : dataInput.value);
+      abrirModalConferirDataWhatsApp(dataFmt, dataInput.value, 'mesa_modal');
+    }
+  };
 }
 
 function bootstrap() {
@@ -733,8 +822,8 @@ function renderCalendar() {
         const summaryDate = document.getElementById('summaryDateVal');
         if (summaryDate) summaryDate.textContent = formattedDisplay;
 
-        // Vai direto para o Passo 2 (Escolha da Sala) e rola direto para as salas
-        window.goToBookingStep(2, true);
+        // Abre pop-up para conferir no WhatsApp se a data está disponível realmente
+        abrirModalConferirDataWhatsApp(formattedDisplay, dateStr, 'sala');
       });
     }
 
@@ -764,6 +853,8 @@ window.goToBookingStep = (step, directToTarget = false) => {
       if (cal) cal.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    // Sincroniza disponibilidade das 3 salas para a data escolhida
+    atualizarDisponibilidadeSalasPasso2();
   }
 
   if (step === 3) {
@@ -840,6 +931,13 @@ window.goToBookingStep = (step, directToTarget = false) => {
 window.openRoomPersonalityModal = (roomName) => {
   const room = ROOM_DATA[roomName];
   if (!room) return;
+
+  // Validação estrita se a sala já está reservada ou bloqueada na data selecionada
+  if (selectedBookingDate && isSalaReservada(roomName, selectedBookingDate.dateStr)) {
+    const dataFmt = selectedBookingDate.formattedDisplay || (typeof formatarDataBR === 'function' ? formatarDataBR(selectedBookingDate.dateStr) : selectedBookingDate.dateStr);
+    alert(`A ${roomName} já está reservada para ${dataFmt}. Por favor, escolha outra sala ou selecione outra data disponível no calendário.`);
+    return;
+  }
 
   pendingRoomSelection = roomName;
   selectedBookingRoom = roomName;
@@ -921,14 +1019,106 @@ window.confirmRoomFromPopup = () => {
 
 
 
+// Funções Utilitárias de Normalização de Datas e Identificação de Mesas/Salas
+export function extrairDataISO(val) {
+  if (!val) return null;
+  if (val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const str = String(val).trim();
+  const matchISO = str.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (matchISO) return `${matchISO[1]}-${matchISO[2]}-${matchISO[3]}`;
+  
+  const matchBR = str.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+  if (matchBR) {
+    const d = matchBR[1].padStart(2, '0');
+    const m = matchBR[2].padStart(2, '0');
+    const y = matchBR[3];
+    return `${y}-${m}-${d}`;
+  }
+  return null;
+}
+
+export function formatarDataBR(val) {
+  const iso = extrairDataISO(val);
+  if (!iso) return String(val || '');
+  const parts = iso.split('-');
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+export function extrairNumeroMesa(mesaRef) {
+  if (!mesaRef) return null;
+  const str = String(mesaRef).toLowerCase();
+  const catalogoMap = {
+    'mesa-30': 1,
+    'mesa-26-a': 2,
+    'mesa-26-bar': 5,
+    'mesa-22': 3,
+    'mesa-20': 4,
+    'mesa-16': 6,
+    'mesa-14': 7,
+    'mesa-12-dj': 8,
+    'mesa-12-entrada': 9,
+    'mesa-bistro-4': 10,
+    'mesa-xadrez-2': 11
+  };
+  for (const [catId, num] of Object.entries(catalogoMap)) {
+    if (str.includes(catId)) return num;
+  }
+  const m = str.match(/mesa[- _:]*(\d+)/i);
+  if (m) return parseInt(m[1], 10);
+  const justNum = str.replace(/\D/g, '');
+  if (justNum) return parseInt(justNum, 10);
+  return null;
+}
+
 // Inicializa Mapa 2D Vetorial Interativo do Salão Principal
 export function initMapaSalaoPrincipal() {
   const container = document.getElementById('karaokeMapMount');
   if (container) {
     initKaraokeMap('karaokeMapMount');
   }
+
+  // Inicializa filtro de data do mapa com a data atual e restringe o seletor
+  const filtroData = document.getElementById('mapaFiltroData');
+  if (filtroData) {
+    const today = new Date().toISOString().split('T')[0];
+    filtroData.min = today;
+    if (!filtroData.value) filtroData.value = today;
+
+    // Garante acionamento imediato ao escolher/alterar a data no mapa
+    filtroData.addEventListener('input', (e) => {
+      const v = e.target.value;
+      if (v && v.length === 10) {
+        window.handleMapaDataFiltroChange(v);
+      }
+    });
+  }
+
+  const filtroHora = document.getElementById('mapaFiltroHorario');
+  if (filtroHora && !filtroHora.value) {
+    filtroHora.value = '19:00';
+  }
+
   carregarReservasOcupadas();
 }
+
+window.handleMapaDataFiltroChange = (val) => {
+  atualizarStatusMesasNoMapa();
+  if (val && val.length === 10) {
+    const formattedDisplay = typeof formatarDataComDiaSemana === 'function'
+      ? formatarDataComDiaSemana(val)
+      : (typeof formatarDataBR === 'function' ? formatarDataBR(val) : val);
+    abrirModalConferirDataWhatsApp(formattedDisplay, val, 'mapa_filtro');
+  }
+};
+
+window.handleMapaHorarioFiltroChange = (val) => {
+  atualizarStatusMesasNoMapa();
+};
 
 async function carregarReservasOcupadas() {
   const todasReservas = [];
@@ -974,44 +1164,175 @@ async function carregarReservasOcupadas() {
   atualizarStatusMesasNoMapa();
 }
 
-function isMesaReservada(mesaId, dataStr, horarioStr) {
+export function isMesaReservada(mesaId, dataStr, horarioStr) {
+  const targetNum = extrairNumeroMesa(mesaId);
+  if (!targetNum) return false;
+
+  const targetDataISO = extrairDataISO(dataStr);
+  const targetHorario = horarioStr ? String(horarioStr).trim() : null;
+
+  // 1. Checa bloqueios manuais cadastrados pelo administrador
+  if (activeBlockedDates && activeBlockedDates.length) {
+    const temBloqueio = activeBlockedDates.some(b => {
+      if (!b) return false;
+      const bDataISO = extrairDataISO(b.data || b.dataBloqueio || b.date);
+      if (targetDataISO && bDataISO && targetDataISO !== bDataISO) return false;
+
+      // Bloqueio de dia inteiro de todas as salas/mesas
+      if (b.tipo === 'dia_inteiro' || b.sala === 'todas' || !b.sala) {
+        if (b.horario && b.horario !== 'Dia Inteiro' && targetHorario && b.horario !== targetHorario) {
+          return false;
+        }
+        return true;
+      }
+
+      // Bloqueio específico para esta mesa
+      const bMesaNum = extrairNumeroMesa(b.sala);
+      if (bMesaNum === targetNum) {
+        if (b.horario && b.horario !== 'Dia Inteiro' && targetHorario && b.horario !== targetHorario) {
+          return false;
+        }
+        return true;
+      }
+      return false;
+    });
+    if (temBloqueio) return true;
+  }
+
+  // 2. Checa reservas ativas no banco
   if (!reservasOcupadas || !reservasOcupadas.length) return false;
 
-  const numOnly = mesaId.replace(/\D/g, '');
-  const targetId = `mesa-${numOnly}`.toLowerCase();
-  const targetName = `mesa ${numOnly}`.toLowerCase();
-
   return reservasOcupadas.some(r => {
-    const rMesa = (r.salaOuMesa || r.sala || r.mesaId || '').toLowerCase();
-    const rMesaId = (r.mesaId || '').toLowerCase();
-    const rMesaNum = String(r.mesaNumero || '');
+    const st = (r.status || '').toUpperCase();
+    if (st === 'CANCELLED' || st === 'CANCELADO') return false;
 
-    const matchesMesa = 
-      rMesa.includes(targetId) ||
-      rMesa.includes(targetName) ||
-      rMesaId === targetId ||
-      rMesaNum === numOnly;
+    // Considera reservas confirmadas, em conferência, aguardando comprovante ou pendentes válidas
+    const isAtiva = st === 'CONFIRMED' || st === 'CONFIRMADA' || st === 'CHECKED_IN' || 
+                    st === 'AGUARDANDO_CONFERENCIA' || st === 'AGUARDANDO_COMPROVANTE' || 
+                    st === 'PENDING';
+    if (!isAtiva) return false;
 
-    if (!matchesMesa) return false;
+    const rMesaNum = extrairNumeroMesa(r.salaOuMesa || r.sala || r.mesaId);
+    if (rMesaNum !== targetNum) return false;
 
-    // Se data for especificada, valida data
-    if (dataStr) {
-      const rData = r.data || r.dataReserva || '';
-      if (rData && !rData.includes(dataStr) && !(selectedReservaData && rData.includes(selectedReservaData.formattedDisplay))) {
+    // Se data foi especificada, valida estritamente
+    if (targetDataISO) {
+      const rDataISO = extrairDataISO(r.data || r.dataReserva);
+      if (rDataISO && rDataISO !== targetDataISO) {
         return false;
       }
     }
 
-    // Se horário for especificado, valida horário
-    if (horarioStr) {
-      const rHora = r.horario || '';
-      if (rHora && rHora !== horarioStr) {
+    // Se horário foi especificado, valida horário
+    if (targetHorario && r.horario) {
+      const rHorario = String(r.horario).trim();
+      if (rHorario !== 'Dia Inteiro' && rHorario !== targetHorario) {
         return false;
       }
     }
 
     return true;
   });
+}
+
+export function isSalaReservada(salaNome, dataStr) {
+  if (!salaNome) return false;
+  const targetDataISO = extrairDataISO(dataStr);
+  if (!targetDataISO) return false;
+
+  const targetSalaClean = String(salaNome).toLowerCase();
+  const salaKey = targetSalaClean.includes('red') ? 'red' : targetSalaClean.includes('green') ? 'green' : targetSalaClean.includes('blue') ? 'blue' : null;
+  if (!salaKey) return false;
+
+  // 1. Checa bloqueios manuais cadastrados pelo administrador
+  if (activeBlockedDates && activeBlockedDates.length) {
+    const temBloqueio = activeBlockedDates.some(b => {
+      if (!b) return false;
+      const bDataISO = extrairDataISO(b.data || b.dataBloqueio || b.date);
+      if (bDataISO !== targetDataISO) return false;
+
+      const bSala = String(b.sala || '').toLowerCase();
+      if (b.tipo === 'dia_inteiro' && (bSala === 'todas' || !bSala)) return true;
+      if (bSala === 'todas') return true;
+      return bSala.includes(salaKey);
+    });
+    if (temBloqueio) return true;
+  }
+
+  // 2. Checa reservas ativas no banco
+  if (!reservasOcupadas || !reservasOcupadas.length) return false;
+
+  return reservasOcupadas.some(r => {
+    const st = (r.status || '').toUpperCase();
+    if (st === 'CANCELLED' || st === 'CANCELADO') return false;
+
+    const isAtiva = st === 'CONFIRMED' || st === 'CONFIRMADA' || st === 'CHECKED_IN' || 
+                    st === 'AGUARDANDO_CONFERENCIA' || st === 'AGUARDANDO_COMPROVANTE' || 
+                    st === 'PENDING';
+    if (!isAtiva) return false;
+
+    const rDataISO = extrairDataISO(r.data || r.dataReserva);
+    if (rDataISO !== targetDataISO) return false;
+
+    const rSalaClean = String(r.salaOuMesa || r.sala || '').toLowerCase();
+    return rSalaClean.includes(salaKey);
+  });
+}
+
+export function atualizarDisponibilidadeSalasPasso2() {
+  if (!selectedBookingDate) return;
+  const dataStr = selectedBookingDate.dateStr;
+  const dataFmt = selectedBookingDate.formattedDisplay || formatarDataBR(dataStr);
+
+  const step2DateSummary = document.getElementById('step2DateSummary');
+  if (step2DateSummary) {
+    step2DateSummary.textContent = dataFmt;
+  }
+
+  const salas = ['Sala Red', 'Sala Green', 'Sala Blue'];
+  salas.forEach(salaNome => {
+    const card = document.querySelector(`.step-room-card[data-room="${salaNome}"]`);
+    if (!card) return;
+
+    const reservada = isSalaReservada(salaNome, dataStr);
+    const btn = card.querySelector('.btn-room-select-trigger');
+    const head = card.querySelector('.room-card-head');
+
+    if (reservada) {
+      card.classList.add('room-card-unavailable');
+      card.setAttribute('aria-disabled', 'true');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>Sala Já Reservada nesta Data ✕</span>`;
+      }
+      let pill = card.querySelector('.room-card-status-pill');
+      if (!pill && head) {
+        pill = document.createElement('span');
+        pill.className = 'room-card-status-pill unavailable';
+        head.appendChild(pill);
+      }
+      if (pill) pill.textContent = 'Indisponível nesta data';
+    } else {
+      card.classList.remove('room-card-unavailable');
+      card.removeAttribute('aria-disabled');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Ver ${salaNome} &amp; Reservar ➔</span>`;
+      }
+      const existingPill = card.querySelector('.room-card-status-pill');
+      if (existingPill) existingPill.remove();
+    }
+  });
+}
+
+// Exposição global das funções de validação
+if (typeof window !== 'undefined') {
+  window.extrairDataISO = extrairDataISO;
+  window.formatarDataBR = formatarDataBR;
+  window.extrairNumeroMesa = extrairNumeroMesa;
+  window.isMesaReservada = isMesaReservada;
+  window.isSalaReservada = isSalaReservada;
+  window.atualizarDisponibilidadeSalasPasso2 = atualizarDisponibilidadeSalasPasso2;
 }
 
 function renderHotspotsNoMapa() {
@@ -1093,13 +1414,17 @@ window.selecionarMesaNoModal = (mesaId) => {
   }
 };
 
-function atualizarStatusMesasNoMapa() {
+export function atualizarStatusMesasNoMapa() {
   if (window.karaokeMapInstance) {
     const mapInst = window.karaokeMapInstance;
-    const dateToCheck = selectedReservaData ? selectedReservaData.dateStr : null;
+    const filtroDataInput = document.getElementById('mapaFiltroData');
+    const filtroHoraInput = document.getElementById('mapaFiltroHorario');
+
+    const dateToCheck = filtroDataInput?.value || (selectedReservaData ? selectedReservaData.dateStr : new Date().toISOString().split('T')[0]);
+    const horaToCheck = filtroHoraInput?.value || selectedCheckoutHorario || selectedReservaHorario || '19:00';
 
     mapInst.tables.forEach(t => {
-      const reserved = isMesaReservada(t.id, dateToCheck, null);
+      const reserved = isMesaReservada(t.id, dateToCheck, horaToCheck);
       if (reserved) {
         mapInst.setTableStatus(t.id, 'reservada');
       } else if (t.status === 'reservada') {
@@ -1109,6 +1434,9 @@ function atualizarStatusMesasNoMapa() {
 
     mapInst.updateTablesList();
   }
+}
+if (typeof window !== 'undefined') {
+  window.atualizarStatusMesasNoMapa = atualizarStatusMesasNoMapa;
 }
 
 // Sincronização em tempo real quando uma mesa for reservada
@@ -1353,10 +1681,8 @@ window.selecionarDataModal = (dateStr, formattedDisplay) => {
 
   renderModalCalendar();
 
-  // Avança suavemente para o Passo 3 (Horário)
-  setTimeout(() => {
-    window.avancarParaPassoHorario();
-  }, 220);
+  // Abre pop-up para conferir no WhatsApp se a data está disponível realmente
+  abrirModalConferirDataWhatsApp(formattedDisplay, dateStr, 'mesa');
 };
 
 // ----------------------------------------------------------------------------
@@ -2051,6 +2377,12 @@ window.abrirWhatsAppComprovante = async () => {
     return;
   }
 
+  // Validação estrita dos dados obrigatórios da reserva
+  if (!currentReservaPendente.nome || !currentReservaPendente.data || !currentReservaPendente.horario) {
+    alert('Por favor, informe seu nome completo, data e horário antes de enviar o comprovante.');
+    return;
+  }
+
   const errBox = document.getElementById('pagarWhatsappErroBox');
   if (errBox) errBox.style.display = 'none';
 
@@ -2101,17 +2433,40 @@ window.abrirWhatsAppComprovante = async () => {
       dadosReserva
     });
 
-    // Atualiza status no banco para aguardando_comprovante (sem auto-confirmação)
+    // Registra / atualiza status no Supabase para aguardando_comprovante
     try {
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('reservas').update({
+        await supabase.from('reservas').upsert({
+          codigo_reserva: currentReservaPendente.codigoReserva,
+          nome: currentReservaPendente.nome,
+          whatsapp: currentReservaPendente.whatsapp,
+          email: currentReservaPendente.email || null,
+          data: currentReservaPendente.data,
+          horario: currentReservaPendente.horario || '19:00',
+          ambiente_id: currentReservaPendente.ambienteId || 'salas-privadas',
+          sala_ou_mesa: currentReservaPendente.salaOuMesa || currentReservaPendente.sala || '',
+          sala: currentReservaPendente.sala,
+          pessoas: currentReservaPendente.pessoas || 1,
           status: 'aguardando_comprovante',
           status_pagamento: 'aguardando',
+          valor_total: total,
+          valor_sinal: currentReservaPendente.valorSinal || null,
+          valor_pago: 0,
           valor_restante: total - valorAgora,
+          origem: currentReservaPendente.origem || 'site_cliente',
           atualizado_em: new Date().toISOString()
-        }).eq('codigo_reserva', currentReservaPendente.codigoReserva);
+        }, { onConflict: 'codigo_reserva' });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Aviso Supabase upsert comprovante:', e);
+    }
+
+    // Mantém na lista de ocupadas do cliente e atualiza mapa
+    const exists = reservasOcupadas.some(r => r.codigoReserva === currentReservaPendente.codigoReserva);
+    if (!exists) {
+      reservasOcupadas.push({ ...currentReservaPendente, status: 'aguardando_comprovante' });
+      atualizarStatusMesasNoMapa();
+    }
 
     window.open(url, '_blank');
 
@@ -2131,6 +2486,12 @@ window.abrirWhatsAppComprovante = async () => {
 window.abrirWhatsAppCartao = async () => {
   if (!currentReservaPendente) {
     alert('Nenhuma reserva ativa encontrada. Por favor, reinicie a reserva.');
+    return;
+  }
+
+  // Validação estrita dos dados obrigatórios da reserva
+  if (!currentReservaPendente.nome || !currentReservaPendente.data || !currentReservaPendente.horario) {
+    alert('Por favor, informe seu nome completo, data e horário antes de enviar.');
     return;
   }
 
@@ -2185,13 +2546,36 @@ window.abrirWhatsAppCartao = async () => {
 
     try {
       if (isSupabaseConfigured && supabase) {
-        await supabase.from('reservas').update({
+        await supabase.from('reservas').upsert({
+          codigo_reserva: currentReservaPendente.codigoReserva,
+          nome: currentReservaPendente.nome,
+          whatsapp: currentReservaPendente.whatsapp,
+          email: currentReservaPendente.email || null,
+          data: currentReservaPendente.data,
+          horario: currentReservaPendente.horario || '19:00',
+          ambiente_id: currentReservaPendente.ambienteId || 'salas-privadas',
+          sala_ou_mesa: currentReservaPendente.salaOuMesa || currentReservaPendente.sala || '',
+          sala: currentReservaPendente.sala,
+          pessoas: currentReservaPendente.pessoas || 1,
           status: 'aguardando_comprovante',
           status_pagamento: 'aguardando',
+          valor_total: total,
+          valor_sinal: currentReservaPendente.valorSinal || null,
+          valor_pago: 0,
+          valor_restante: 0,
+          origem: currentReservaPendente.origem || 'site_cliente',
           atualizado_em: new Date().toISOString()
-        }).eq('codigo_reserva', currentReservaPendente.codigoReserva);
+        }, { onConflict: 'codigo_reserva' });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Aviso Supabase upsert cartao:', e);
+    }
+
+    const exists = reservasOcupadas.some(r => r.codigoReserva === currentReservaPendente.codigoReserva);
+    if (!exists) {
+      reservasOcupadas.push({ ...currentReservaPendente, status: 'aguardando_comprovante' });
+      atualizarStatusMesasNoMapa();
+    }
 
     window.open(url, '_blank');
 
@@ -2938,7 +3322,7 @@ export function applyConfiguracoesToDOM(conf) {
   if (conf.endereco) {
     const enderecoEl = document.getElementById('footerEndereco');
     if (enderecoEl) {
-      enderecoEl.textContent = `${conf.endereco} • Proibido menores de 18 no Salão Principal`;
+      enderecoEl.textContent = `${conf.endereco} • Proibido menor de 16 anos no Salão Principal`;
     }
   }
 

@@ -155,3 +155,169 @@
     transition: none;
   }
 }
+
+/* ==============================================================================
+   FALLBACK ROBUSTO: CARROSSEL VISUAL DE IMAGENS (HTML / CSS NATIVO)
+   Garante que todas as imagens fiquem visíveis imediatamente em qualquer dispositivo
+   ============================================================================== */
+.flex-carousel canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.viva-fallback-carousel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  transition: opacity 0.4s ease;
+}
+
+/* Quando o WebGL estiver ativo e desenhando, o fallback HTML cede lugar ao canvas interativo */
+.flex-carousel.flex-carousel-webgl-active .viva-fallback-carousel {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.viva-fallback-track {
+  display: flex;
+  gap: 18px;
+  padding: 24px 32px 50px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.viva-fallback-track::-webkit-scrollbar {
+  display: none;
+}
+
+.viva-fallback-card {
+  flex: 0 0 290px;
+  height: 410px;
+  border-radius: 18px;
+  overflow: hidden;
+  position: relative;
+  scroll-snap-align: center;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+  user-select: none;
+}
+
+.viva-fallback-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(0, 240, 255, 0.55);
+  box-shadow: 0 16px 40px rgba(0, 240, 255, 0.22);
+}
+
+.viva-fallback-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.viva-fallback-card:hover .viva-fallback-img {
+  transform: scale(1.05);
+}
+
+.viva-fallback-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 34px 18px 18px;
+  background: linear-gradient(to top, rgba(5, 8, 19, 0.96) 0%, rgba(5, 8, 19, 0.72) 65%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.viva-fallback-title {
+  font-family: var(--font-heading, Montserrat, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.viva-fallback-subtitle {
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.82rem;
+  color: var(--primary-cyan, #00F0FF);
+  margin: 0;
+  line-height: 1.35;
+  opacity: 0.95;
+}
+
+.viva-fallback-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(5, 8, 19, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s, color 0.2s;
+}
+
+.viva-fallback-nav-btn:hover {
+  background: rgba(0, 240, 255, 0.25);
+  border-color: var(--primary-cyan, #00F0FF);
+  color: var(--primary-cyan, #00F0FF);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.viva-fallback-nav-btn.prev {
+  left: 14px;
+}
+
+.viva-fallback-nav-btn.next {
+  right: 14px;
+}
+
+@media (max-width: 768px) {
+  .viva-fallback-card {
+    flex: 0 0 250px;
+    height: 360px;
+  }
+  .viva-fallback-nav-btn {
+    width: 38px;
+    height: 38px;
+  }
+  .viva-fallback-track {
+    padding: 16px 20px 40px;
+  }
+}

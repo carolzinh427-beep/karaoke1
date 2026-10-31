@@ -18,13 +18,13 @@ export const REGRAS_AMBIENTES = {
   'salao-principal': {
     id: 'salao-principal',
     titulo: 'Salão Principal (Palco Aberto & Bar)',
-    faixaEtaria: 'Exclusivo para maiores de 18 anos (18+)',
-    classificacaoBadge: '18+',
+    faixaEtaria: 'Proibido menor de 16 anos (16+)',
+    classificacaoBadge: '16+',
     permiteMenor: false,
-    avisoDestaque: 'CLASSIFICAÇÃO ETÁRIA INTERNA: O Salão Principal possui classificação exclusiva para maiores de 18 anos. Não é permitida a entrada ou permanência de menores de idade neste ambiente.',
+    avisoDestaque: 'CLASSIFICAÇÃO ETÁRIA INTERNA: O Salão Principal possui classificação restrita: proibido menor de 16 anos. Não é permitida a entrada ou permanência de menores de 16 anos neste ambiente.',
     regras: [
-      'Entrada permitida exclusivamente para maiores de 18 anos com documento oficial de identificação original com foto (RG, CNH, Passaporte ou CNH Digital).',
-      'Não é permitida a entrada de menores de idade, mesmo acompanhados por pais ou responsáveis legais, no Salão Principal, em conformidade com as diretrizes operacionais do estabelecimento.',
+      'Entrada permitida exclusivamente para maiores de 16 anos (proibido menor de 16 anos) com documento oficial de identificação original com foto (RG, CNH, Passaporte ou CNH Digital).',
+      'Não é permitida a entrada de menores de 16 anos, mesmo acompanhados por pais ou responsáveis legais, no Salão Principal, em conformidade com as diretrizes operacionais do estabelecimento.',
       'A cada 4 convidados da mesa, é concedido um número para chamada musical organizada pelo operador de som/DJ.',
       'É permitido levar bolo e doces decorativos para comemoração de aniversários.',
       'É terminantemente proibido o ingresso de bebidas alcoólicas, energéticos, refrigerantes e salgados de fontes externas.'

@@ -233,3 +233,68 @@ export function getMesaById(id) {
   return MESAS_SALAO[0] || null;
 }
 
+/**
+ * Normaliza qualquer data (ISO, BR ou por extenso) para o formato padrão 'YYYY-MM-DD'
+ */
+export function extrairDataISO(val) {
+  if (!val) return null;
+  if (val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const str = String(val).trim();
+  const matchISO = str.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (matchISO) return `${matchISO[1]}-${matchISO[2]}-${matchISO[3]}`;
+  
+  const matchBR = str.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+  if (matchBR) {
+    const d = matchBR[1].padStart(2, '0');
+    const m = matchBR[2].padStart(2, '0');
+    const y = matchBR[3];
+    return `${y}-${m}-${d}`;
+  }
+  return null;
+}
+
+/**
+ * Formata qualquer data para exibição no padrão brasileiro 'DD/MM/YYYY'
+ */
+export function formatarDataBR(val) {
+  const iso = extrairDataISO(val);
+  if (!iso) return String(val || '');
+  const parts = iso.split('-');
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+/**
+ * Extrai o número sequencial da mesa (1 a 11) a partir de qualquer identificador ou nome
+ */
+export function extrairNumeroMesa(mesaRef) {
+  if (!mesaRef) return null;
+  const str = String(mesaRef).toLowerCase();
+  const catalogoMap = {
+    'mesa-30': 1,
+    'mesa-26-a': 2,
+    'mesa-26-bar': 5,
+    'mesa-22': 3,
+    'mesa-20': 4,
+    'mesa-16': 6,
+    'mesa-14': 7,
+    'mesa-12-dj': 8,
+    'mesa-12-entrada': 9,
+    'mesa-bistro-4': 10,
+    'mesa-xadrez-2': 11
+  };
+  for (const [catId, num] of Object.entries(catalogoMap)) {
+    if (str.includes(catId)) return num;
+  }
+  const m = str.match(/mesa[- _:]*(\d+)/i);
+  if (m) return parseInt(m[1], 10);
+  const justNum = str.replace(/\D/g, '');
+  if (justNum) return parseInt(justNum, 10);
+  return null;
+}
+
+

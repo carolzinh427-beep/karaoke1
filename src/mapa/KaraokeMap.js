@@ -356,7 +356,10 @@ export class KaraokeMap {
     if (!table) return;
 
     if (table.status === 'reservada' || table.status === 'indisponivel') {
-      alert(`${table.name} está ${this.formatStatus(table.status).toLowerCase()} no momento. Por favor, escolha outra mesa.`);
+      const filtroData = document.getElementById('mapaFiltroData')?.value;
+      const filtroHora = document.getElementById('mapaFiltroHorario')?.value || '19:00';
+      const dataFmt = filtroData ? (typeof window !== 'undefined' && window.formatarDataBR ? window.formatarDataBR(filtroData) : filtroData) : 'na data e horário selecionados';
+      alert(`${table.name} já está reservada para ${dataFmt} às ${filtroHora}. Por favor, escolha outra mesa ou selecione outro horário no filtro acima do mapa.`);
       return;
     }
 
