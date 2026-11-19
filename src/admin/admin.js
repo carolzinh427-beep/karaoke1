@@ -710,7 +710,21 @@ async function fetchConfiguracoes() {
 
 // 5.7 Promoções da Semana e Destaques da Home
 async function fetchPromocoes() {
-  // 1. Tenta do localStorage para carregamento imediato
+  // 1. Tenta Supabase se configurado
+  if (isSupabaseConfigured) {
+    try {
+      const conf = await getConfiguracoesSupabase();
+      if (conf && Array.isArray(conf.promocoes) && conf.promocoes.length >= 3) {
+        state.promocoes = conf.promocoes;
+        try { localStorage.setItem('backstage_promocoes', JSON.stringify(state.promocoes)); } catch(e) {}
+        return state.promocoes;
+      }
+    } catch (supaErr) {
+      console.warn('Aviso Supabase promocoes:', supaErr);
+    }
+  }
+
+  // 2. Tenta do localStorage para carregamento imediato
   try {
     const local = localStorage.getItem('backstage_promocoes');
     if (local) {
@@ -5500,6 +5514,18 @@ window.handleSalvarPromocoes = async (e) => {
     localStorage.setItem('backstage_promocoes', JSON.stringify(updatedCards));
     notifyRealtimeUpdate('PROMOCOES_UPDATE', updatedCards);
 
+    // Salva no Supabase se configurado
+    if (isSupabaseConfigured) {
+      try {
+        await saveConfiguracoesSupabase({
+          ...state.configuracoes,
+          promocoes: updatedCards
+        });
+      } catch (supaErr) {
+        console.warn('Aviso ao salvar promoções no Supabase:', supaErr);
+      }
+    }
+
     // Salva no Firestore
     if (db) {
       try {
@@ -5538,6 +5564,14 @@ window.handleResetPromocoes = () => {
       state.promocoes = JSON.parse(JSON.stringify(DEFAULT_PROMOCOES));
       localStorage.setItem('backstage_promocoes', JSON.stringify(state.promocoes));
       notifyRealtimeUpdate('PROMOCOES_UPDATE', state.promocoes);
+      if (isSupabaseConfigured) {
+        try {
+          await saveConfiguracoesSupabase({
+            ...state.configuracoes,
+            promocoes: state.promocoes
+          });
+        } catch (e) {}
+      }
       if (db) {
         try {
           await setDoc(doc(db, 'configuracoes', 'promocoes'), {
