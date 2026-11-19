@@ -9,6 +9,7 @@
  */
 
 import { validarWebhookAsaas } from './_asaas.js';
+import { sanitizeHeaderValue } from './_auth.js';
 
 // Cache em memória para deduplicação ultra-rápida de eventos do webhook Asaas (Idempotência)
 const PROCESSED_WEBHOOK_EVENTS = new Map();
@@ -112,8 +113,8 @@ export default async function handler(req, res) {
     }
 
     // 2. Atualização segura no banco de dados Supabase via SERVICE_ROLE_KEY
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = sanitizeHeaderValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL);
+    const supabaseServiceKey = sanitizeHeaderValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.warn('[Asaas Webhook] Aviso: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configuradas no servidor.');

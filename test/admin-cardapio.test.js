@@ -14,6 +14,7 @@
 
 import assert from 'node:assert/strict';
 import adminCardapioHandler from '../api/admin-cardapio.js';
+import { sanitizeHeaderValue } from '../api/_auth.js';
 
 let totalTests = 0;
 let passedTests = 0;
@@ -131,6 +132,16 @@ await runTest('5. DELETE /api/admin-cardapio sem autorização deve ser bloquead
   assert.equal(res._getStatusCode(), 401, 'Deveria responder HTTP 401');
   const data = res._getResponseData();
   assert.equal(data.sucesso, false);
+});
+
+// 6. Sanitização de chaves multilinhas coladas com quebra de linha (\n)
+await runTest('6. Chave do Supabase com quebras de linha acidentais deve ser sanitizada para evitar erro de Header', () => {
+  const dirtyKey = `sb_secret_mock_test_token_xyz_12345\nsb_secret_mock_test_token_xyz_12345\nsb_secret_mock_test_token_xyz_12345`;
+  const clean = sanitizeHeaderValue(dirtyKey);
+  assert.equal(clean, 'sb_secret_mock_test_token_xyz_12345');
+  assert.doesNotThrow(() => {
+    new Headers({ 'apikey': clean, 'Authorization': `Bearer ${clean}` });
+  });
 });
 
 console.log('\n======================================================');

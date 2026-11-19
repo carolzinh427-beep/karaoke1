@@ -9,6 +9,7 @@
  */
 
 import { getAsaasConfig, consultarCobrancaAsaas, asaasRequest } from './_asaas.js';
+import { sanitizeHeaderValue } from './_auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -71,8 +72,8 @@ export default async function handler(req, res) {
 
     // Se o Asaas confirmou recebimento, atualiza com autoridade no Supabase via SERVICE_ROLE_KEY
     if (isPago) {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = sanitizeHeaderValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL);
+      const supabaseServiceKey = sanitizeHeaderValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
       if (supabaseUrl && supabaseServiceKey) {
         try {

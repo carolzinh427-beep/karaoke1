@@ -10,7 +10,7 @@
  * ==============================================================================
  */
 
-import { verifyAdminToken } from './_auth.js';
+import { verifyAdminToken, getSupabaseServerConfig } from './_auth.js';
 
 export default async function handler(req, res) {
   // CORS
@@ -22,8 +22,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://qepsqxllrgtrrtafpwpe.supabase.co';
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+  const { supabaseUrl, supabaseKey } = getSupabaseServerConfig();
 
   // ----------------------------------------------------------------------------
   // GET: Retorna as configurações atuais gravadas no banco de dados

@@ -3,6 +3,30 @@
  * Valida o Firebase ID Token diretamente nos servidores do Google Identity Toolkit.
  */
 
+/**
+ * Sanitiza valores de cabeçalhos HTTP, removendo quebras de linha (\r, \n),
+ * duplicatas e aspas para evitar erros de Headers.append no Node.js/Fetch.
+ */
+export function sanitizeHeaderValue(val) {
+  if (!val || typeof val !== 'string') return '';
+  const lines = val.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+  if (!lines.length) return '';
+  return lines[0].replace(/^["']|["']$/g, '').trim();
+}
+
+/**
+ * Retorna as variáveis de ambiente do Supabase devidamente sanitizadas para uso em cabeçalhos HTTP.
+ */
+export function getSupabaseServerConfig() {
+  const rawUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://qepsqxllrgtrrtafpwpe.supabase.co';
+  const rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+
+  return {
+    supabaseUrl: sanitizeHeaderValue(rawUrl),
+    supabaseKey: sanitizeHeaderValue(rawKey)
+  };
+}
+
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || 'AIzaSyAS6XWac_dB_hMI0M-ZaC5Qju2_zquYYcE';
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
 
@@ -88,8 +112,7 @@ export async function verifyAdminToken(req) {
 
     // Se ainda não autorizado, verifica se corresponde ao e-mail salvo na tabela configuracoes
     if (!isAuthorized) {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const { supabaseUrl, supabaseKey } = getSupabaseServerConfig();
       if (supabaseUrl && supabaseKey) {
         try {
           const confRes = await fetch(`${supabaseUrl}/rest/v1/configuracoes?id=eq.geral&select=contato_email`, {

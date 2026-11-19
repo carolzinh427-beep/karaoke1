@@ -8,15 +8,24 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 
+function sanitizeHeaderKey(val) {
+  if (!val || typeof val !== 'string') return '';
+  const lines = val.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+  return lines.length ? lines[0].replace(/^["']|["']$/g, '').trim() : '';
+}
+
+const rawUrl = 
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 
   (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) ||
   'https://qepsqxllrgtrrtafpwpe.supabase.co';
 
-const supabasePublishableKey = 
+const rawKey = 
   (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_SUPABASE_ANON_KEY || import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY)) || 
   (typeof process !== 'undefined' && (process.env?.VITE_SUPABASE_ANON_KEY || process.env?.SUPABASE_ANON_KEY || process.env?.VITE_SUPABASE_PUBLISHABLE_KEY || process.env?.SUPABASE_PUBLISHABLE_KEY)) ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlcHNxeGxscmd0cnJ0YWZwd3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExOTk4MTMsImV4cCI6MjEwNjc3NTgxM30.SqtA6rfMQVs0t8q9FIcV8M0r6ucV9EIJ7Wj2_X2X0kY';
+
+const supabaseUrl = sanitizeHeaderKey(rawUrl);
+const supabasePublishableKey = sanitizeHeaderKey(rawKey);
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
