@@ -421,28 +421,28 @@ export async function saveReservaSupabase(dados) {
     email: dados.email || null,
     data: dados.data,
     horario: dados.horario || '19:00',
-    ambiente_id: dados.ambienteId || 'salas-privadas',
-    sala_ou_mesa: dados.salaOuMesa || dados.sala || '',
+    ambiente_id: dados.ambienteId || dados.ambiente_id || 'salas-privadas',
+    sala_ou_mesa: dados.salaOuMesa || dados.sala_ou_mesa || dados.sala || '',
     sala: dados.sala,
     pessoas: dados.pessoas || 1,
     status: dados.status || 'PENDING',
-    status_pagamento: dados.statusPagamento || 'aguardando',
-    valor_total: dados.valorTotal || null,
-    valor_sinal: dados.valorSinal || null,
-    valor_pago: dados.valorPago || null,
-    valor_restante: dados.valorRestante !== undefined ? dados.valorRestante : null,
-    termos_aceitos: dados.termosAceitos !== false,
-    termos_versao: dados.termosVersao || '2026.1',
-    consentimento_marketing: Boolean(dados.consentimentoMarketing),
-    presenca_menor: Boolean(dados.presencaMenor),
-    responsavel_legal_declarado: Boolean(dados.responsavelLegalDeclarado),
+    status_pagamento: dados.statusPagamento || dados.status_pagamento || 'aguardando',
+    valor_total: dados.valorTotal !== undefined ? dados.valorTotal : (dados.valor_total !== undefined ? dados.valor_total : null),
+    valor_sinal: dados.valorSinal !== undefined ? dados.valorSinal : (dados.valor_sinal !== undefined ? dados.valor_sinal : null),
+    valor_pago: dados.valorPago !== undefined ? dados.valorPago : (dados.valor_pago !== undefined ? dados.valor_pago : null),
+    valor_restante: dados.valorRestante !== undefined ? dados.valorRestante : (dados.valor_restante !== undefined ? dados.valor_restante : null),
+    termos_aceitos: dados.termosAceitos !== false && dados.termos_aceitos !== false,
+    termos_versao: dados.termosVersao || dados.termos_versao || '2026.1',
+    consentimento_marketing: Boolean(dados.consentimentoMarketing || dados.consentimento_marketing),
+    presenca_menor: Boolean(dados.presencaMenor || dados.presenca_menor),
+    responsavel_legal_declarado: Boolean(dados.responsavelLegalDeclarado || dados.responsavel_legal_declarado),
     observacoes: dados.observacoes || '',
     origem: dados.origem || 'site_cliente'
   };
   if (dados.id) payload.id = dados.id;
-  if (dados.codigoReserva) payload.codigo_reserva = dados.codigoReserva;
-  if (dados.transacaoId) payload.transacao_id = dados.transacaoId;
-  if (dados.qrCodeToken) payload.qr_code_token = dados.qrCodeToken;
+  if (dados.codigoReserva || dados.codigo_reserva) payload.codigo_reserva = dados.codigoReserva || dados.codigo_reserva;
+  if (dados.transacaoId || dados.transacao_id) payload.transacao_id = dados.transacaoId || dados.transacao_id;
+  if (dados.qrCodeToken || dados.qr_code_token) payload.qr_code_token = dados.qrCodeToken || dados.qr_code_token;
 
   const { data, error } = await supabase
     .from('reservas')

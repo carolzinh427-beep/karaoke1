@@ -13,7 +13,9 @@ import {
   seedDatabaseIfNeeded,
 } from '../lib/catalogData.js';
 import {
+  supabase,
   isSupabaseConfigured,
+  saveReservaSupabase,
   getSalasSupabase,
   saveSalaSupabase,
   getCategoriasSupabase,
@@ -3110,9 +3112,14 @@ window.handleSalvarNovaReservaAdmin = async (e) => {
     let savedId = null;
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data: resData, error: supaErr } = await supabase.from('reservas').insert([novaReserva]).select().single();
-        if (supaErr) throw supaErr;
-        if (resData?.id) savedId = resData.id;
+        if (typeof saveReservaSupabase === 'function') {
+          const resData = await saveReservaSupabase(novaReserva);
+          if (resData?.id) savedId = resData.id;
+        } else {
+          const { data: resData, error: supaErr } = await supabase.from('reservas').insert([novaReserva]).select().single();
+          if (supaErr) throw supaErr;
+          if (resData?.id) savedId = resData.id;
+        }
       } catch (err) {
         console.warn('Aviso Supabase ao salvar reserva manual:', err.message);
       }
